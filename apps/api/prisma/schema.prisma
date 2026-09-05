@@ -57,6 +57,7 @@ model FamilyMember {
   canComment    Boolean   @default(true)
   joinedAt      DateTime  @default(now())
   lastSeenAt    DateTime?
+  activitySeenAt DateTime? // Aktivitäts-Verlauf zuletzt geöffnet (Ungelesen-Zähler)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 

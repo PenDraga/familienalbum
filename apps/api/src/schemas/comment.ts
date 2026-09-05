@@ -26,19 +26,3 @@ export const deviceBodySchema = z.object({
 export const deleteDeviceBodySchema = z.object({
   fcmToken: z.string().min(20).max(4096),
 });
-
-export const activityQuerySchema = z.object({
-  /** Zeitpunkt der letzten Prüfung (ISO 8601) */
-  since: z.iso.datetime(),
-});
-
-export const activityResponseSchema = z
-  .object({
-    /** Neue, fertige Medien anderer Mitglieder seit `since` */
-    newMedia: z.number().int(),
-    /** Neue Kommentare anderer Mitglieder seit `since` */
-    newComments: z.number().int(),
-    /** Für den nächsten Aufruf als `since` verwenden */
-    serverTime: z.iso.datetime(),
-  })
-  .meta({ id: 'Activity' });

@@ -173,8 +173,15 @@ Chunks unter `MEDIA_ROOT/_uploads/<sessionId>/`.
 
 - `POST /devices` `{ fcmToken, platform }` registriert ein Gerät (Upsert; ein Token gehört immer dem zuletzt
   angemeldeten Benutzer). `DELETE /devices` `{ fcmToken }` beim Abmelden.
-- `GET /families/:id/activity?since=` → `{ newMedia, newComments, serverTime }` – zählt nur Beiträge **anderer**
-  Mitglieder. Web und Windows pollen damit jede Minute; die App nutzt es auch im Vordergrund.
+- `GET /families/:id/activity?since=` → `{ newMedia, newComments, since, serverTime }` – zählt nur Beiträge **anderer**
+  Mitglieder. Ohne `since` gilt der zuletzt gesehene Zeitpunkt (`FamilyMember.activitySeenAt`, sonst Beitritt) –
+  das ist der Ungelesen-Zähler der Glocke. Web und Windows pollen damit jede Minute.
+- `GET /families/:id/activity/feed?cursor=&limit=` → `{ items: FeedItem[], nextCursor, seenAt }`, neueste zuerst.
+  `FeedItem` ist entweder eine **Upload-Serie** (`type: 'UPLOAD'`: gleiche Person, höchstens eine Stunde Abstand
+  zwischen zwei Uploads; `count/photos/videos`, bis zu vier Vorschau-Medien) oder ein **Kommentar**
+  (`type: 'COMMENT'`, `comment.body` gekürzt auf 200 Zeichen, `media[0]` ist das kommentierte Medium). `mine` markiert
+  eigene Aktionen, `unread` alles Fremde nach `seenAt`. Der Cursor ist der Zeitpunkt des letzten Eintrags.
+- `POST /families/:id/activity/seen` → `{ seenAt }` setzt den Zeitpunkt auf jetzt (App ruft es beim Öffnen des Verlaufs).
 
 **Versand** (`src/services/notification.service.ts`):
 
