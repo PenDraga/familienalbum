@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cached_network_image_platform_interface/cached_network_image_platform_interface.dart' show ImageRenderMethodForWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +10,7 @@ import 'package:intl/intl.dart';
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_image.dart';
 import '../../widgets/glass.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_models.dart';
@@ -419,14 +418,12 @@ class _HeroHeader extends StatelessWidget {
               offset: Offset(0, -t * 40),
               child: Transform.scale(
                 scale: 1 + (1 - t) * 0.04 + (settings.currentExtent > settings.maxExtent ? (settings.currentExtent / settings.maxExtent - 1) : 0),
-                child: CachedNetworkImage(
-                  imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
-                  imageUrl: newest!.urls.thumb1600!,
+                child: AppImage(
+                  url: newest!.urls.thumb1600!,
                   fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                  fadeInDuration: const Duration(milliseconds: 300),
-                  placeholder: (_, _) => Container(color: scheme.surfaceContainerHigh),
-                  errorWidget: (_, _, _) => Container(color: scheme.surfaceContainerHigh),
+                  fadeIn: const Duration(milliseconds: 300),
+                  placeholder: Container(color: scheme.surfaceContainerHigh),
+                  errorWidget: Container(color: scheme.surfaceContainerHigh),
                 ),
               ),
             )
@@ -596,14 +593,7 @@ class MediaTile extends ConsumerWidget {
             if (item.urls.thumb400 != null)
               _maybeHero(
                 'media-${item.id}',
-                CachedNetworkImage(
-                  imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
-                  imageUrl: item.urls.thumb400!,
-                  fit: BoxFit.cover,
-                  fadeInDuration: const Duration(milliseconds: 200),
-                  placeholder: (_, _) => const SizedBox.shrink(),
-                  errorWidget: (_, _, _) => Icon(Icons.broken_image_outlined, color: scheme.outline),
-                ),
+                AppImage(url: item.urls.thumb400!, fit: BoxFit.cover),
               )
             else
               _PendingTile(item: item),

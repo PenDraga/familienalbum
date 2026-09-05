@@ -1,5 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cached_network_image_platform_interface/cached_network_image_platform_interface.dart' show ImageRenderMethodForWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../core/api_exception.dart';
+import '../../widgets/app_image.dart';
 import '../../widgets/glass.dart';
 import '../comments/comments_sheet.dart';
 import '../timeline/media_model.dart';
@@ -563,20 +562,15 @@ class _PhotoViewState extends State<_PhotoView> with SingleTickerProviderStateMi
     final url = widget.item.urls.thumb1600 ?? widget.item.urls.thumb400;
     if (url == null) return const Center(child: Icon(Icons.broken_image_outlined, color: Colors.white54, size: 64));
 
-    Widget image = CachedNetworkImage(
-      imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
-      imageUrl: url,
+    Widget image = AppImage(
+      url: url,
       fit: BoxFit.contain,
-      fadeInDuration: Duration.zero,
-      // Im Web keinen geteilten Platzhalter (dasselbe Bild wie die Kachel) – sonst wird die Kachel danach schwarz
-      placeholder: (_, _) => heroTransitionsSupported && widget.item.urls.thumb400 != null
-          ? CachedNetworkImage(
-              imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
-              imageUrl: widget.item.urls.thumb400!,
-              fit: BoxFit.contain,
-            )
-          : const Center(child: CircularProgressIndicator()),
-      errorWidget: (_, _, _) => const Icon(Icons.broken_image_outlined, color: Colors.white54, size: 64),
+      fadeIn: Duration.zero,
+      // Kleine Vorschau als Platzhalter, bis die grosse geladen ist
+      placeholder: widget.item.urls.thumb400 != null
+          ? AppImage(url: widget.item.urls.thumb400!, fit: BoxFit.contain, fadeIn: Duration.zero)
+          : const Center(child: CircularProgressIndicator(color: Colors.white54)),
+      errorWidget: const Icon(Icons.broken_image_outlined, color: Colors.white54, size: 64),
     );
     if (widget.hero && heroTransitionsSupported) image = Hero(tag: 'media-${widget.item.id}', child: image);
 
@@ -656,11 +650,7 @@ class _VideoViewState extends State<_VideoView> {
           if (widget.item.urls.thumb1600 != null && heroTransitionsSupported)
             Hero(
               tag: 'media-${widget.item.id}',
-              child: CachedNetworkImage(
-                imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
-                imageUrl: widget.item.urls.thumb1600!,
-                fit: BoxFit.contain,
-              ),
+              child: AppImage(url: widget.item.urls.thumb1600!, fit: BoxFit.contain),
             ),
           const Center(child: CircularProgressIndicator()),
         ],
