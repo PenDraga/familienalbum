@@ -49,8 +49,8 @@ export class BullMqMediaQueue implements MediaQueue {
   }
 
   async enqueueProcessMedia(mediaId: string) {
-    // jobId = mediaId → derselbe Job wird nicht doppelt eingereiht
-    await this.queue.add('process', { mediaId }, { jobId: `process:${mediaId}` });
+    // jobId = mediaId → derselbe Job wird nicht doppelt eingereiht (BullMQ erlaubt kein „:“ in eigenen IDs)
+    await this.queue.add('process', { mediaId }, { jobId: `process-${mediaId}` });
   }
 
   async enqueueNotifyMedia(familyId: string, uploaderId: string) {
@@ -59,7 +59,7 @@ export class BullMqMediaQueue implements MediaQueue {
     await this.queue.add(
       'notify',
       { familyId, uploaderId },
-      { jobId: `notify:${familyId}:${uploaderId}`, delay: this.digestSeconds * 1000, attempts: 2, removeOnComplete: true, removeOnFail: 50 },
+      { jobId: `notify-${familyId}-${uploaderId}`, delay: this.digestSeconds * 1000, attempts: 2, removeOnComplete: true, removeOnFail: 50 },
     );
   }
 

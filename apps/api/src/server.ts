@@ -76,6 +76,14 @@ async function main() {
     { mediaRoot: config.mediaRoot, processing: env.MEDIA_PROCESSING, push: pushSender.enabled ? 'fcm' : 'off (polling)' },
     'api ready',
   );
+
+  // Hängengebliebene Medien (z.B. Neustart oder Fehler beim Einreihen) erneut einreihen – die feste jobId
+  // verhindert Doppel-Jobs, wenn der Job noch in der Queue steht.
+  const stuck = await prisma.media.findMany({ where: { status: 'PROCESSING', deletedAt: null }, select: { id: true } });
+  for (const m of stuck) {
+    await queue.enqueueProcessMedia(m.id).catch((err) => app.log.warn({ err, mediaId: m.id }, 'requeue failed'));
+  }
+  if (stuck.length) app.log.info({ count: stuck.length }, 'media in PROCESSING erneut eingereiht');
 }
 
 main().catch((err) => {
