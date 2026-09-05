@@ -180,5 +180,6 @@ Fehlen die Defines, startet die App ohne Firebase (kein `google-services.json` n
 - [x] **M5** Auto-Upload: neue Galerie-Aufnahmen im Hintergrund (Android WorkManager, iOS BGTaskScheduler) und beim Öffnen der App, nur-WLAN-Option, HEIC→JPEG auf dem Gerät – Code fertig, Gerätetest offen (kein Android SDK/iOS-Build)
 - [x] **Aufnahme-Metadaten:** Info-Sheet in der Detailansicht (Kamera, Belichtung, Ort, Datei); Aufnahmedatum einzeln oder für eine Auswahl setzen bzw. verschieben
 - [x] **Original sichern ohne Browser-Wechsel:** App lädt das Original selbst (Fortschritt in der Leiste); iOS/Android: in Fotos sichern oder Teilen-Blatt; Web mobil: Teilen-Blatt („Bild sichern“); Web Desktop: Download-Ordner
+- [x] **Aktivität:** Glocke mit Ungelesen-Zähler in der Timeline; Verlauf nach Tagen (Upload-Serien mit Vorschauen, Kommentare mit Auszug), Antippen öffnet das Foto bzw. den Kommentar; Öffnen markiert als gesehen. Push-Tipp ohne Medium landet im Verlauf
 - [ ] **M6** iOS-Build + TestFlight – Anleitung in [docs/ios-build.md](docs/ios-build.md). Windows-Build zurückgestellt: die Web-App (als Browser-App installiert) deckt den PC ab
 - [ ] **M7** Admin-Bereich im Web

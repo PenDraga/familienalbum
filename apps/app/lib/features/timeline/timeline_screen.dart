@@ -13,8 +13,8 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_image.dart';
 import '../../widgets/glass.dart';
 import '../auth/auth_controller.dart';
+import '../activity/activity_controller.dart';
 import '../auth/auth_models.dart';
-import '../comments/comments_repository.dart';
 import '../media/taken_at_dialog.dart';
 import '../upload/upload_controller.dart';
 import '../upload/upload_sheet.dart';
@@ -33,21 +33,16 @@ class TimelineScreen extends ConsumerStatefulWidget {
 class _TimelineScreenState extends ConsumerState<TimelineScreen> {
   final _scroll = ScrollController();
   Timer? _poll;
-  Timer? _activity;
-  DateTime _since = DateTime.now();
 
   @override
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
-    // Web/Windows haben keinen Push: jede Minute nachfragen, ob es Neues von anderen gibt.
-    _activity = Timer.periodic(const Duration(seconds: 60), (_) => _checkActivity());
   }
 
   @override
   void dispose() {
     _poll?.cancel();
-    _activity?.cancel();
     _scroll.dispose();
     super.dispose();
   }
@@ -55,24 +50,6 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
   void _onScroll() {
     if (_scroll.position.pixels > _scroll.position.maxScrollExtent - 800) {
       ref.read(timelineControllerProvider.notifier).loadMore();
-    }
-  }
-
-  Future<void> _checkActivity() async {
-    final family = ref.read(selectedFamilyProvider);
-    if (family == null) return;
-    try {
-      final a = await ref.read(commentsRepositoryProvider).activity(family.id, _since);
-      _since = a.serverTime;
-      if (!a.hasNews || !mounted) return;
-      await ref.read(timelineControllerProvider.notifier).refresh();
-      final parts = <String>[
-        if (a.newMedia > 0) a.newMedia == 1 ? '1 neues Medium' : '${a.newMedia} neue Medien',
-        if (a.newComments > 0) a.newComments == 1 ? '1 neuer Kommentar' : '${a.newComments} neue Kommentare',
-      ];
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(parts.join(' · '))));
-    } catch (_) {
-      // Netzwerkfehler beim Polling still ignorieren
     }
   }
 
@@ -94,6 +71,14 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
     final timeline = ref.watch(timelineControllerProvider);
     _syncPolling(timeline.whenOrNull(data: (s) => s));
 
+    // Glocke: wenn der Ungelesen-Zähler steigt, hat jemand anderes etwas beigetragen → Timeline auffrischen
+    ref.listen(unreadProvider, (prev, next) {
+      final before = prev?.whenOrNull(data: (u) => u.total) ?? 0;
+      final after = next.whenOrNull(data: (u) => u.total) ?? 0;
+      if (after > before) ref.read(timelineControllerProvider.notifier).refresh();
+    });
+    final unread = ref.watch(unreadProvider).whenOrNull(data: (u) => u.total) ?? 0;
+
     ref.listen(uploadControllerProvider, (prev, next) {
       final before = prev?.where((t) => t.status == UploadStatus.done).length ?? 0;
       final after = next.where((t) => t.status == UploadStatus.done).length;
@@ -103,6 +88,10 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
     if (me == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
     final actions = <Widget>[
+      if (family != null) ...[
+        _BellButton(unread: unread, onPressed: () => context.go('/activity')),
+        const SizedBox(width: 8),
+      ],
       if (family?.membership.isFamilyAdmin ?? false)
         GlassIconButton(icon: Icons.person_add_alt_1_outlined, tooltip: 'Einladen', onPressed: () => _showInviteDialog(context, family!)),
       const SizedBox(width: 8),
@@ -899,6 +888,49 @@ class _ErrorView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Glocke mit Ungelesen-Zähler (Aktivitäts-Verlauf).
+class _BellButton extends StatelessWidget {
+  const _BellButton({required this.unread, required this.onPressed});
+  final int unread;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        GlassIconButton(
+          icon: unread > 0 ? Icons.notifications_active_outlined : Icons.notifications_none_outlined,
+          tooltip: 'Aktivität',
+          onPressed: onPressed,
+        ),
+        if (unread > 0)
+          Positioned(
+            right: -4,
+            top: -4,
+            child: IgnorePointer(
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                decoration: BoxDecoration(
+                  color: scheme.primary,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: scheme.surface, width: 2),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  unread > 99 ? '99+' : '$unread',
+                  style: TextStyle(color: scheme.onPrimary, fontSize: 11, fontWeight: FontWeight.w700, height: 1),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

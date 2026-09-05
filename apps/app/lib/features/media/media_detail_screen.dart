@@ -21,8 +21,10 @@ import 'taken_at_dialog.dart';
 /// Vollbild-Ansicht: Wischen zwischen Medien, Zoom, Wischen nach unten zum Schliessen,
 /// Glas-Leisten oben und unten, Hero-Übergang von der Kachel.
 class MediaDetailScreen extends ConsumerStatefulWidget {
-  const MediaDetailScreen({super.key, required this.mediaId});
+  const MediaDetailScreen({super.key, required this.mediaId, this.openComments = false});
   final String mediaId;
+  /// Kommentar-Blatt sofort öffnen (Link aus dem Aktivitäts-Verlauf)
+  final bool openComments;
 
   @override
   ConsumerState<MediaDetailScreen> createState() => _MediaDetailScreenState();
@@ -36,6 +38,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
   bool _zoomed = false;
   MediaItem? _single; // Deep-Link ohne geladene Timeline
   final Map<String, double?> _downloading = {}; // Original-Download: Fortschritt je Medium
+  late bool _pendingComments = widget.openComments;
 
   List<MediaItem> _items(TimelineState? s) {
     final ready = s?.items.where((m) => m.isReady).toList() ?? const <MediaItem>[];
@@ -310,6 +313,12 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
       });
     }
     final item = items[index];
+    if (_pendingComments && item.id == widget.mediaId) {
+      _pendingComments = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openComments(item);
+      });
+    }
     final dateFormat = DateFormat.yMMMMEEEEd('de_CH');
     final timeFormat = DateFormat.Hm('de_CH');
     final padding = MediaQuery.paddingOf(context);

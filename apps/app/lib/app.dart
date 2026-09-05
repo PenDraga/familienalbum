@@ -7,6 +7,8 @@ import 'core/providers.dart';
 import 'features/admin/families_screen.dart';
 import 'features/admin/members_screen.dart';
 import 'features/admin/users_screen.dart';
+import 'features/activity/activity_controller.dart';
+import 'features/activity/activity_screen.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/autoupload/auto_upload_controller.dart';
 import 'features/autoupload/auto_upload_service.dart';
@@ -69,12 +71,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               key: state.pageKey,
               // Nicht deckend: beim Wischen nach unten scheint die Timeline durch
               opaque: false,
-              child: MediaDetailScreen(mediaId: state.pathParameters['id']!),
+              child: MediaDetailScreen(mediaId: state.pathParameters['id']!, openComments: state.uri.queryParameters['comments'] == '1'),
               transitionDuration: const Duration(milliseconds: 260),
               reverseTransitionDuration: const Duration(milliseconds: 220),
               transitionsBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
             ),
           ),
+          GoRoute(path: 'activity', builder: (_, _) => const ActivityScreen()),
           GoRoute(
             path: 'settings',
             builder: (_, _) => const SettingsScreen(),
@@ -105,8 +108,11 @@ class FamilienalbumApp extends ConsumerWidget {
       final event = next.whenOrNull(data: (e) => e);
       if (event == null) return;
       ref.read(timelineControllerProvider.notifier).refresh();
+      ref.read(unreadProvider.notifier).refresh();
       if (event.openedFromNotification && event.mediaId != null) {
         ref.read(routerProvider).go('/media/${event.mediaId}');
+      } else if (event.openedFromNotification) {
+        ref.read(routerProvider).go('/activity');
       } else if (event.title != null) {
         rootMessengerKey.currentState?.showSnackBar(SnackBar(content: Text('${event.title}: ${event.body ?? ''}')));
       }
