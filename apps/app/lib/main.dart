@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -12,6 +13,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Saubere URLs im Web (/media/:id statt /#/media/:id); Caddy liefert dafür index.html per try_files.
   usePathUrlStrategy();
+  if (kIsWeb) initialDeepLink = Uri.base.path;
   await initializeDateFormatting('de_CH');
   final prefs = await SharedPreferences.getInstance();
   await AutoUploadBackground.initialize();

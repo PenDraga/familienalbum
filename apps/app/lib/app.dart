@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +27,9 @@ class _AuthRefresh extends ChangeNotifier {
   }
 }
 
+/// Pfad aus der Adresszeile beim Start (nur Web), gesetzt in main().
+String? initialDeepLink;
+
 /// Für Snackbars aus Diensten ohne BuildContext (Push).
 final rootMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -36,8 +38,9 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
-    // Web: Deep-Link aus der Adresszeile übernehmen (der Router entsteht erst nach dem Splash)
-    initialLocation: kIsWeb && Uri.base.path.length > 1 ? Uri.base.path : '/',
+    // Web: Deep-Link vom App-Start übernehmen – der Splash (eigene MaterialApp) setzt die Adresse
+    // vorher auf '/' zurück, deshalb wird der Pfad in main() gesichert.
+    initialLocation: (initialDeepLink?.length ?? 0) > 1 ? initialDeepLink! : '/',
     refreshListenable: refresh,
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
