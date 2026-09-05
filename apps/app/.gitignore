@@ -46,3 +46,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Xcode SwiftPM-Cache (Package.resolved wird von Flutter erzeugt)
+**/xcshareddata/swiftpm/
