@@ -155,12 +155,29 @@ export class MediaProcessor {
 
   // ---------- Videos ----------
 
+  /** Drehung aus der Display-Matrix per ffprobe-JSON (0, 90, 180, 270). */
+  private async probeRotation(path: string, streamIndex: number): Promise<number> {
+    try {
+      const { stdout } = await execFileAsync(
+        this.opts.ffprobePath ?? 'ffprobe',
+        ['-v', 'error', '-select_streams', String(streamIndex), '-show_entries', 'stream_side_data=rotation', '-of', 'json', path],
+        { timeout: 30_000 },
+      );
+      const parsed = JSON.parse(stdout) as { streams?: Array<{ side_data_list?: Array<{ rotation?: number }> }> };
+      const rot = parsed.streams?.[0]?.side_data_list?.find((d) => typeof d.rotation === 'number')?.rotation;
+      return rot === undefined ? 0 : ((Math.round(rot) % 360) + 360) % 360;
+    } catch {
+      return 0;
+    }
+  }
+
   private async processVideo(media: Media, original: string): Promise<Extracted> {
     const probe = await ffprobe(original);
-    const video = probe.streams.find((s) => s.codec_type === 'video');
+    const { video, audio } = selectStreams(probe.streams);
     if (!video) throw new Error('Kein Videostream gefunden');
 
-    const rotation = videoRotation(video);
+    // fluent-ffmpeg liefert keine side_data (Display-Matrix) – iPhone-Videos tragen die Drehung genau dort
+    const rotation = videoRotation(video) || (await this.probeRotation(original, video.index));
     const swap = rotation === 90 || rotation === 270;
     const width = swap ? (video.height ?? null) : (video.width ?? null);
     const height = swap ? (video.width ?? null) : (video.height ?? null);
@@ -174,10 +191,12 @@ export class MediaProcessor {
     await runFfmpeg(
       ffmpeg(original)
         .outputOptions([
-          '-map 0:v:0', '-map 0:a?',
+          // Nur den Videostream und eine dekodierbare Tonspur mappen. iPhones legen zusätzlich eine
+          // Spur in Apples räumlichem Codec (apac) und Metadaten-Spuren ab, die ffmpeg nicht lesen kann.
+          `-map 0:${video.index}`,
+          ...(audio ? [`-map 0:${audio.index}`, '-c:a aac', '-b:a 128k', '-ac 2'] : ['-an']),
           '-c:v libx264', '-preset veryfast', '-crf 23', '-pix_fmt yuv420p',
           '-vf', `scale=${MAX_PREVIEW_EDGE}:${MAX_PREVIEW_EDGE}:force_original_aspect_ratio=decrease:force_divisible_by=2`,
-          '-c:a aac', '-b:a 128k', '-ac 2',
           '-movflags +faststart',
           '-sn', '-dn',
         ])
@@ -227,6 +246,22 @@ function dateOrNull(d: Date): Date | null {
 function numberOrNull(v: unknown): number | null {
   const n = typeof v === 'string' ? Number(v) : typeof v === 'number' ? v : NaN;
   return Number.isFinite(n) ? n : null;
+}
+
+type ProbeStream = FfprobeData['streams'][number];
+
+/** Codecs ohne Decoder in ffmpeg (Stand ffmpeg 8): Apple Positional Audio Codec u.a. */
+const UNDECODABLE = new Set(['unknown', 'none', 'apac']);
+
+/**
+ * Wählt den ersten Videostream und die erste Tonspur, die ffmpeg dekodieren kann.
+ * Exportiert für Tests.
+ */
+export function selectStreams(streams: ProbeStream[]): { video: ProbeStream | undefined; audio: ProbeStream | undefined } {
+  const decodable = (s: ProbeStream) => !!s.codec_name && !UNDECODABLE.has(s.codec_name);
+  const video = streams.find((s) => s.codec_type === 'video' && decodable(s)) ?? streams.find((s) => s.codec_type === 'video');
+  const audio = streams.find((s) => s.codec_type === 'audio' && decodable(s));
+  return { video, audio };
 }
 
 function videoRotation(stream: FfprobeData['streams'][number]): number {

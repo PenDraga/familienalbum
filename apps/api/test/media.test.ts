@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { selectStreams } from '../src/services/media-processor.js';
 import { TestContext, expectProblem } from './helpers/app.js';
 import { hasFfmpeg, makeJpeg, makeMp4, makePng } from './helpers/fixtures.js';
 
@@ -84,6 +85,33 @@ describe('Verarbeitung (Worker-Logik)', () => {
     const t = await sharp(`${ctx.mediaRoot}/${family.id}/${media.id}/thumb_400.webp`).metadata();
     expect(t.width).toBe(320);
   }, 60_000);
+});
+
+describe('Spurauswahl für die Video-Vorschau', () => {
+  const stream = (index: number, codec_type: string, codec_name: string) => ({ index, codec_type, codec_name }) as never;
+
+  it('überspringt Apples räumliche Tonspur (apac) und Metadaten-Spuren wie beim iPhone-Clip', () => {
+    const { video, audio } = selectStreams([
+      stream(0, 'audio', 'aac'),
+      stream(1, 'audio', 'unknown'), // apac
+      stream(2, 'video', 'h264'),
+      stream(3, 'data', 'unknown'), // mebx
+      stream(4, 'data', 'unknown'),
+    ]);
+    expect(video?.index).toBe(2);
+    expect(audio?.index).toBe(0);
+  });
+
+  it('nimmt keinen Ton, wenn keine dekodierbare Tonspur da ist', () => {
+    const { video, audio } = selectStreams([stream(0, 'video', 'hevc'), stream(1, 'audio', 'apac')]);
+    expect(video?.index).toBe(0);
+    expect(audio).toBeUndefined();
+  });
+
+  it('bevorzugt die erste dekodierbare Tonspur, auch wenn sie nicht zuerst kommt', () => {
+    const { audio } = selectStreams([stream(0, 'video', 'h264'), stream(1, 'audio', 'unknown'), stream(2, 'audio', 'aac')]);
+    expect(audio?.index).toBe(2);
+  });
 });
 
 describe('GET /families/:id/timeline', () => {
