@@ -35,7 +35,7 @@
       "runtimeExecutable": "node",
       "runtimeArgs": [
         "apps/app/tool/serve_web.mjs",
-        "8080",
+        "8090",
         "0.0.0.0"
       ],
       "port": 8090
