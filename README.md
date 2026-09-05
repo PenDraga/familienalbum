@@ -108,10 +108,11 @@ cd apps/app && flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8090 
 Schneller auf dem Handy ist der Release-Build, statisch ausgeliefert:
 
 ```bash
-cd apps/app && flutter build web --release --dart-define=API_BASE_URL=http://192.168.0.135:3000 && node tool/serve_web.mjs 8090
+cd apps/app && flutter build web --release --pwa-strategy=none --dart-define=API_BASE_URL=http://192.168.0.135:3000 && node tool/serve_web.mjs 8090
 ```
 
-Dann auf dem Handy `http://192.168.0.135:8090` öffnen. Windows fragt beim ersten Start evtl. nach der Firewall-Freigabe
+`--pwa-strategy=none` verhindert, dass der Browser alte Builds aus dem Service-Worker-Cache lädt (für Tests wichtig;
+im Betrieb hinter Caddy darf der Service Worker bleiben). Dann auf dem Handy `http://192.168.0.135:8090` öffnen. Windows fragt beim ersten Start evtl. nach der Firewall-Freigabe
 für `dart.exe` und `node.exe` (privates Netzwerk erlauben). Über HTTP ohne HTTPS fällt die Token-Ablage im Browser auf
 localStorage zurück – für den Test okay, im Betrieb läuft alles über HTTPS.
 
