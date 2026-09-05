@@ -2,7 +2,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { errorResponses } from '../schemas/common.js';
 import { familySchema, membershipFlagsSchema } from '../schemas/family.js';
-import { userPublicSchema } from '../schemas/user.js';
+import { updateMeBodySchema, userPublicSchema } from '../schemas/user.js';
 import { UserService } from '../services/user.service.js';
 
 export const meResponseSchema = userPublicSchema
@@ -33,5 +33,21 @@ export const meRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request) => users.getMe(request.user!.id),
+  );
+
+  app.patch(
+    '/me',
+    {
+      preHandler: app.authenticate,
+      schema: {
+        tags: ['me'],
+        summary: 'Anzeigename oder Passwort ändern',
+        description: 'Passwortwechsel verlangt `currentPassword`; andere Sitzungen werden dabei beendet.',
+        security: [{ bearerAuth: [] }],
+        body: updateMeBodySchema,
+        response: { 200: userPublicSchema, ...errorResponses(400, 401, 403) },
+      },
+    },
+    async (request) => users.updateMe(request.user!.id, request.body),
   );
 };

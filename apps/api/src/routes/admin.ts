@@ -2,7 +2,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { listUsersQuerySchema, statsSchema } from '../schemas/admin.js';
 import { errorResponses, idParamsSchema } from '../schemas/common.js';
-import { addMemberBodySchema, memberSchema } from '../schemas/family.js';
+import { addMemberBodySchema, familyAdminSchema, familySchema, memberSchema, membershipFlagsSchema } from '../schemas/family.js';
 import { createUserBodySchema, updateUserBodySchema, userPublicSchema } from '../schemas/user.js';
 import { FamilyService } from '../services/family.service.js';
 import { UserService } from '../services/user.service.js';
@@ -31,6 +31,43 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request) => users.list(request.query),
+  );
+
+  app.get(
+    '/admin/users/:id',
+    {
+      schema: {
+        tags: ['admin'],
+        summary: 'Benutzer mit Familien und Rechten',
+        security: bearer,
+        params: idParamsSchema,
+        response: {
+          200: userPublicSchema.extend({
+            deviceCount: z.number().int(),
+            families: z.array(
+              familySchema.extend({
+                membership: membershipFlagsSchema.extend({ joinedAt: z.iso.datetime(), lastSeenAt: z.iso.datetime().nullable() }),
+              }),
+            ),
+          }),
+          ...errorResponses(401, 403, 404),
+        },
+      },
+    },
+    async (request) => users.getWithMemberships(request.params.id),
+  );
+
+  app.get(
+    '/admin/families',
+    {
+      schema: {
+        tags: ['admin'],
+        summary: 'Alle Familien mit Mitglieder- und Medienzahl',
+        security: bearer,
+        response: { 200: z.array(familyAdminSchema), ...errorResponses(401, 403) },
+      },
+    },
+    async () => families.listAll(),
   );
 
   app.post(

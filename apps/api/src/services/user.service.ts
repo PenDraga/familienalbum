@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { Errors } from '../lib/errors.js';
-import { hashPassword } from '../lib/password.js';
+import { hashPassword, verifyPassword } from '../lib/password.js';
 import { toFamilyDto, toMembershipFlags, toUserDto, iso, isoOrNull } from './dto.js';
 
 export class UserService {
@@ -19,6 +19,46 @@ export class UserService {
         membership: { ...toMembershipFlags(m), joinedAt: iso(m.joinedAt), lastSeenAt: isoOrNull(m.lastSeenAt) },
       })),
     };
+  }
+
+  /** Benutzer mit seinen Familien (globaler Admin). */
+  async getWithMemberships(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { memberships: { include: { family: true }, orderBy: { joinedAt: 'asc' } }, _count: { select: { devices: true } } },
+    });
+    if (!user) throw Errors.notFound('Benutzer nicht gefunden.', 'USER_NOT_FOUND');
+    return {
+      ...toUserDto(user),
+      deviceCount: user._count.devices,
+      families: user.memberships.map((m) => ({
+        ...toFamilyDto(m.family),
+        membership: { ...toMembershipFlags(m), joinedAt: iso(m.joinedAt), lastSeenAt: isoOrNull(m.lastSeenAt) },
+      })),
+    };
+  }
+
+  /** Eigenes Profil: Anzeigename und/oder Passwort (mit Bestätigung des aktuellen). */
+  async updateMe(userId: string, patch: { displayName?: string; currentPassword?: string; newPassword?: string }) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw Errors.notFound('Benutzer nicht gefunden.', 'USER_NOT_FOUND');
+    if (patch.newPassword) {
+      if (!patch.currentPassword || !(await verifyPassword(user.passwordHash, patch.currentPassword))) {
+        throw Errors.forbidden('Das aktuelle Passwort ist falsch.', 'WRONG_PASSWORD');
+      }
+    }
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        displayName: patch.displayName,
+        passwordHash: patch.newPassword ? await hashPassword(patch.newPassword) : undefined,
+      },
+    });
+    if (patch.newPassword) {
+      // Andere Sitzungen beenden – die aktuelle behält ihr Access-Token bis zum Ablauf
+      await this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
+    }
+    return toUserDto(updated);
   }
 
   async list(opts: { q?: string; limit: number; offset: number }) {

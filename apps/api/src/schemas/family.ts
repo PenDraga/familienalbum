@@ -59,6 +59,21 @@ export const updateMemberBodySchema = membershipFlagsSchema
   .partial()
   .refine((v) => Object.keys(v).length > 0, { message: 'Mindestens ein Flag angeben' });
 
+/** Familien-Admin legt ein Konto an und macht es zum Mitglied. */
+export const createMemberAccountBodySchema = z.object({
+  email: z.email().max(254).transform((v) => v.trim().toLowerCase()),
+  password: z.string().min(8, 'Mindestens 8 Zeichen').max(200),
+  displayName: z.string().trim().min(1).max(80),
+  isFamilyAdmin: z.boolean().default(false),
+  canUpload: z.boolean().default(true),
+  canDownload: z.boolean().default(false),
+  canComment: z.boolean().default(true),
+});
+
+export const familyAdminSchema = familySchema
+  .extend({ memberCount: z.number().int(), mediaCount: z.number().int() })
+  .meta({ id: 'FamilyAdmin' });
+
 /** Admin fügt einen bestehenden Benutzer direkt einer Familie hinzu. */
 export const addMemberBodySchema = z.object({
   userId: uuidSchema,

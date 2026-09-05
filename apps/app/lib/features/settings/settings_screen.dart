@@ -8,6 +8,7 @@ import '../../widgets/app_logo.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_models.dart';
 import '../autoupload/auto_upload_section.dart';
+import 'profile_dialogs.dart';
 import '../autoupload/auto_upload_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -28,17 +29,68 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           if (me != null)
             Card(
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: scheme.primaryContainer,
-                  foregroundColor: scheme.onPrimaryContainer,
-                  child: Text(me.displayName.isNotEmpty ? me.displayName[0].toUpperCase() : '?'),
-                ),
-                title: Text(me.displayName, style: text.titleMedium),
-                subtitle: Text(me.email),
-                trailing: me.isAdmin ? const Chip(label: Text('Admin')) : null,
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: scheme.primaryContainer,
+                      foregroundColor: scheme.onPrimaryContainer,
+                      child: Text(me.displayName.isNotEmpty ? me.displayName[0].toUpperCase() : '?'),
+                    ),
+                    title: Text(me.displayName, style: text.titleMedium),
+                    subtitle: Text(me.email),
+                    trailing: me.isAdmin ? const Chip(label: Text('Admin')) : null,
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.badge_outlined),
+                    title: const Text('Anzeigename ändern'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => showRenameDialog(context, ref),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.lock_reset),
+                    title: const Text('Passwort ändern'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => showChangePasswordDialog(context, ref),
+                  ),
+                ],
               ),
             ),
+          if (me != null && ((selected?.membership.isFamilyAdmin ?? false) || me.isAdmin)) ...[
+            const SizedBox(height: 24),
+            _SectionTitle('Verwaltung'),
+            Card(
+              child: Column(
+                children: [
+                  if (selected != null && selected.membership.isFamilyAdmin)
+                    ListTile(
+                      leading: const Icon(Icons.group_outlined),
+                      title: Text('Mitglieder von ${selected.name}'),
+                      subtitle: const Text('Rechte, Konten anlegen, Einladungen'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push('/settings/members/${selected.id}'),
+                    ),
+                  if (me.isAdmin) ...[
+                    ListTile(
+                      leading: const Icon(Icons.manage_accounts_outlined),
+                      title: const Text('Benutzer'),
+                      subtitle: const Text('Alle Konten, Admin-Rechte, Sperren'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push('/settings/users'),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.family_restroom),
+                      title: const Text('Familien'),
+                      subtitle: const Text('Anlegen, löschen, Mitglied werden'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push('/settings/families'),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           _SectionTitle('Darstellung'),
           SegmentedButton<ThemeMode>(

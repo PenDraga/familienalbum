@@ -27,6 +27,15 @@ export const createUserBodySchema = z.object({
   isAdmin: z.boolean().default(false),
 });
 
+export const updateMeBodySchema = z
+  .object({
+    displayName: displayNameSchema.optional(),
+    currentPassword: z.string().max(200).optional(),
+    newPassword: passwordSchema.optional(),
+  })
+  .refine((v) => v.displayName !== undefined || v.newPassword !== undefined, { message: 'Mindestens ein Feld angeben' })
+  .refine((v) => !v.newPassword || !!v.currentPassword, { message: 'currentPassword ist beim Passwortwechsel nötig', path: ['currentPassword'] });
+
 export const updateUserBodySchema = z
   .object({
     displayName: displayNameSchema.optional(),

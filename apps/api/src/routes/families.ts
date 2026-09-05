@@ -5,6 +5,7 @@ import { requireFamilyPermission } from '../plugins/permissions.js';
 import { emptyResponse, errorResponses, idParamsSchema } from '../schemas/common.js';
 import {
   createFamilyBodySchema,
+  createMemberAccountBodySchema,
   familySchema,
   familyWithMembershipSchema,
   memberParamsSchema,
@@ -118,6 +119,23 @@ export const familyRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request) => families.listMembers(request.params.id),
+  );
+
+  app.post(
+    '/families/:id/members',
+    {
+      preHandler: requireFamilyPermission('isFamilyAdmin'),
+      schema: {
+        tags: ['families'],
+        summary: 'Neues Konto anlegen und als Mitglied aufnehmen (Familien-Admin)',
+        description: 'Alternative zur Einladung, z.B. für Grosseltern. Bestehende Konten → 409, dafür Einladungscode nutzen.',
+        security: bearer,
+        params: idParamsSchema,
+        body: createMemberAccountBodySchema,
+        response: { 201: memberSchema, ...errorResponses(400, 401, 403, 404, 409) },
+      },
+    },
+    async (request, reply) => reply.code(201).send(await families.createMemberAccount(request.params.id, request.body)),
   );
 
   app.patch(

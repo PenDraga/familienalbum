@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/providers.dart';
+import 'features/admin/families_screen.dart';
+import 'features/admin/members_screen.dart';
+import 'features/admin/users_screen.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/autoupload/auto_upload_controller.dart';
 import 'features/autoupload/auto_upload_service.dart';
@@ -67,7 +70,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               transitionsBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
             ),
           ),
-          GoRoute(path: 'settings', builder: (_, _) => const SettingsScreen()),
+          GoRoute(
+            path: 'settings',
+            builder: (_, _) => const SettingsScreen(),
+            routes: [
+              GoRoute(path: 'members/:familyId', builder: (_, state) => MembersScreen(familyId: state.pathParameters['familyId']!)),
+              GoRoute(path: 'users', builder: (_, _) => const UsersScreen()),
+              GoRoute(path: 'families', builder: (_, _) => const FamiliesScreen()),
+            ],
+          ),
         ],
       ),
     ],

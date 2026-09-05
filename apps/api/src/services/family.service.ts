@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { Errors } from '../lib/errors.js';
+import { hashPassword } from '../lib/password.js';
 import { iso, isoOrNull, toFamilyDto, toMemberDto, toMembershipFlags } from './dto.js';
 
 export interface MembershipFlagsInput {
@@ -81,6 +82,46 @@ export class FamilyService {
       orderBy: [{ isFamilyAdmin: 'desc' }, { joinedAt: 'asc' }],
     });
     return members.map(toMemberDto);
+  }
+
+  /**
+   * Familien-Admin legt ein neues Konto an und macht es sofort zum Mitglied (Alternative zur Einladung).
+   * Bestehende Konten dürfen so NICHT hinzugefügt werden (409) – dafür gibt es die Einladung bzw. den globalen Admin.
+   */
+  async createMemberAccount(
+    familyId: string,
+    input: { email: string; password: string; displayName: string } & Required<MembershipFlagsInput>,
+  ) {
+    const existing = await this.prisma.user.findUnique({ where: { email: input.email }, select: { id: true } });
+    if (existing) {
+      throw Errors.conflict('Diese E-Mail-Adresse hat bereits ein Konto. Lade die Person per Einladungscode ein.', 'EMAIL_TAKEN');
+    }
+    const member = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { email: input.email, displayName: input.displayName, passwordHash: await hashPassword(input.password) },
+      });
+      return tx.familyMember.create({
+        data: {
+          familyId,
+          userId: user.id,
+          isFamilyAdmin: input.isFamilyAdmin,
+          canUpload: input.canUpload,
+          canDownload: input.canDownload,
+          canComment: input.canComment,
+        },
+        include: { user: { select: { id: true, displayName: true } } },
+      });
+    });
+    return toMemberDto(member);
+  }
+
+  /** Alle Familien mit Zählern (globaler Admin). */
+  async listAll() {
+    const families = await this.prisma.family.findMany({
+      include: { _count: { select: { members: true, media: { where: { deletedAt: null } } } } },
+      orderBy: { name: 'asc' },
+    });
+    return families.map((f) => ({ ...toFamilyDto(f), memberCount: f._count.members, mediaCount: f._count.media }));
   }
 
   async addMember(familyId: string, userId: string, flags: Required<MembershipFlagsInput>) {
