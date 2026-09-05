@@ -1,0 +1,44 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "apps/api"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "app-web",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "cd apps\\app && C:\\Users\\phili\\flutter\\bin\\flutter.bat run -d web-server --web-port 8080 --web-hostname localhost --dart-define=API_BASE_URL=http://localhost:3000"
+      ],
+      "port": 8080
+    },
+    {
+      "name": "app-web-lan",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "cd apps\\app && C:\\Users\\phili\\flutter\\bin\\flutter.bat run -d web-server --web-port 8080 --web-hostname 0.0.0.0 --dart-define=API_BASE_URL=http://192.168.0.135:3000"
+      ],
+      "port": 8080
+    },
+    {
+      "name": "app-web-release",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "apps/app/tool/serve_web.mjs",
+        "8080",
+        "0.0.0.0"
+      ],
+      "port": 8080
+    }
+  ]
+}

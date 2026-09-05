@@ -1,0 +1,38 @@
+# Caddy hinter dem Cloudflare Tunnel: TLS terminiert Cloudflare, hier reicht HTTP.
+:80 {
+	encode zstd gzip
+
+	# API (Fastify)
+	handle /api/* {
+		reverse_proxy api:3000 {
+			# Chunk-Uploads bis 50 MB (Cloudflare-Limit 100 MB)
+			transport http {
+				read_timeout 10m
+				write_timeout 10m
+			}
+		}
+	}
+
+	# Flutter-Web-Build
+	handle {
+		root * /srv/web
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	request_body {
+		max_size 60MB
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

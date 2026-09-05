@@ -1,0 +1,181 @@
+# Familienalbum API – Übersicht (Stand M4)
+
+Basis-URL: `/api/v1`. Die vollständige, generierte Spezifikation liegt in [`openapi.json`](./openapi.json)
+(`npm run openapi -w apps/api`) und ist im Dev-Betrieb unter `/api/docs` als Swagger-UI erreichbar.
+
+## Fehlerformat
+
+Alle Fehler sind RFC 7807 Problem-JSON (`Content-Type: application/problem+json`):
+
+```json
+{
+  "type": "https://familienalbum.local/problems/permission-canupload",
+  "title": "Forbidden",
+  "status": 403,
+  "detail": "Du darfst in dieser Familie nichts hochladen.",
+  "code": "PERMISSION_CANUPLOAD",
+  "instance": "/api/v1/families/…/uploads"
+}
+```
+
+`detail` ist ein deutscher, anzeigbarer Text. `code` ist stabil und für die App gedacht. Validierungsfehler
+(`VALIDATION_ERROR`) enthalten zusätzlich `errors: [{ path, message }]`.
+
+## Authentifizierung
+
+- `POST /auth/login` `{ email, password }` → `{ user, tokens }`
+- Access-Token: JWT (HS256), 15 Minuten, als `Authorization: Bearer …`
+- Refresh-Token: zufälliger String, 30 Tage, nur als SHA-256-Hash in der DB
+- `POST /auth/refresh` `{ refreshToken }` → neues Paar. **Rotation:** das alte Token wird ungültig.
+  Wird ein bereits rotiertes Token nochmals benutzt, werden alle Sitzungen des Benutzers beendet
+  (`REFRESH_REUSED`).
+- `POST /auth/logout` `{ refreshToken }` oder mit Access-Token `{ all: true }`
+- Gesperrte Benutzer (`isDisabled`) werden bei jedem Request geprüft, nicht nur beim Login.
+
+Es gibt **keine offene Registrierung**. Konten entstehen durch einen globalen Admin
+(`POST /admin/users`) oder über eine Einladung (siehe unten).
+
+## Familien & Mitglieder
+
+| Route | Recht |
+|---|---|
+| `GET /families` | angemeldet (nur eigene) |
+| `POST /families` `{ name, initialAdminUserId? }` | globaler Admin |
+| `GET /families/:id` | Mitglied |
+| `PATCH /families/:id` `{ name }` | Familien-Admin |
+| `DELETE /families/:id` | globaler Admin |
+| `GET /families/:id/members` | Mitglied |
+| `PATCH /families/:id/members/:userId` `{ isFamilyAdmin?, canUpload?, canDownload?, canComment? }` | Familien-Admin |
+| `DELETE /families/:id/members/:userId` | Familien-Admin, oder man selbst (Austritt) |
+
+Eine Familie behält immer mindestens einen Familien-Admin (`LAST_FAMILY_ADMIN`, 409).
+
+**Globale Admins umgehen Familienrechte nicht.** Ein Admin, der eine Familie sehen will, fügt sich
+über `POST /admin/families/:id/members` selbst hinzu oder gibt sich beim Anlegen als
+`initialAdminUserId` an.
+
+## Einladungen
+
+| Route | Recht |
+|---|---|
+| `POST /families/:id/invites` `{ expiresInHours=168, maxUses=1, canUpload, canDownload, canComment }` | Familien-Admin |
+| `GET /families/:id/invites` (nur aktive) | Familien-Admin |
+| `DELETE /families/:id/invites/:inviteId` | Familien-Admin |
+| `GET /invites/:code` (Vorschau: Familienname, Gültigkeit, Rechte) | öffentlich |
+| `POST /invites/:code/accept` | siehe unten |
+
+Annehmen funktioniert auf zwei Wegen (ADR-0001):
+
+1. **Angemeldet** (Bearer-Token, leerer Body): der Benutzer wird Mitglied mit den Flags der Einladung.
+2. **Neu** (kein Token, Body `{ email, password, displayName }`): Konto wird angelegt, Mitgliedschaft
+   erzeugt, Tokens zurückgegeben. Alles in einer Transaktion – bei aufgebrauchter Einladung entsteht
+   kein Konto.
+
+Codes: 10 Zeichen aus `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (keine 0/O, 1/I/L), Gross-/Kleinschreibung egal.
+Abgelaufen/aufgebraucht → 410 (`INVITE_EXPIRED` / `INVITE_USED_UP`), bereits Mitglied → 409.
+
+## Admin (globaler Admin)
+
+- `GET /admin/users?q=&limit=&offset=` · `POST /admin/users` · `PATCH /admin/users/:id`
+  (`displayName`, `isAdmin`, `isDisabled`, `password`; Sperre/Passwortwechsel beendet alle Sitzungen;
+  kein Selbst-Entzug/Selbst-Sperre)
+- `POST /admin/families/:id/members` `{ userId, flags… }`
+- `GET /admin/stats` → Benutzer, Familien, Medien, Speicher
+
+## Rechte-Hook
+
+`requireFamilyPermission('canUpload')` (in `src/plugins/permissions.ts`) lädt die Membership einmal
+pro Request, legt sie auf `request.membership` und wirft 401/403/404 als Problem-JSON. Die Family-ID
+kommt standardmässig aus `params.id`; für Routen wie `/media/:id` kann ein eigener Resolver
+übergeben werden. `lastSeenAt` wird dabei höchstens alle 5 Minuten aktualisiert.
+Die komplette Rechtematrix ist in `test/permissions.test.ts` als Tabelle abgesichert.
+
+## Medien (M2)
+
+### Upload-Flow
+
+```
+POST /families/:id/uploads   { sha256, sizeBytes, originalName, mimeType, takenAt? }   (canUpload)
+  → 201 UploadSession { id, chunkSize, totalChunks, receivedChunks[] }
+  → 409 DUPLICATE_MEDIA { mediaId }       Datei existiert in dieser Familie schon
+  → 415 UNSUPPORTED_MEDIA_TYPE            z.B. HEIC (bitte als JPEG exportieren)
+PUT  /uploads/:id/chunks/:index          application/octet-stream, genau chunkSize Bytes (letzter kleiner)
+  → 200 UploadSession (receivedChunks aktualisiert; Reihenfolge egal, wiederholbar)
+POST /uploads/:id/complete               → 201 Media (status PROCESSING), Job `process-media` eingereiht
+GET  /uploads/:id                        Session für Wiederaufnahme · DELETE /uploads/:id  Abbruch
+```
+
+- Chunk-Grösse: `UPLOAD_CHUNK_SIZE` (Standard 50 MB, Cloudflare-Limit 100 MB). Maximale Dateigrösse
+  `MAX_UPLOAD_BYTES` (Standard 2 GB, Prisma `Int`).
+- Sessions leben 24 h; dieselbe Datei desselben Uploaders liefert die offene Session zurück (Resume).
+- `complete` prüft den SHA-256 beim Zusammenfügen; bei Abweichung 400 `HASH_MISMATCH` und die Session
+  wird verworfen.
+- Ein soft-gelöschtes Duplikat wird beim Neu-Upload endgültig entfernt, damit der Upload durchgeht.
+
+### Verarbeitung (Worker)
+
+`apps/api/src/worker.ts` (BullMQ, Queue `process-media`, Redis) ruft `MediaProcessor.process(mediaId)`:
+
+- **Foto:** EXIF (`DateTimeOriginal` → `takenAt`, Orientierung), Masse, `thumb_400.webp`, `thumb_1600.webp`
+  (sharp, `fit: inside`, ohne Vergrösserung).
+- **Video:** ffprobe (Dauer, Masse inkl. Rotation, `creation_time`), `preview.mp4` (H.264, max. 1920 px Kante,
+  AAC, faststart), Poster-Frame bei 1 s → Thumbnails.
+- Ergebnis `READY` (mit `width/height/durationSec/takenAt`) oder `FAILED` mit `processingError`.
+  BullMQ wiederholt 3× mit Backoff.
+- Ohne Redis (Entwicklung): `MEDIA_PROCESSING=inline` verarbeitet im API-Prozess.
+- `takenAt`-Priorität: EXIF/creation_time → `takenAt`-Hinweis des Clients → Upload-Zeit.
+
+### Timeline & Dateien
+
+| Route | Recht |
+|---|---|
+| `GET /families/:id/timeline?limit=&cursor=&month=YYYY-MM` | Mitglied |
+| `GET /families/:id/timeline/months` → `[{ month, count }]` | Mitglied |
+| `GET /media/:id` | Mitglied |
+| `PATCH /media/:id` `{ caption }` · `DELETE /media/:id` (Soft-Delete, Dateien weg) | Uploader oder Familien-Admin |
+| `GET /media/:id/thumb/400` · `/thumb/1600` (WebP) | Mitglied **oder** Signatur |
+| `GET /media/:id/preview` (MP4, Range-Requests) | Mitglied **oder** Signatur |
+| `GET /media/:id/original` (Content-Disposition, Range) | canDownload **oder** Signatur |
+
+Timeline-Antwort: `{ groups: [{ month: 'YYYY-MM', items: Media[] }], nextCursor }`, neueste zuerst,
+Cursor = `(takenAt, id)`. `PROCESSING` sehen alle (Platzhalter), `FAILED` nur der Uploader.
+
+**Signierte URLs:** Jedes `Media` enthält `urls.{thumb400, thumb1600, preview, original}` als relative Pfade
+mit `?exp=&sig=` (HMAC-SHA256 über Pfad + Ablauf, `SIGNED_URL_TTL_SECONDS`, Standard 24 h). Damit laden
+`<img>`/Video-Player ohne Authorization-Header (Flutter Web, Caches). `original` wird nur an Mitglieder mit
+`canDownload` ausgegeben; `thumb*`/`preview` erst ab `READY`. Der Entzug einer Mitgliedschaft wirkt auf
+bereits ausgegebene Links erst nach Ablauf der TTL.
+
+Dateiablage: `MEDIA_ROOT/<familyId>/<mediaId>/{original.<ext>, thumb_400.webp, thumb_1600.webp, preview.mp4, poster.jpg}`,
+Chunks unter `MEDIA_ROOT/_uploads/<sessionId>/`.
+
+## Kommentare (M4)
+
+| Route | Recht |
+|---|---|
+| `GET /media/:id/comments` (älteste zuerst) | Mitglied |
+| `POST /media/:id/comments` `{ body }` (1–2000 Zeichen, nur bei `READY`) | canComment |
+| `DELETE /comments/:id` | Autor oder Familien-Admin |
+
+`Comment` enthält `canDelete` für die App; `Media.commentCount` zählt mit. Soft-gelöschte Medien liefern 404.
+
+## Push & Aktivität (M4)
+
+- `POST /devices` `{ fcmToken, platform }` registriert ein Gerät (Upsert; ein Token gehört immer dem zuletzt
+  angemeldeten Benutzer). `DELETE /devices` `{ fcmToken }` beim Abmelden.
+- `GET /families/:id/activity?since=` → `{ newMedia, newComments, serverTime }` – zählt nur Beiträge **anderer**
+  Mitglieder. Web und Windows pollen damit jede Minute; die App nutzt es auch im Vordergrund.
+
+**Versand** (`src/services/notification.service.ts`):
+
+- Neue Medien werden pro Familie und Uploader gebündelt: der Worker reiht nach jedem fertigen Medium einen
+  verzögerten Job `notify` ein (`NOTIFY_DIGEST_SECONDS`, Standard 90 s, feste jobId → keine Duplikate).
+  Beim Ausführen werden alle Medien mit `notifiedAt = null` gezählt, markiert und als eine Nachricht an alle
+  anderen Mitglieder geschickt („Anna hat 3 neue Fotos und 1 neues Video hinzugefügt“).
+- Kommentare gehen sofort an den Uploader und alle bisherigen Kommentierenden des Mediums, nie an den Autor.
+- FCM antwortet mit ungültigen Tokens → diese Geräte werden gelöscht.
+- Ohne `FIREBASE_SERVICE_ACCOUNT` (Pfad zur Service-Account-JSON) ist Push aus; alles andere funktioniert,
+  die Clients pollen.
+
+Nachrichten-Daten (`data`): `type` = `media` | `comment`, `familyId`, bei Kommentaren `mediaId` und `commentId`.
+Die App öffnet beim Antippen das betroffene Medium.

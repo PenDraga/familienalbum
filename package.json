@@ -1,0 +1,13 @@
+{
+  "name": "familienalbum",
+  "private": true,
+  "workspaces": [
+    "apps/api"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/api",
+    "build": "npm run build -w apps/api",
+    "test": "npm test -w apps/api",
+    "lint": "npm run lint -w apps/api"
+  }
+}

@@ -1,0 +1,171 @@
+// Familienalbum – Datenmodell (siehe CLAUDE.md)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+}
+
+enum MediaStatus {
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  displayName   String
+  isAdmin       Boolean        @default(false) // globaler Admin
+  isDisabled    Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  memberships   FamilyMember[]
+  refreshTokens RefreshToken[]
+  devices       Device[]
+  uploads       Media[]        @relation("UploaderMedia")
+  comments      Comment[]
+  invites       Invite[]       @relation("InviteCreator")
+  uploadSessions UploadSession[]
+}
+
+model Family {
+  id        String         @id @default(uuid())
+  name      String
+  createdAt DateTime       @default(now())
+  members   FamilyMember[]
+  media     Media[]
+  invites   Invite[]
+  uploadSessions UploadSession[]
+}
+
+model FamilyMember {
+  userId        String
+  familyId      String
+  isFamilyAdmin Boolean   @default(false)
+  canUpload     Boolean   @default(false)
+  canDownload   Boolean   @default(false)
+  canComment    Boolean   @default(true)
+  joinedAt      DateTime  @default(now())
+  lastSeenAt    DateTime?
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, familyId])
+  @@index([familyId])
+}
+
+model Invite {
+  id          String   @id @default(uuid())
+  familyId    String
+  code        String   @unique
+  createdById String
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+  maxUses     Int      @default(1)
+  uses        Int      @default(0)
+  // Flags, die das neue Mitglied bekommt
+  canUpload   Boolean
+  canDownload Boolean
+  canComment  Boolean
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy User   @relation("InviteCreator", fields: [createdById], references: [id])
+
+  @@index([familyId])
+}
+
+model Media {
+  id           String      @id @default(uuid())
+  familyId     String
+  uploaderId   String
+  type         MediaType
+  status       MediaStatus
+  sha256       String
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  width        Int?
+  height       Int?
+  durationSec  Float?
+  takenAt      DateTime // aus EXIF, Fallback Upload-Zeit
+  uploadedAt   DateTime    @default(now())
+  caption      String?
+  processingError String?
+  notifiedAt   DateTime? // Push "neue Medien" verschickt
+  deletedAt    DateTime? // Soft-Delete
+  family   Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  uploader User      @relation("UploaderMedia", fields: [uploaderId], references: [id])
+  comments Comment[]
+
+  @@unique([familyId, sha256]) // Dedup pro Familie
+  @@index([familyId, takenAt])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  mediaId   String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+  media  Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id])
+
+  @@index([mediaId, createdAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique // SHA-256 des Klartext-Tokens
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+  userAgent String?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Chunk-Uploads (M2)
+model UploadSession {
+  id             String   @id @default(uuid())
+  familyId       String
+  uploaderId     String
+  sha256         String
+  originalName   String
+  mimeType       String
+  sizeBytes      Int
+  chunkSize      Int
+  receivedChunks Int[]    @default([])
+  takenAtHint    DateTime?
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  uploader User   @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@index([familyId, uploaderId])
+  @@index([expiresAt])
+}
+
+// FCM-Token pro Gerät (M4)
+model Device {
+  id        String   @id @default(uuid())
+  userId    String
+  fcmToken  String   @unique
+  platform  String // ios | android | windows | web
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastError String?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
