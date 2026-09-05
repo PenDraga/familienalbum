@@ -7,6 +7,10 @@ import 'package:flutter/material.dart';
 /// dort nur tönen, nicht weichzeichnen.
 bool get glassBlurSupported => !kIsWeb;
 
+/// Hero-Flüge mit Bildern lassen im Web-Renderer die Ausgangskachel nach der Rückkehr schwarz
+/// (Bild wird während des Flugs freigegeben) – dort ohne Hero.
+bool get heroTransitionsSupported => !kIsWeb;
+
 /// Milchglas: Weichzeichner über dem Inhalt darunter plus leichte Tönung.
 class Glass extends StatelessWidget {
   const Glass({

@@ -568,7 +568,8 @@ class _PhotoViewState extends State<_PhotoView> with SingleTickerProviderStateMi
       imageUrl: url,
       fit: BoxFit.contain,
       fadeInDuration: Duration.zero,
-      placeholder: (_, _) => widget.item.urls.thumb400 != null
+      // Im Web keinen geteilten Platzhalter (dasselbe Bild wie die Kachel) – sonst wird die Kachel danach schwarz
+      placeholder: (_, _) => heroTransitionsSupported && widget.item.urls.thumb400 != null
           ? CachedNetworkImage(
               imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
               imageUrl: widget.item.urls.thumb400!,
@@ -577,7 +578,7 @@ class _PhotoViewState extends State<_PhotoView> with SingleTickerProviderStateMi
           : const Center(child: CircularProgressIndicator()),
       errorWidget: (_, _, _) => const Icon(Icons.broken_image_outlined, color: Colors.white54, size: 64),
     );
-    if (widget.hero) image = Hero(tag: 'media-${widget.item.id}', child: image);
+    if (widget.hero && heroTransitionsSupported) image = Hero(tag: 'media-${widget.item.id}', child: image);
 
     return GestureDetector(
       onDoubleTapDown: _toggleZoom,
@@ -652,7 +653,7 @@ class _VideoViewState extends State<_VideoView> {
       return Stack(
         fit: StackFit.expand,
         children: [
-          if (widget.item.urls.thumb1600 != null)
+          if (widget.item.urls.thumb1600 != null && heroTransitionsSupported)
             Hero(
               tag: 'media-${widget.item.id}',
               child: CachedNetworkImage(

@@ -594,9 +594,9 @@ class MediaTile extends ConsumerWidget {
           fit: StackFit.expand,
           children: [
             if (item.urls.thumb400 != null)
-              Hero(
-                tag: 'media-${item.id}',
-                child: CachedNetworkImage(
+              _maybeHero(
+                'media-${item.id}',
+                CachedNetworkImage(
                   imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
                   imageUrl: item.urls.thumb400!,
                   fit: BoxFit.cover,
@@ -734,6 +734,8 @@ class _SelectionBar extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 }
+
+Widget _maybeHero(String tag, Widget child) => heroTransitionsSupported ? Hero(tag: tag, child: child) : child;
 
 class _Badge extends StatelessWidget {
   const _Badge({required this.icon, this.text});
