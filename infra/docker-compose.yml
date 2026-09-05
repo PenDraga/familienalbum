@@ -92,7 +92,7 @@ services:
     image: ghcr.io/pendraga/familienalbum-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
-      - '${HTTP_PORT:-80}:80'
+      - '${HTTP_PORT:-8090}:80'
     # Caddyfile liegt im Image (infra/Caddyfile); zum Anpassen als Bind-Mount ergänzen:
     #   volumes: ['./Caddyfile:/etc/caddy/Caddyfile:ro']
     depends_on:
