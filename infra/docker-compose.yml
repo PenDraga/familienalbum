@@ -4,6 +4,23 @@
 # Selbst bauen (Repo-Checkout nötig): docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 name: familienalbum
 
+# Gemeinsame Umgebung für API und Worker (Pflicht: JWT_SECRET, Postgres-Zugang; Rest hat Standardwerte)
+x-api-env: &api-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  REDIS_URL: redis://redis:6379
+  MEDIA_ROOT: /data/media
+  JWT_SECRET: ${JWT_SECRET}
+  ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
+  REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-30}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  SIGNED_URL_TTL_SECONDS: ${SIGNED_URL_TTL_SECONDS:-86400}
+  NOTIFY_DIGEST_SECONDS: ${NOTIFY_DIGEST_SECONDS:-90}
+  FIREBASE_SERVICE_ACCOUNT: ${FIREBASE_SERVICE_ACCOUNT:-}
+  ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+  ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+  ADMIN_DISPLAY_NAME: ${ADMIN_DISPLAY_NAME:-Admin}
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -36,14 +53,14 @@ services:
   api:
     image: ghcr.io/pendraga/familienalbum-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
-    env_file: .env
+    # Werte kommen aus der .env neben dieser Datei oder aus den Stack-Variablen des Managers (Dockhand, Portainer)
+    env_file:
+      - path: .env
+        required: false
     environment:
-      NODE_ENV: production
+      <<: *api-env
       HOST: 0.0.0.0
       PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      REDIS_URL: redis://redis:6379
-      MEDIA_ROOT: /data/media
       MEDIA_PROCESSING: queue
     volumes:
       - ${MEDIA_PATH:-./data/media}:/data/media
@@ -59,12 +76,11 @@ services:
     image: ghcr.io/pendraga/familienalbum-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     command: ['node', 'dist/worker.js']
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      REDIS_URL: redis://redis:6379
-      MEDIA_ROOT: /data/media
+      <<: *api-env
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
     volumes:
       - ${MEDIA_PATH:-./data/media}:/data/media
