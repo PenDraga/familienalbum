@@ -1,23 +1,131 @@
 # Familienalbum
 
-Privates, selbst gehostetes Familienalbum. Projekt-Brief und Konventionen: [CLAUDE.md](./CLAUDE.md).
+Privates, selbst gehostetes Familienalbum (nach dem Vorbild von FamilyAlbum/Mitene). Fotos und Videos werden von
+Familienmitgliedern hochgeladen, chronologisch nach Aufnahmedatum angezeigt, kommentiert und bei Bedarf als Original
+gesichert. Läuft als Docker-Compose-Stack zu Hause, von aussen per Cloudflare Tunnel erreichbar.
+Clients: iOS, Android, Web (ein Flutter-Codebase). Projekt-Brief und Konventionen: [CLAUDE.md](./CLAUDE.md).
+
+**Status: Beta.** Der Server läuft im Dauerbetrieb, die Web-App und die iOS-App werden im Familienkreis getestet.
+Änderungen siehe [CHANGELOG.md](./CHANGELOG.md).
+
+## Funktionen
+
+- **Familien und Rechte:** mehrere Familien pro Server, Beitritt nur per Einladungslink, Rechte pro Mitglied
+  (Hochladen, Original laden, Kommentieren, Familien-Admin), globale Admins verwalten Benutzer und Familien in der App.
+- **Timeline:** Mosaik nach Monaten, Vollbild mit Wischen und Zoom, Videos mit Spulen, Mehrfachauswahl zum Löschen
+  oder Datum anpassen, Hell/Dunkel wählbar.
+- **Upload:** in Chunks, wiederaufnehmbar, Duplikat-Erkennung per SHA-256, HEIC/HEIF und iPhone-Videos werden
+  serverseitig umgewandelt; Auto-Upload neuer Aufnahmen im Hintergrund (iOS, Android).
+- **Aufnahme-Metadaten:** Kamera, Objektiv, Blende, Belichtung, ISO, Brennweite, Aufnahmeort mit Karte;
+  Aufnahmedatum einzeln oder für eine Auswahl setzen bzw. verschieben.
+- **Kommentare und Aktivität:** Kommentare pro Medium, Glocke mit Ungelesen-Zähler, Verlauf nach Tagen
+  (wer hat wann hochgeladen oder kommentiert, mit Sprung zum Foto).
+- **Originale:** direkt in der App in die Fotos-Mediathek sichern oder teilen, im Browser herunterladen.
+- **Push** (optional, Firebase Cloud Messaging): Sammelmeldung bei neuen Uploads, sofort bei Kommentaren;
+  ohne Firebase fragen die Clients regelmässig nach.
+
+## Aufbau
 
 ```
 apps/api    Fastify-Backend + Medien-Worker (Node 22, TypeScript, Prisma, Zod, BullMQ, sharp, ffmpeg)
-apps/app    Flutter-App (Android, iOS, Web, Windows – ein Codebase)
+apps/app    Flutter-App (iOS, Android, Web)
 infra       docker-compose.yml, Caddyfile, .env.example, backup.sh
-docs        API-Übersicht, ADRs, generierte OpenAPI-Spezifikation
+docs        API-Übersicht, ADRs, iOS-Build, generierte OpenAPI-Spezifikation
 ```
+
+| Teil | Technik |
+|---|---|
+| Backend | Node 22, Fastify 5, Prisma 6, Zod 4, BullMQ 6, sharp, fluent-ffmpeg |
+| Datenbank / Queue | PostgreSQL 16, Redis 7 |
+| Medien | Dateisystem-Bind-Mount, Thumbnails als WebP (400/1600), Video-Preview als H.264 MP4 |
+| Auth | E-Mail + Argon2id, JWT-Access-Token (15 min) + Refresh-Token mit Rotation (30 Tage) |
+| Clients | Flutter (Riverpod, go_router, Dio) |
+| Auslieferung | Caddy serviert Web-App und proxied `/api`; Cloudflare Tunnel für den Zugriff von aussen |
+
+## Betrieb (Docker Compose)
+
+Die Images baut GitHub Actions bei jedem Push auf `main` und bei jedem Release-Tag
+(`.github/workflows/images.yml`) und veröffentlicht sie in der GitHub Container Registry:
+
+- `ghcr.io/pendraga/familienalbum-api` – API und Worker (Node, ffmpeg, libheif)
+- `ghcr.io/pendraga/familienalbum-web` – Flutter-Web-Build, ausgeliefert von Caddy
+
+Der Server zieht nur fertige Images. Ein Stack-Manager wie Dockhand oder Portainer braucht lediglich
+`infra/docker-compose.yml` und die Variablen aus `infra/.env.example`; alle Werte werden per Variablen-Ersetzung
+in die Container gereicht, eine `.env` neben der Compose-Datei ist optional.
+
+### Einrichten
+
+1. Registry-Zugang, solange die Pakete privat sind (GitHub-Token classic mit `read:packages`):
+
+```bash
+docker login ghcr.io -u PenDraga
+```
+
+2. Variablen setzen (Stack-Manager) oder `.env` anlegen:
+
+```bash
+cd infra && cp .env.example .env
+```
+
+Pflicht: `POSTGRES_PASSWORD`, `JWT_SECRET` (mindestens 32 Zeichen, `openssl rand -base64 48`), `ADMIN_EMAIL`,
+`ADMIN_PASSWORD`, die Pfade `MEDIA_PATH`, `POSTGRES_PATH`, `REDIS_PATH` sowie `HTTP_PORT` (Standard 8090, Port 80 ist
+auf Unraid/Synology meist belegt). `IMAGE_TAG` wählt die Version (`latest`, `v0.1.0-beta.1`, `sha-<commit>`).
+
+3. Starten. Die API spielt beim Start die Migrationen ein und reiht hängengebliebene Medien erneut ein:
+
+```bash
+docker compose up -d
+```
+
+4. Ersten Admin anlegen (idempotent):
+
+```bash
+docker compose exec api node dist/seed.js
+```
+
+5. Im LAN unter `http://<server>:<HTTP_PORT>` anmelden, Familie anlegen, Einladungslink verschicken.
+
+### Zugriff von aussen
+
+Cloudflare-Tunnel-Token in die Variablen und den Stack mit Profil starten:
+
+```bash
+docker compose --profile tunnel up -d
+```
+
+Alternativ ein vorhandener Reverse-Proxy mit HTTPS vor Caddy; er muss Request-Bodys bis 50 MB durchlassen (Chunks).
+
+### Update, Backup, Selbstbau
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+Backup täglich per Cron mit `infra/backup.sh` (`pg_dump` + `rsync` der Medien). Ohne Registry aus dem Git-Checkout bauen:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+```
+
+### Push (Firebase Cloud Messaging)
+
+Optional. Ohne Konfiguration pollen die Clients jede Minute.
+
+1. Firebase-Projekt anlegen, iOS-App (Bundle-ID `ch.familienalbum.familienalbum`) und Android-App hinzufügen;
+   für iOS den APNs-Schlüssel in Firebase hochladen.
+2. **Server:** Dienstkonto-Schlüssel (JSON) nach `infra/secrets/` legen und
+   `FIREBASE_SERVICE_ACCOUNT=/run/secrets/<datei>.json` setzen.
+3. **App:** Werte aus den Firebase-Projekteinstellungen beim Bauen als `--dart-define` mitgeben
+   (`FIREBASE_API_KEY`, `FIREBASE_APP_ID`, `FIREBASE_PROJECT_ID`, `FIREBASE_SENDER_ID`). Fehlen sie, startet die App ohne Firebase.
 
 ## Entwicklung (Backend)
 
-Voraussetzungen: Node 22, Docker (für PostgreSQL und die Tests), `ffmpeg`/`ffprobe` im PATH (Videos, HEIC-Umwandlung).
+Voraussetzungen: Node 22, Docker (PostgreSQL, Tests), `ffmpeg`/`ffprobe` im PATH.
 
 ```bash
 npm install
 ```
-
-PostgreSQL lokal starten (z.B. nur den DB-Service aus dem Compose-File):
 
 ```bash
 docker run -d --name familienalbum-pg -p 5432:5432 -e POSTGRES_USER=familienalbum -e POSTGRES_PASSWORD=familienalbum -e POSTGRES_DB=familienalbum postgres:16-alpine
@@ -27,188 +135,75 @@ docker run -d --name familienalbum-pg -p 5432:5432 -e POSTGRES_USER=familienalbu
 cp apps/api/.env.example apps/api/.env
 ```
 
-Dann Migrationen einspielen, ersten Admin anlegen und starten:
-
 ```bash
-npm run prisma:migrate -w apps/api
-```
-
-```bash
-npm run prisma:seed -w apps/api
-```
-
-```bash
-npm run dev
+npm run prisma:migrate -w apps/api && npm run seed -w apps/api && npm run dev
 ```
 
 Swagger-UI: <http://localhost:3000/api/docs> · Health: <http://localhost:3000/api/v1/health>
 
-Medienverarbeitung lokal: mit `MEDIA_PROCESSING=inline` in der `.env` läuft sie im API-Prozess (kein Redis nötig).
-Für den produktionsnahen Weg Redis starten und den Worker separat laufen lassen:
+Medienverarbeitung lokal mit `MEDIA_PROCESSING=inline` im API-Prozess (kein Redis nötig). Produktionsnah: Redis
+starten (`docker run -d --name familienalbum-redis -p 6379:6379 redis:7-alpine`) und `npm run dev:worker -w apps/api`.
 
-```bash
-docker run -d --name familienalbum-redis -p 6379:6379 redis:7-alpine
-```
-
-```bash
-npm run dev:worker -w apps/api
-```
-
-### Tests
-
-```bash
-npm test
-```
-
-Die Integrationstests (Vitest) starten per Testcontainers einen PostgreSQL-16-Container, spielen die
-Migrationen ein und leeren vor jedem Test alle Tabellen. Ohne Docker kann alternativ
-`TEST_DATABASE_URL` auf eine leere Datenbank zeigen (sie wird geleert!).
-
-### Weitere Skripte (in `apps/api`)
-
-| Skript | Zweck |
+| Skript (in `apps/api`) | Zweck |
 |---|---|
+| `npm test` | Vitest + Testcontainers (PostgreSQL 16), 180 Integrationstests |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run build` | kompiliert nach `dist/` |
-| `npm run openapi` | schreibt `docs/openapi.json` (Basis für den Flutter-Client) |
-| `npm run prisma:migrate` | neue Migration aus Schema-Änderungen erzeugen und anwenden |
-| `npm run prisma:deploy` | Migrationen anwenden (Produktion, läuft auch im Container-Start) |
+| `npm run openapi` | schreibt `docs/openapi.json` |
+| `npm run prisma:migrate` | Migration aus Schema-Änderungen erzeugen und anwenden |
+| `npm run seed` | ersten Admin anlegen (`ADMIN_*` aus `.env`) |
+
+API-Beschreibung: [docs/api.md](docs/api.md). Entscheidungen: [docs/adr](docs/adr).
 
 ## Entwicklung (Flutter-App)
 
-Voraussetzungen: Flutter SDK (stable) im PATH; für Android zusätzlich Android SDK, für Web Chrome.
+Voraussetzungen: Flutter SDK (stable, aktuell 3.47), für iOS ein Mac mit Xcode ([docs/ios-build.md](docs/ios-build.md)).
 
 ```bash
 cd apps/app && flutter pub get
 ```
 
-Web gegen das lokale Backend (Server-URL ist im Login-Screen auch editierbar):
+Web gegen das lokale Backend (Server-URL ist auch im Login-Screen editierbar):
 
 ```bash
 cd apps/app && flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:3000
 ```
 
-Android-Emulator erreicht den Host unter `http://10.0.2.2:3000`. Release-Web-Build für Caddy:
+Vom Handy im WLAN testen (LAN-IP des Rechners einsetzen; Release-Build ist deutlich flüssiger):
 
 ```bash
-cd apps/app && flutter build web --release
+cd apps/app && flutter build web --release --pwa-strategy=none --dart-define=API_BASE_URL=http://<lan-ip>:3000 && node tool/serve_web.mjs 8090
 ```
 
-Ohne `API_BASE_URL` nimmt die Web-App den eigenen Origin (Caddy serviert App und `/api` zusammen).
-
-### Vom Handy im WLAN testen
-
-Der Dev-Server muss auf allen Interfaces lauschen und die App muss die LAN-Adresse des Rechners kennen
-(hier `192.168.0.135`, mit `ipconfig` prüfen). Backend läuft bereits auf `0.0.0.0:3000`.
+`--pwa-strategy=none` verhindert, dass Safari alte Builds aus dem Service-Worker-Cache lädt. Ohne `API_BASE_URL`
+nimmt die Web-App den eigenen Origin (so läuft sie hinter Caddy). iOS-Build gegen den Heim-Server:
 
 ```bash
-cd apps/app && flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8090 --dart-define=API_BASE_URL=http://192.168.0.135:3000
+cd apps/app && flutter run --release -d <iphone> --dart-define=API_BASE_URL=https://<deine-domain>
 ```
 
-Schneller auf dem Handy ist der Release-Build, statisch ausgeliefert:
+Branding: Quelle ist `apps/app/assets/branding/logo.svg`; Icons und Splash neu erzeugen mit
+`node tool/render_branding.mjs && dart run flutter_launcher_icons && dart run flutter_native_splash:create`.
 
-```bash
-cd apps/app && flutter build web --release --pwa-strategy=none --dart-define=API_BASE_URL=http://192.168.0.135:3000 && node tool/serve_web.mjs 8090
-```
+### Auto-Upload
 
-`--pwa-strategy=none` verhindert, dass der Browser alte Builds aus dem Service-Worker-Cache lädt (für Tests wichtig;
-im Betrieb hinter Caddy darf der Service Worker bleiben). Dann auf dem Handy `http://192.168.0.135:8090` öffnen. Windows fragt beim ersten Start evtl. nach der Firewall-Freigabe
-für `dart.exe` und `node.exe` (privates Netzwerk erlauben). Über HTTP ohne HTTPS fällt die Token-Ablage im Browser auf
-localStorage zurück – für den Test okay, im Betrieb läuft alles über HTTPS.
+In den App-Einstellungen unter „Automatischer Upload“ einschalten. Neue Aufnahmen (ab Einschaltzeitpunkt, Datum
+rückwirkend wählbar) werden in die gewählte Familie hochgeladen, standardmässig nur im WLAN.
 
-Branding: Logo-Quelle ist `apps/app/assets/branding/logo.svg`. Nach Änderungen die PNGs rendern und Icons/Splash neu erzeugen:
+- Vordergrund: beim Start, bei Rückkehr in den Vordergrund (höchstens alle 5 Minuten) und über „Jetzt“.
+- Hintergrund: Android WorkManager (periodisch), iOS BGTaskScheduler (`ch.familienalbum.autoupload`). Pro Lauf höchstens 25 Dateien.
+- HEIC wird auf dem Gerät zu JPEG gewandelt, Duplikate erkennt der Server per SHA-256.
 
-```bash
-cd apps/app && node tool/render_branding.mjs && dart run flutter_launcher_icons && dart run flutter_native_splash:create
-```
-
-## Betrieb (Docker Compose)
-
-Die Images baut GitHub Actions bei jedem Push auf `main` (`.github/workflows/images.yml`) und veröffentlicht sie in der
-GitHub Container Registry: `ghcr.io/pendraga/familienalbum-api` (Node + ffmpeg + libheif) und
-`ghcr.io/pendraga/familienalbum-web` (Flutter-Web-Build, ausgeliefert von Caddy, proxied `/api`). Der Server zieht nur
-fertige Images – ein Stack-Manager wie Dockhand oder Portainer braucht lediglich `infra/docker-compose.yml` und die `.env`.
-
-Solange die Pakete privat sind, muss sich der Server einmal anmelden (GitHub-Token mit `read:packages`):
-
-```bash
-docker login ghcr.io -u PenDraga
-```
-
-Alternativ die beiden Pakete unter github.com/PenDraga?tab=packages auf „public“ stellen, dann entfällt das Login.
-
-```bash
-cp .env.example .env
-```
-
-`.env` ausfüllen: Passwörter, `JWT_SECRET` (`openssl rand -base64 48`), Admin-Zugang, Pfade für Medien/Datenbank/Redis,
-`HTTP_PORT`. Dann:
-
-```bash
-docker compose up -d
-```
-
-Die API spielt beim Start die Migrationen ein. Ersten Admin anlegen:
-
-```bash
-docker compose exec api node dist/seed.js
-```
-
-Danach im LAN unter `http://<server>:<HTTP_PORT>` anmelden. Für den Zugriff von aussen den Cloudflare-Tunnel-Token in
-`.env` setzen und mit Profil starten:
-
-```bash
-docker compose --profile tunnel up -d
-```
-
-Update: `docker compose pull && docker compose up -d` (oder `IMAGE_TAG=sha-…` für eine bestimmte Version).
-Selbst bauen ohne Registry, aus dem Git-Checkout:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
-```
-
-Push (optional): Firebase-Dienstkonto-JSON nach `infra/secrets/` legen und `FIREBASE_SERVICE_ACCOUNT=/run/secrets/<datei>.json`
-in `.env` setzen. Backup (täglich per Cron): `infra/backup.sh` – `pg_dump` + `rsync` von `/data/media`.
-
-### Auto-Upload (M5)
-
-In den App-Einstellungen unter „Automatischer Upload“ einschalten. Danach werden neue Aufnahmen (ab dem Einschaltzeitpunkt,
-Datum rückwirkend wählbar) in die gewählte Familie hochgeladen – standardmässig nur im WLAN.
-
-- **Vordergrund:** beim App-Start, bei Rückkehr in den Vordergrund (max. alle 5 Minuten) und über „Jetzt“.
-- **Hintergrund:** Android WorkManager (periodisch, ~30 Minuten, nur bei WLAN/Akku ok), iOS BGTaskScheduler
-  (`ch.familienalbum.autoupload`, iOS entscheidet den Zeitpunkt). Pro Lauf höchstens 25 Dateien.
-- HEIC/HEIF wird auf dem Gerät zu JPEG gewandelt (iOS liefert die kompatible Variante, Android per `flutter_image_compress`).
-- Dedup: Assets werden lokal als erledigt gemerkt; der Server erkennt Duplikate zusätzlich per SHA-256.
-- Berechtigungen: Android `READ_MEDIA_IMAGES/VIDEO`, iOS `NSPhotoLibraryUsageDescription` – beides eingetragen.
-
-### Push (Firebase Cloud Messaging)
-
-Push ist optional. Ohne Konfiguration pollen die Clients jede Minute (`GET /families/:id/activity`).
-
-1. Firebase-Projekt anlegen, Android-App (`ch.familienalbum.familienalbum`) und später iOS-App hinzufügen.
-2. **Server:** In der Firebase-Konsole unter *Projekteinstellungen → Dienstkonten* einen privaten Schlüssel
-   erzeugen, als `infra/secrets/firebase-service-account.json` ablegen und in `infra/.env`
-   `FIREBASE_SERVICE_ACCOUNT=/run/secrets/firebase-service-account.json` setzen.
-3. **App:** Die Werte aus *Projekteinstellungen → Allgemein → Deine Apps* beim Bauen als `--dart-define` mitgeben:
-
-```bash
-cd apps/app && flutter build apk --dart-define=FIREBASE_API_KEY=… --dart-define=FIREBASE_APP_ID=… --dart-define=FIREBASE_PROJECT_ID=… --dart-define=FIREBASE_SENDER_ID=…
-```
-
-Fehlen die Defines, startet die App ohne Firebase (kein `google-services.json` nötig).
-
-## Milestones
+## Stand der Milestones
 
 - [x] **M1** Backend-Kern: Auth, Familien, Mitglieder, Einladungen, Rechte-Hook, Rechtematrix-Tests
 - [x] **M2** Medien: Chunk-Upload, Worker, Thumbnails, Video-Preview, Timeline-API, signierte Medien-URLs
-- [x] **M3** Flutter Basis: Login, Einladung einlösen, Timeline-Grid nach Monat, Detailansicht (Foto/Video), manueller Upload – Web gebaut, Android-Build braucht Android SDK
-- [x] **M3b** Design: immersive Timeline (Hero-Kopf, bündiges Mosaik, Glas-Leisten, Hero-Übergang, Wischen zum Schliessen), warmes Farbschema hell/dunkel wählbar, Logo, App-Icons, Splash
-- [x] **M4** Kommentare (API, Sheet in der App) + Push (FCM-Digest für Uploads, sofort bei Kommentaren) + Aktivitäts-Polling für Web/Windows
-- [x] **M5** Auto-Upload: neue Galerie-Aufnahmen im Hintergrund (Android WorkManager, iOS BGTaskScheduler) und beim Öffnen der App, nur-WLAN-Option, HEIC→JPEG auf dem Gerät – Code fertig, Gerätetest offen (kein Android SDK/iOS-Build)
-- [x] **Aufnahme-Metadaten:** Info-Sheet in der Detailansicht (Kamera, Belichtung, Ort, Datei); Aufnahmedatum einzeln oder für eine Auswahl setzen bzw. verschieben
-- [x] **Original sichern ohne Browser-Wechsel:** App lädt das Original selbst (Fortschritt in der Leiste); iOS/Android: in Fotos sichern oder Teilen-Blatt; Web mobil: Teilen-Blatt („Bild sichern“); Web Desktop: Download-Ordner
-- [x] **Aktivität:** Glocke mit Ungelesen-Zähler in der Timeline; Verlauf nach Tagen (Upload-Serien mit Vorschauen, Kommentare mit Auszug), Antippen öffnet das Foto bzw. den Kommentar; Öffnen markiert als gesehen. Push-Tipp ohne Medium landet im Verlauf
-- [ ] **M6** iOS-Build + TestFlight – Anleitung in [docs/ios-build.md](docs/ios-build.md). Windows-Build zurückgestellt: die Web-App (als Browser-App installiert) deckt den PC ab
-- [ ] **M7** Admin-Bereich im Web
+- [x] **M3** Flutter Basis: Login, Einladung einlösen, Timeline, Detailansicht, manueller Upload
+- [x] **M3b** Design: immersive Timeline, Mosaik, Glas-Leisten, Wischen zum Schliessen, Hell/Dunkel, Branding
+- [x] **M4** Kommentare + Push (FCM-Digest) + Aktivitäts-Verlauf mit Glocke
+- [x] **M5** Auto-Upload im Hintergrund (Code fertig, Gerätetest auf iOS läuft, Android offen)
+- [x] **M7** Verwaltung in der App: Benutzer anlegen/sperren, Familien, Mitglieder-Rechte, Einladungen
+- [x] **Zusätzlich:** Aufnahme-Metadaten und Datumskorrektur, Original sichern/teilen, Deploy über GHCR-Images
+- [ ] **M6** iOS: Build auf dem Mac läuft auf dem Gerät, TestFlight-Verteilung offen. Android-Build offen.
+  Windows zurückgestellt, die Web-App deckt den PC ab.
+- [ ] **Push scharf schalten:** Firebase-Projekt, APNs-Schlüssel, Dienstkonto (siehe oben)
+- [ ] Später: Monats-Rückblick, Export-Zip, Besucher-Anzeige, Import aus FamilyAlbum

@@ -1,18 +1,12 @@
-# Baut die Docker-Images (API und Web) bei jedem Push auf main und veröffentlicht sie in der GitHub Container Registry.
+# Baut die Docker-Images (API und Web) bei jedem Push auf main (Tag latest + sha-<commit>) und bei Release-Tags
+# (Tag v0.1.0-beta.1 usw.) und veröffentlicht sie in der GitHub Container Registry.
 # Der Server zieht dann nur noch fertige Images (infra/docker-compose.yml) – kein Build-Kontext nötig.
 name: images
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'apps/**'
-      - 'infra/Caddyfile'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.npmrc'
-      - '.dockerignore'
-      - '.github/workflows/images.yml'
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -39,8 +33,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.OWNER }}/familienalbum-api
           tags: |
-            type=raw,value=latest
+            type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-
+            type=ref,event=tag
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -67,8 +62,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.OWNER }}/familienalbum-web
           tags: |
-            type=raw,value=latest
+            type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-
+            type=ref,event=tag
       - uses: docker/build-push-action@v6
         with:
           context: .
