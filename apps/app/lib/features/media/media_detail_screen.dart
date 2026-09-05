@@ -683,17 +683,102 @@ class _VideoViewState extends State<_VideoView> {
             ),
           ),
         ),
-        Positioned(
-          left: 24,
-          right: 24,
-          bottom: 120,
-          child: VideoProgressIndicator(
-            c,
-            allowScrubbing: true,
-            colors: VideoProgressColors(playedColor: Colors.white, bufferedColor: Colors.white38, backgroundColor: Colors.white24),
-          ),
-        ),
+        Positioned(left: 12, right: 12, bottom: 132, child: _VideoControls(controller: c)),
       ],
+    );
+  }
+}
+
+/// Zeitleiste zum Spulen, Zeitangaben und ±10-Sekunden-Tasten. Liegt in einem eigenen Glas-Streifen,
+/// damit die Gesten nicht mit Blättern (horizontal) oder Schliessen (vertikal) konkurrieren.
+class _VideoControls extends StatefulWidget {
+  const _VideoControls({required this.controller});
+  final VideoPlayerController controller;
+
+  @override
+  State<_VideoControls> createState() => _VideoControlsState();
+}
+
+class _VideoControlsState extends State<_VideoControls> {
+  double? _dragging; // Position in Sekunden während des Ziehens
+
+  String _fmt(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(d.inHours > 0 ? 2 : 1, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return d.inHours > 0 ? '${d.inHours}:$m:$s' : '$m:$s';
+  }
+
+  Future<void> _skip(int seconds) async {
+    final c = widget.controller;
+    final target = c.value.position + Duration(seconds: seconds);
+    final clamped = target < Duration.zero ? Duration.zero : (target > c.value.duration ? c.value.duration : target);
+    await c.seekTo(clamped);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.controller;
+    return ValueListenableBuilder<VideoPlayerValue>(
+      valueListenable: c,
+      builder: (_, v, _) {
+        final total = v.duration.inMilliseconds.toDouble().clamp(1.0, double.infinity);
+        final pos = (_dragging ?? v.position.inMilliseconds / 1000).clamp(0.0, total / 1000);
+        return GestureDetector(
+          // Gesten hier bleiben hier (kein Blättern, kein Schliessen, kein Chrome-Toggle)
+          behavior: HitTestBehavior.opaque,
+          onTap: () {},
+          onHorizontalDragStart: (_) {},
+          onHorizontalDragUpdate: (_) {},
+          onVerticalDragStart: (_) {},
+          onVerticalDragUpdate: (_) {},
+          child: Glass(
+            borderRadius: BorderRadius.circular(16),
+            tint: Colors.black.withValues(alpha: 0.45),
+            border: true,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+              child: Row(
+                children: [
+                  IconButton(color: Colors.white, tooltip: '10 s zurück', icon: const Icon(Icons.replay_10), onPressed: () => _skip(-10)),
+                  IconButton(
+                    color: Colors.white,
+                    tooltip: v.isPlaying ? 'Pause' : 'Abspielen',
+                    icon: Icon(v.isPlaying ? Icons.pause : Icons.play_arrow),
+                    onPressed: () => v.isPlaying ? c.pause() : c.play(),
+                  ),
+                  IconButton(color: Colors.white, tooltip: '10 s vor', icon: const Icon(Icons.forward_10), onPressed: () => _skip(10)),
+                  Text(_fmt(Duration(milliseconds: (pos * 1000).round())), style: const TextStyle(color: Colors.white, fontSize: 12)),
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 3,
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                        activeTrackColor: Colors.white,
+                        inactiveTrackColor: Colors.white30,
+                        thumbColor: Colors.white,
+                      ),
+                      child: Slider(
+                        min: 0,
+                        max: total / 1000,
+                        value: pos,
+                        onChangeStart: (x) => setState(() => _dragging = x),
+                        onChanged: (x) => setState(() => _dragging = x),
+                        onChangeEnd: (x) async {
+                          await c.seekTo(Duration(milliseconds: (x * 1000).round()));
+                          if (mounted) setState(() => _dragging = null);
+                        },
+                      ),
+                    ),
+                  ),
+                  Text(_fmt(v.duration), style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  const SizedBox(width: 6),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

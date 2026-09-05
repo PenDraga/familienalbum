@@ -153,6 +153,13 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                 right: 0,
                 child: _SelectionBar(selection: selection, items: timeline.whenOrNull(data: (s) => s)?.items ?? const []),
               ),
+            // Upload-Status unten links, unabhängig vom Sheet sichtbar
+            Positioned(
+              left: 12,
+              right: family.membership.canUpload ? 190 : 12,
+              bottom: 16 + MediaQuery.paddingOf(context).bottom,
+              child: const UploadProgressBar(),
+            ),
           ],
         ),
       ),
@@ -440,14 +447,16 @@ class _HeroHeader extends StatelessWidget {
               ),
             ),
           ),
-          // Beim Einklappen: Milchglas
+          // Beim Einklappen: Milchglas (im Web nur Tönung – BackdropFilter erzeugt dort schwarze Flächen)
           if (t > 0.02)
-            BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-              child: DecoratedBox(
-                decoration: BoxDecoration(color: scheme.surface.withValues(alpha: t * (isDark ? 0.6 : 0.68))),
-              ),
-            ),
+            glassBlurSupported
+                ? BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(color: scheme.surface.withValues(alpha: t * (isDark ? 0.6 : 0.68))),
+                    ),
+                  )
+                : DecoratedBox(decoration: BoxDecoration(color: scheme.surface.withValues(alpha: t * 0.92))),
           // Grosser Titel unten links, blendet beim Einklappen aus
           Positioned(
             left: 20,

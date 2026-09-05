@@ -1,6 +1,11 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+/// Im Web (v.a. iOS Safari) verursacht BackdropFilter schwarze Flächen und hohe GPU-Last –
+/// dort nur tönen, nicht weichzeichnen.
+bool get glassBlurSupported => !kIsWeb;
 
 /// Milchglas: Weichzeichner über dem Inhalt darunter plus leichte Tönung.
 class Glass extends StatelessWidget {
@@ -24,20 +29,21 @@ class Glass extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = tint ?? scheme.surface.withValues(alpha: isDark ? 0.55 : 0.62);
+    var color = tint ?? scheme.surface.withValues(alpha: isDark ? 0.55 : 0.62);
+    // Ohne Blur braucht die Tönung mehr Deckkraft, damit Text lesbar bleibt
+    if (!glassBlurSupported) color = color.withValues(alpha: (color.a + 0.25).clamp(0.0, 0.95));
+
+    final box = DecoratedBox(
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: borderRadius,
+        border: border ? Border.all(color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.35), width: 0.8) : null,
+      ),
+      child: child,
+    );
     return ClipRRect(
       borderRadius: borderRadius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: borderRadius,
-            border: border ? Border.all(color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.35), width: 0.8) : null,
-          ),
-          child: child,
-        ),
-      ),
+      child: glassBlurSupported ? BackdropFilter(filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur), child: box) : box,
     );
   }
 }
@@ -57,7 +63,7 @@ class GlassIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = dark || Theme.of(context).brightness == Brightness.dark;
     final fg = isDark ? Colors.white : Theme.of(context).colorScheme.onSurface;
-    final button = Glass(
+    return Glass(
       blur: 16,
       borderRadius: BorderRadius.circular(22),
       tint: (isDark ? Colors.black : Colors.white).withValues(alpha: isDark ? 0.35 : 0.55),
@@ -69,13 +75,10 @@ class GlassIconButton extends StatelessWidget {
           tooltip: tooltip,
           onPressed: onPressed,
           color: fg,
-          icon: badge == null
-              ? Icon(icon)
-              : Badge(label: Text(badge!), child: Icon(icon)),
+          icon: badge == null ? Icon(icon) : Badge(label: Text(badge!), child: Icon(icon)),
         ),
       ),
     );
-    return button;
   }
 }
 

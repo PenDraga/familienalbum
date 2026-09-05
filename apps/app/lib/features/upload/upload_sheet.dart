@@ -2,7 +2,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app.dart' show rootMessengerKey;
 import '../../theme/app_theme.dart';
+import '../../widgets/glass.dart';
 import 'upload_controller.dart';
 import 'upload_service.dart';
 
@@ -14,7 +16,13 @@ Future<void> pickAndUpload(BuildContext context, WidgetRef ref, String familyId)
   final files = await FilePicker.pickFiles(dialogTitle: 'Fotos und Videos auswählen', type: FileType.media);
   if (files.isEmpty) return;
   ref.read(uploadControllerProvider.notifier).enqueue(familyId, files);
-  if (context.mounted) showUploadSheet(context);
+  // Sofortige Rückmeldung – auf iOS Safari kommt die Seite manchmal erst verzögert zurück,
+  // dann ist der ursprüngliche Kontext nicht mehr gültig und das Sheet bliebe aus.
+  rootMessengerKey.currentState?.showSnackBar(
+    SnackBar(content: Text(files.length == 1 ? '1 Datei wird hochgeladen' : '${files.length} Dateien werden hochgeladen')),
+  );
+  final ctx = context.mounted ? context : rootMessengerKey.currentContext;
+  if (ctx != null && ctx.mounted) showUploadSheet(ctx);
 }
 
 void showUploadSheet(BuildContext context) {
@@ -35,12 +43,12 @@ class UploadProgressBar extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final running = active.where((t) => t.status == UploadStatus.running).firstOrNull;
     final done = tasks.length - active.length;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+    return Glass(
+      borderRadius: BorderRadius.circular(AppTokens.radiusM),
+      border: true,
+      tint: active.isEmpty ? scheme.errorContainer.withValues(alpha: 0.85) : scheme.surface.withValues(alpha: 0.75),
       child: Material(
-        color: active.isEmpty ? scheme.errorContainer : scheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(AppTokens.radiusM),
-        clipBehavior: Clip.antiAlias,
+        color: Colors.transparent,
         child: InkWell(
           onTap: () => showUploadSheet(context),
           child: Padding(
