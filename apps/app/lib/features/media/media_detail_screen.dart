@@ -4,10 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../core/api_exception.dart';
+import '../../core/providers.dart';
 import '../../widgets/app_image.dart';
 import '../../widgets/glass.dart';
 import '../comments/comments_sheet.dart';
@@ -15,6 +15,7 @@ import '../timeline/media_model.dart';
 import '../timeline/timeline_controller.dart';
 import '../timeline/timeline_screen.dart' show formatDuration;
 import 'media_info_sheet.dart';
+import 'original/original_saver.dart';
 import 'taken_at_dialog.dart';
 
 /// Vollbild-Ansicht: Wischen zwischen Medien, Zoom, Wischen nach unten zum Schliessen,
@@ -34,6 +35,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
   bool _chromeVisible = true;
   bool _zoomed = false;
   MediaItem? _single; // Deep-Link ohne geladene Timeline
+  final Map<String, double?> _downloading = {}; // Original-Download: Fortschritt je Medium
 
   List<MediaItem> _items(TimelineState? s) {
     final ready = s?.items.where((m) => m.isReady).toList() ?? const <MediaItem>[];
@@ -128,6 +130,93 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
     } catch (_) {
       // beim nächsten Laden aktualisiert
     }
+  }
+
+  /// Original in der App laden und dann sichern/teilen – ohne Browser-Wechsel.
+  Future<void> _saveOriginal(MediaItem item) async {
+    final url = item.urls.original;
+    if (url == null || _downloading.containsKey(item.id)) return;
+    setState(() => _downloading[item.id] = 0);
+    final messenger = ScaffoldMessenger.of(context);
+    PreparedOriginal? prepared;
+    try {
+      prepared = await prepareOriginal(
+        ref.read(apiClientProvider).dio,
+        url: url,
+        fileName: item.originalName,
+        mimeType: item.mimeType,
+        isVideo: item.isVideo,
+        onProgress: (f) {
+          if (mounted) setState(() => _downloading[item.id] = f);
+        },
+      );
+      if (!mounted) return;
+      setState(() => _downloading.remove(item.id));
+
+      final actions = <_OriginalAction>[
+        if (prepared.canSaveToPhotos) const _OriginalAction(Icons.photo_library_outlined, 'In Fotos sichern', _OriginalActionKind.photos),
+        if (prepared.canShare) const _OriginalAction(Icons.ios_share, 'Teilen …', _OriginalActionKind.share),
+        if (prepared.canDownload) const _OriginalAction(Icons.download_outlined, 'Als Datei herunterladen', _OriginalActionKind.download),
+      ];
+      // Nur eine Möglichkeit (Desktop-Browser): direkt ausführen, sonst fragen.
+      // Das Teilen-Blatt im Browser braucht eine frische Nutzergeste, deshalb erst nach dem Download fragen.
+      final choice = actions.length == 1 ? actions.single.kind : await _askOriginalAction(item, actions);
+      if (choice == null) return;
+      switch (choice) {
+        case _OriginalActionKind.photos:
+          await prepared.saveToPhotos();
+          messenger.showSnackBar(const SnackBar(content: Text('In Fotos gesichert')));
+        case _OriginalActionKind.share:
+          await prepared.share();
+        case _OriginalActionKind.download:
+          await prepared.download();
+          messenger.showSnackBar(SnackBar(content: Text('„${item.originalName}“ heruntergeladen')));
+      }
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e is OriginalSaveException ? e.message : errorMessage(e))));
+    } finally {
+      if (mounted) setState(() => _downloading.remove(item.id));
+      await prepared?.dispose();
+    }
+  }
+
+  Future<_OriginalActionKind?> _askOriginalAction(MediaItem item, List<_OriginalAction> actions) {
+    return showModalBottomSheet<_OriginalActionKind>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+              child: Row(
+                children: [
+                  Icon(item.isVideo ? Icons.movie_outlined : Icons.image_outlined, color: Theme.of(ctx).colorScheme.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Original bereit', style: Theme.of(ctx).textTheme.titleMedium),
+                        Text(
+                          '${item.originalName} · ${formatBytes(item.sizeBytes)}',
+                          style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            for (final a in actions)
+              ListTile(leading: Icon(a.icon), title: Text(a.label), onTap: () => Navigator.pop(ctx, a.kind)),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _showInfo(MediaItem item) async {
@@ -396,8 +485,12 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                             if (item.urls.original != null)
                               _BarButton(
                                 icon: Icons.download_outlined,
-                                label: 'Original',
-                                onTap: () => launchUrl(Uri.parse(item.urls.original!), mode: LaunchMode.externalApplication),
+                                label: _downloading.containsKey(item.id)
+                                    ? (_downloading[item.id] == null ? 'Lädt …' : '${(_downloading[item.id]! * 100).round()} %')
+                                    : 'Original',
+                                progress: _downloading.containsKey(item.id) ? _downloading[item.id] : null,
+                                busy: _downloading.containsKey(item.id),
+                                onTap: () => _saveOriginal(item),
                               ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -433,23 +526,42 @@ String commentLabel(int count) {
   return count == 1 ? '1 Kommentar' : '$count Kommentare';
 }
 
+enum _OriginalActionKind { photos, share, download }
+
+class _OriginalAction {
+  const _OriginalAction(this.icon, this.label, this.kind);
+  final IconData icon;
+  final String label;
+  final _OriginalActionKind kind;
+}
+
 class _BarButton extends StatelessWidget {
-  const _BarButton({required this.icon, required this.label, required this.onTap});
+  const _BarButton({required this.icon, required this.label, required this.onTap, this.progress, this.busy = false});
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  /// Fortschritt 0..1 (null bei [busy] = unbestimmt)
+  final double? progress;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: busy ? null : onTap,
       borderRadius: BorderRadius.circular(10),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white, size: 22),
+            if (busy)
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(value: progress, strokeWidth: 2.5, color: Colors.white, backgroundColor: Colors.white24),
+              )
+            else
+              Icon(icon, color: Colors.white, size: 22),
             const SizedBox(width: 6),
             Text(
               label,

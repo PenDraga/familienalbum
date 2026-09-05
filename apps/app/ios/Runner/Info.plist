@@ -70,6 +70,8 @@
 		<false/>
 		<key>NSPhotoLibraryUsageDescription</key>
 	<string>Familienalbum lädt neue Fotos und Videos automatisch in euer Album hoch.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Familienalbum sichert Originale aus dem Album in deiner Fotos-Mediathek.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

@@ -29,6 +29,7 @@ class MediaItem {
     required this.type,
     required this.status,
     required this.originalName,
+    required this.mimeType,
     required this.sizeBytes,
     required this.takenAt,
     required this.uploadedAt,
@@ -48,6 +49,7 @@ class MediaItem {
   final MediaType type;
   final MediaStatus status;
   final String originalName;
+  final String mimeType;
   final int sizeBytes;
   final int? width;
   final int? height;
@@ -80,6 +82,7 @@ class MediaItem {
       _ => MediaStatus.uploading,
     },
     originalName: j['originalName'] as String,
+    mimeType: j['mimeType'] as String,
     sizeBytes: j['sizeBytes'] as int,
     width: j['width'] as int?,
     height: j['height'] as int?,
