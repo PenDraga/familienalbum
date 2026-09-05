@@ -178,5 +178,6 @@ Fehlen die Defines, startet die App ohne Firebase (kein `google-services.json` n
 - [x] **M3b** Design: immersive Timeline (Hero-Kopf, bündiges Mosaik, Glas-Leisten, Hero-Übergang, Wischen zum Schliessen), warmes Farbschema hell/dunkel wählbar, Logo, App-Icons, Splash
 - [x] **M4** Kommentare (API, Sheet in der App) + Push (FCM-Digest für Uploads, sofort bei Kommentaren) + Aktivitäts-Polling für Web/Windows
 - [x] **M5** Auto-Upload: neue Galerie-Aufnahmen im Hintergrund (Android WorkManager, iOS BGTaskScheduler) und beim Öffnen der App, nur-WLAN-Option, HEIC→JPEG auf dem Gerät – Code fertig, Gerätetest offen (kein Android SDK/iOS-Build)
+- [x] **Aufnahme-Metadaten:** Info-Sheet in der Detailansicht (Kamera, Belichtung, Ort, Datei); Aufnahmedatum einzeln oder für eine Auswahl setzen bzw. verschieben
 - [ ] **M6** iOS-Build + TestFlight – Anleitung in [docs/ios-build.md](docs/ios-build.md). Windows-Build zurückgestellt: die Web-App (als Browser-App installiert) deckt den PC ab
 - [ ] **M7** Admin-Bereich im Web

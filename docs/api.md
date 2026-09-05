@@ -133,13 +133,22 @@ GET  /uploads/:id                        Session für Wiederaufnahme · DELETE /
 | `GET /families/:id/timeline?limit=&cursor=&month=YYYY-MM` | Mitglied |
 | `GET /families/:id/timeline/months` → `[{ month, count }]` | Mitglied |
 | `GET /media/:id` | Mitglied |
-| `PATCH /media/:id` `{ caption }` · `DELETE /media/:id` (Soft-Delete, Dateien weg) | Uploader oder Familien-Admin |
+| `PATCH /media/:id` `{ caption?, takenAt? }` · `DELETE /media/:id` (Soft-Delete, Dateien weg) | Uploader oder Familien-Admin |
+| `GET /media/:id/info` → Aufnahme-Metadaten (Kamera, Objektiv, Blende, Belichtung, ISO, Brennweite, GPS, Originalzeit) + Dateiinfos | Mitglied |
+| `POST /families/:id/media/taken-at` `{ ids[], takenAt }` **oder** `{ ids[], shiftSeconds }` → `{ updated, skipped[] }` | Mitglied; wirkt nur auf eigene Medien bzw. alle als Familien-Admin, Rest landet in `skipped` |
 | `GET /media/:id/thumb/400` · `/thumb/1600` (WebP) | Mitglied **oder** Signatur |
 | `GET /media/:id/preview` (MP4, Range-Requests) | Mitglied **oder** Signatur |
 | `GET /media/:id/original` (Content-Disposition, Range) | canDownload **oder** Signatur |
 
 Timeline-Antwort: `{ groups: [{ month: 'YYYY-MM', items: Media[] }], nextCursor }`, neueste zuerst,
 Cursor = `(takenAt, id)`. `PROCESSING` sehen alle (Platzhalter), `FAILED` nur der Uploader.
+
+**Aufnahmedatum korrigieren:** `takenAt` ist die Sortier- und Gruppierungsgrundlage. Wer ein Medium bearbeiten darf,
+kann es per `PATCH` auf einen Zeitpunkt setzen; für Serien (falsche Zeitzone, verstellte Kamera-Uhr) verschiebt
+`shiftSeconds` alle gewählten Medien um denselben Betrag, die Abstände bleiben erhalten. Der Auszug aus den
+Aufnahme-Metadaten (`Media.exif`, JSON) wird beim Verarbeiten gespeichert; für Altbestand liest `GET /media/:id/info`
+ihn beim ersten Abruf aus der Originaldatei nach (nicht für HEIC). `exif.originalDateTime` ist die Zeit laut Datei und
+bleibt von Korrekturen unberührt.
 
 **Signierte URLs:** Jedes `Media` enthält `urls.{thumb400, thumb1600, preview, original}` als relative Pfade
 mit `?exp=&sig=` (HMAC-SHA256 über Pfad + Ablauf, `SIGNED_URL_TTL_SECONDS`, Standard 24 h). Damit laden

@@ -15,6 +15,7 @@ import '../../widgets/glass.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_models.dart';
 import '../comments/comments_repository.dart';
+import '../media/taken_at_dialog.dart';
 import '../upload/upload_controller.dart';
 import '../upload/upload_sheet.dart';
 import 'justified_layout.dart';
@@ -673,6 +674,11 @@ class _SelectionBar extends ConsumerWidget {
                 ],
               ),
             ),
+            IconButton(
+              tooltip: 'Datum anpassen',
+              onPressed: deletable == 0 ? null : () => _changeDates(context, ref, selectedItems.where((m) => m.canEdit).toList()),
+              icon: const Icon(Icons.edit_calendar_outlined),
+            ),
             TextButton.icon(
               onPressed: deletable == 0 ? null : () => _deleteSelected(context, ref, selectedItems.where((m) => m.canEdit).toList()),
               icon: const Icon(Icons.delete_outline),
@@ -683,6 +689,28 @@ class _SelectionBar extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _changeDates(BuildContext context, WidgetRef ref, List<MediaItem> targets) async {
+    final sorted = [...targets]..sort((a, b) => a.takenAt.compareTo(b.takenAt));
+    final samples = sorted.length > 1 ? [sorted.first.takenAt, sorted.last.takenAt] : [sorted.first.takenAt];
+    final change = await showTakenAtDialog(context, samples: samples, count: targets.length);
+    if (change == null || !context.mounted) return;
+    // Die Leiste verschwindet mit dem Leeren der Auswahl – Messenger vorher greifen
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final result = await ref
+          .read(timelineRepositoryProvider)
+          .batchTakenAt(targets.first.familyId, targets.map((m) => m.id).toList(), change);
+      ref.read(selectionProvider.notifier).clear();
+      await ref.read(timelineControllerProvider.notifier).refresh();
+      final msg = result.skipped.isEmpty
+          ? (result.updated == 1 ? 'Datum von 1 Medium angepasst' : 'Datum von ${result.updated} Medien angepasst')
+          : '${result.updated} angepasst, ${result.skipped.length} übersprungen';
+      messenger.showSnackBar(SnackBar(content: Text(msg)));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(errorMessage(e))));
+    }
   }
 
   Future<void> _deleteSelected(BuildContext context, WidgetRef ref, List<MediaItem> targets) async {
@@ -701,7 +729,8 @@ class _SelectionBar extends ConsumerWidget {
         ],
       ),
     );
-    if (ok != true) return;
+    if (ok != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
 
     final repo = ref.read(timelineRepositoryProvider);
     final timeline = ref.read(timelineControllerProvider.notifier);
@@ -717,11 +746,10 @@ class _SelectionBar extends ConsumerWidget {
       }
     }
     ref.read(selectionProvider.notifier).clear();
-    if (!context.mounted) return;
     final msg = firstError == null
         ? (deleted == 1 ? '1 Medium gelöscht' : '$deleted Medien gelöscht')
         : '$deleted gelöscht, Fehler: $firstError';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    messenger.showSnackBar(SnackBar(content: Text(msg)));
   }
 }
 

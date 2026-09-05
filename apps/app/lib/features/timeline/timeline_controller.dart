@@ -100,10 +100,14 @@ class TimelineController extends AsyncNotifier<TimelineState> {
     return m.takenAt.isBefore(last.takenAt) || (m.takenAt == last.takenAt && m.id.compareTo(last.id) < 0);
   }
 
+  /// Ersetzt ein Medium; hat sich das Aufnahmedatum geändert, wird neu einsortiert (neueste zuerst).
   void replaceItem(MediaItem updated) {
     final current = state.whenOrNull(data: (s) => s);
     if (current == null) return;
-    state = AsyncData(current.copyWith(items: [for (final m in current.items) m.id == updated.id ? updated : m]));
+    final items = [for (final m in current.items) m.id == updated.id ? updated : m];
+    final before = current.items.where((m) => m.id == updated.id).firstOrNull;
+    if (before != null && before.takenAt != updated.takenAt) sortNewestFirst(items);
+    state = AsyncData(current.copyWith(items: items));
   }
 
   void removeItem(String id) {
@@ -114,3 +118,11 @@ class TimelineController extends AsyncNotifier<TimelineState> {
 }
 
 final timelineControllerProvider = AsyncNotifierProvider<TimelineController, TimelineState>(TimelineController.new);
+
+/// Server-Reihenfolge: takenAt absteigend, bei Gleichstand id absteigend.
+void sortNewestFirst(List<MediaItem> items) {
+  items.sort((a, b) {
+    final c = b.takenAt.compareTo(a.takenAt);
+    return c != 0 ? c : b.id.compareTo(a.id);
+  });
+}

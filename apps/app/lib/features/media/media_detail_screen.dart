@@ -14,6 +14,8 @@ import '../comments/comments_sheet.dart';
 import '../timeline/media_model.dart';
 import '../timeline/timeline_controller.dart';
 import '../timeline/timeline_screen.dart' show formatDuration;
+import 'media_info_sheet.dart';
+import 'taken_at_dialog.dart';
 
 /// Vollbild-Ansicht: Wischen zwischen Medien, Zoom, Wischen nach unten zum Schliessen,
 /// Glas-Leisten oben und unten, Hero-Übergang von der Kachel.
@@ -28,6 +30,7 @@ class MediaDetailScreen extends ConsumerStatefulWidget {
 class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
   PageController? _pager;
   int _index = 0;
+  String? _currentId; // bleibt stabil, auch wenn die Timeline umsortiert wird (Datum geändert)
   bool _chromeVisible = true;
   bool _zoomed = false;
   MediaItem? _single; // Deep-Link ohne geladene Timeline
@@ -43,6 +46,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
     super.initState();
     final items = _items(ref.read(timelineControllerProvider).whenOrNull(data: (s) => s));
     final idx = items.indexWhere((m) => m.id == widget.mediaId);
+    _currentId = widget.mediaId;
     if (idx >= 0) {
       _index = idx;
     } else {
@@ -126,6 +130,23 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
     }
   }
 
+  Future<void> _showInfo(MediaItem item) async {
+    final updated = await showMediaInfoSheet(context, item);
+    if (updated != null && _single != null && mounted) setState(() => _single = updated);
+  }
+
+  Future<void> _editDate(MediaItem item) async {
+    final change = await showTakenAtDialog(context, samples: [item.takenAt]);
+    if (change == null || !mounted) return;
+    try {
+      final updated = await ref.read(timelineRepositoryProvider).updateTakenAt(item.id, change.apply(item.takenAt));
+      ref.read(timelineControllerProvider.notifier).replaceItem(updated);
+      if (_single != null) setState(() => _single = updated);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage(e))));
+    }
+  }
+
   Future<void> _editCaption(MediaItem item) async {
     final controller = TextEditingController(text: item.caption ?? '');
     final result = await showDialog<String?>(
@@ -189,7 +210,16 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
         body: Center(child: CircularProgressIndicator(color: Colors.white.withValues(alpha: 0.7))),
       );
     }
-    final index = _index.clamp(0, items.length - 1);
+    var index = _index.clamp(0, items.length - 1);
+    // Nach einer Datumsänderung kann das Medium an anderer Stelle liegen: Position nachführen
+    final byId = _currentId == null ? -1 : items.indexWhere((m) => m.id == _currentId);
+    if (byId >= 0 && byId != index) {
+      index = byId;
+      _index = byId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pager?.hasClients == true && _pager!.page?.round() != byId) _pager!.jumpToPage(byId);
+      });
+    }
     final item = items[index];
     final dateFormat = DateFormat.yMMMMEEEEd('de_CH');
     final timeFormat = DateFormat.Hm('de_CH');
@@ -231,6 +261,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                         itemCount: items.length,
                         onPageChanged: (i) => setState(() {
                           _index = i;
+                          _currentId = i < items.length ? items[i].id : _currentId;
                           _zoomed = false;
                         }),
                         itemBuilder: (_, i) => items[i].isVideo
@@ -311,10 +342,15 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                         if (item.canEdit)
                           PopupMenuButton<String>(
                             iconColor: Colors.white,
-                            onSelected: (v) => v == 'caption' ? _editCaption(item) : _delete(item),
+                            onSelected: (v) => switch (v) {
+                              'caption' => _editCaption(item),
+                              'date' => _editDate(item),
+                              _ => _delete(item),
+                            },
                             itemBuilder: (_) => const [
-                              PopupMenuItem(value: 'caption', child: Text('Beschreibung bearbeiten')),
-                              PopupMenuItem(value: 'delete', child: Text('Löschen')),
+                              PopupMenuItem(value: 'caption', child: ListTile(leading: Icon(Icons.notes), title: Text('Beschreibung bearbeiten'))),
+                              PopupMenuItem(value: 'date', child: ListTile(leading: Icon(Icons.edit_calendar_outlined), title: Text('Datum und Uhrzeit ändern'))),
+                              PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete_outline), title: Text('Löschen'))),
                             ],
                           ),
                       ],
@@ -354,6 +390,8 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                               label: item.commentCount == 0 ? 'Kommentieren' : commentLabel(item.commentCount),
                               onTap: () => _openComments(item),
                             ),
+                            const SizedBox(width: 14),
+                            _BarButton(icon: Icons.info_outline, label: 'Info', onTap: () => _showInfo(item)),
                             const SizedBox(width: 14),
                             if (item.urls.original != null)
                               _BarButton(

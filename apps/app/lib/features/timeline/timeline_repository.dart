@@ -1,4 +1,5 @@
 import '../../core/api_client.dart';
+import '../media/media_info.dart';
 import 'media_model.dart';
 
 class TimelineRepository {
@@ -24,9 +25,18 @@ class TimelineRepository {
   Future<MediaItem> get(String mediaId) async =>
       MediaItem.fromJson(await _api.dio.get<Map<String, dynamic>>('/media/$mediaId').unwrap(), _api.absolute);
 
-  Future<MediaItem> updateCaption(String mediaId, String? caption) async => MediaItem.fromJson(
-    await _api.dio.patch<Map<String, dynamic>>('/media/$mediaId', data: {'caption': caption}).unwrap(),
-    _api.absolute,
+  Future<MediaItem> updateCaption(String mediaId, String? caption) => _patch(mediaId, {'caption': caption});
+
+  Future<MediaItem> updateTakenAt(String mediaId, DateTime takenAt) => _patch(mediaId, {'takenAt': takenAt.toUtc().toIso8601String()});
+
+  Future<MediaItem> _patch(String mediaId, Map<String, dynamic> body) async =>
+      MediaItem.fromJson(await _api.dio.patch<Map<String, dynamic>>('/media/$mediaId', data: body).unwrap(), _api.absolute);
+
+  Future<MediaInfo> info(String mediaId) async => MediaInfo.fromJson(await _api.dio.get<Map<String, dynamic>>('/media/$mediaId/info').unwrap());
+
+  /// Aufnahmedatum mehrerer Medien setzen oder verschieben; fremde Medien meldet der Server in `skipped`.
+  Future<BatchTakenAtResult> batchTakenAt(String familyId, List<String> ids, TakenAtChange change) async => BatchTakenAtResult.fromJson(
+    await _api.dio.post<Map<String, dynamic>>('/families/$familyId/media/taken-at', data: {'ids': ids, ...change.toJson()}).unwrap(),
   );
 
   Future<void> delete(String mediaId) => _api.dio.delete<void>('/media/$mediaId').unwrap();
