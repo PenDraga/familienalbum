@@ -8,6 +8,9 @@ import { requireFamilyPermission, type FamilyPermission } from '../plugins/permi
 import { mediaFamilyResolver } from '../plugins/resolvers.js';
 import { emptyResponse, errorResponses, idParamsSchema } from '../schemas/common.js';
 import {
+  batchTakenAtBodySchema,
+  batchTakenAtResponseSchema,
+  mediaInfoSchema,
   mediaSchema,
   monthSummarySchema,
   thumbParamsSchema,
@@ -99,14 +102,57 @@ export const mediaRoutes: FastifyPluginAsyncZod = async (app) => {
       preHandler: requireFamilyPermission('member', mediaFamilyResolver),
       schema: {
         tags: ['media'],
-        summary: 'Beschreibung ändern (Uploader oder Familien-Admin)',
+        summary: 'Beschreibung oder Aufnahmedatum ändern (Uploader oder Familien-Admin)',
         security: bearer,
         params: idParamsSchema,
         body: updateMediaBodySchema,
         response: { 200: mediaSchema, ...errorResponses(400, 401, 403, 404) },
       },
     },
-    async (request) => media.updateCaption(request.media!, request.body.caption, ctx(request)),
+    async (request) =>
+      media.update(
+        request.media!,
+        { caption: request.body.caption, takenAt: request.body.takenAt ? new Date(request.body.takenAt) : undefined },
+        ctx(request),
+      ),
+  );
+
+  app.get(
+    '/media/:id/info',
+    {
+      preHandler: requireFamilyPermission('member', mediaFamilyResolver),
+      schema: {
+        tags: ['media'],
+        summary: 'Aufnahme-Metadaten (Kamera, Belichtung, GPS) und Dateiinfos',
+        security: bearer,
+        params: idParamsSchema,
+        response: { 200: mediaInfoSchema, ...errorResponses(401, 403, 404) },
+      },
+    },
+    async (request) => media.info(request.media!),
+  );
+
+  app.post(
+    '/families/:id/media/taken-at',
+    {
+      preHandler: requireFamilyPermission('member'),
+      schema: {
+        tags: ['media'],
+        summary: 'Aufnahmedatum mehrerer Medien setzen oder verschieben',
+        description: 'Nur eigene Medien bzw. alle als Familien-Admin; nicht erlaubte IDs werden in `skipped` zurückgegeben.',
+        security: bearer,
+        params: idParamsSchema,
+        body: batchTakenAtBodySchema,
+        response: { 200: batchTakenAtResponseSchema, ...errorResponses(400, 401, 403, 404) },
+      },
+    },
+    async (request) =>
+      media.batchUpdateTakenAt(
+        request.params.id,
+        request.body.ids,
+        { takenAt: request.body.takenAt ? new Date(request.body.takenAt) : undefined, shiftSeconds: request.body.shiftSeconds },
+        ctx(request),
+      ),
   );
 
   app.delete(

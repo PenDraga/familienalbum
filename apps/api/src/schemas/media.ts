@@ -70,9 +70,57 @@ export const monthSummarySchema = z
   })
   .meta({ id: 'MonthSummary' });
 
-export const updateMediaBodySchema = z.object({
-  caption: z.string().trim().max(2000).nullable(),
-});
+export const updateMediaBodySchema = z
+  .object({
+    caption: z.string().trim().max(2000).nullable().optional(),
+    /** Aufnahmezeit (ISO 8601) – sortiert die Timeline neu */
+    takenAt: z.iso.datetime().optional(),
+  })
+  .refine((v) => v.caption !== undefined || v.takenAt !== undefined, { message: 'caption oder takenAt angeben' });
+
+export const batchTakenAtBodySchema = z
+  .object({
+    ids: z.array(uuidSchema).min(1).max(500),
+    /** Alle auf diesen Zeitpunkt setzen … */
+    takenAt: z.iso.datetime().optional(),
+    /** … oder alle um so viele Sekunden verschieben (negativ = früher) */
+    shiftSeconds: z.number().int().min(-315_360_000).max(315_360_000).optional(),
+  })
+  .refine((v) => (v.takenAt !== undefined) !== (v.shiftSeconds !== undefined), { message: 'Entweder takenAt oder shiftSeconds' });
+
+export const batchTakenAtResponseSchema = z
+  .object({ updated: z.number().int(), skipped: z.array(uuidSchema) })
+  .meta({ id: 'BatchTakenAtResult' });
+
+export const exifSchema = z
+  .object({
+    make: z.string().optional(),
+    model: z.string().optional(),
+    lens: z.string().optional(),
+    software: z.string().optional(),
+    fNumber: z.number().optional(),
+    exposureTime: z.number().optional(),
+    iso: z.number().optional(),
+    focalLength: z.number().optional(),
+    focalLength35: z.number().optional(),
+    orientation: z.number().optional(),
+    originalDateTime: z.string().optional(),
+    gps: z.object({ lat: z.number(), lon: z.number(), alt: z.number().optional() }).optional(),
+  })
+  .loose()
+  .meta({ id: 'Exif' });
+
+export const mediaInfoSchema = z
+  .object({
+    exif: exifSchema,
+    originalName: z.string(),
+    mimeType: z.string(),
+    sizeBytes: z.number().int(),
+    sha256: z.string(),
+    uploadedAt: z.iso.datetime(),
+    takenAt: z.iso.datetime(),
+  })
+  .meta({ id: 'MediaInfo' });
 
 export const thumbParamsSchema = z.object({
   id: uuidSchema,

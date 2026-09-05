@@ -6,6 +6,7 @@ import { execFile } from 'node:child_process';
 import { rm } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { MIME_EXTENSIONS, type MediaStorage } from '../lib/storage.js';
+import { readPhotoExif, readVideoExif, type ExifSummary } from './exif.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -22,6 +23,7 @@ interface Extracted {
   height: number | null;
   durationSec: number | null;
   takenAt: Date | null;
+  exif: ExifSummary | null;
 }
 
 const MAX_PREVIEW_EDGE = 1920;
@@ -66,6 +68,7 @@ export class MediaProcessor {
           width: extracted.width,
           height: extracted.height,
           durationSec: extracted.durationSec,
+          exif: extracted.exif ?? undefined,
           // EXIF gewinnt; sonst bleibt der Wert aus dem Upload (Geräte-Hinweis oder Upload-Zeit)
           takenAt: extracted.takenAt ?? media.takenAt,
         },
@@ -135,6 +138,7 @@ export class MediaProcessor {
       height: swap ? width : height,
       durationSec: null,
       takenAt: exif,
+      exif: await readPhotoExif(original),
     };
   }
 
@@ -208,7 +212,7 @@ export class MediaProcessor {
 
     await this.writeThumbs(sharp(poster).rotate(), media);
 
-    return { width, height, durationSec, takenAt };
+    return { width, height, durationSec, takenAt, exif: readVideoExif(probe) };
   }
 }
 

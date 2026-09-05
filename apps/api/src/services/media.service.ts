@@ -4,6 +4,8 @@ import { Errors } from '../lib/errors.js';
 import type { UrlSigner } from '../lib/signed-url.js';
 import type { MediaStorage } from '../lib/storage.js';
 import { iso, toUserBrief } from './dto.js';
+import { readPhotoExif, type ExifSummary } from './exif.js';
+import { MIME_EXTENSIONS } from '../lib/storage.js';
 
 export type MediaWithUploader = Media & { uploader: { id: string; displayName: string }; _count?: { comments: number } };
 
@@ -121,10 +123,58 @@ export class MediaService {
     }
   }
 
-  async updateCaption(media: Media, caption: string | null, ctx: MediaViewContext) {
+  /** Beschreibung und/oder Aufnahmedatum ändern (Uploader oder Familien-Admin). */
+  async update(media: Media, patch: { caption?: string | null; takenAt?: Date }, ctx: MediaViewContext) {
     this.assertCanEdit(media, ctx);
-    const updated = await this.prisma.media.update({ where: { id: media.id }, data: { caption: caption || null }, include: this.include });
+    const updated = await this.prisma.media.update({
+      where: { id: media.id },
+      data: {
+        caption: patch.caption === undefined ? undefined : patch.caption || null,
+        takenAt: patch.takenAt,
+      },
+      include: this.include,
+    });
     return this.toDto(updated, ctx);
+  }
+
+  /**
+   * Aufnahmedatum für mehrere Medien: entweder auf einen festen Zeitpunkt setzen oder um Sekunden verschieben.
+   * Medien ohne Bearbeitungsrecht werden übersprungen und gemeldet.
+   */
+  async batchUpdateTakenAt(familyId: string, ids: string[], change: { takenAt?: Date; shiftSeconds?: number }, ctx: MediaViewContext) {
+    const items = await this.prisma.media.findMany({ where: { id: { in: ids }, familyId, deletedAt: null } });
+    const allowed = items.filter((m) => m.uploaderId === ctx.membership.userId || ctx.membership.isFamilyAdmin);
+    const skipped = ids.filter((id) => !allowed.some((m) => m.id === id));
+    await this.prisma.$transaction(
+      allowed.map((m) =>
+        this.prisma.media.update({
+          where: { id: m.id },
+          data: { takenAt: change.takenAt ?? new Date(m.takenAt.getTime() + (change.shiftSeconds ?? 0) * 1000) },
+        }),
+      ),
+    );
+    return { updated: allowed.length, skipped };
+  }
+
+  /** Aufnahme-Metadaten; für ältere Medien ohne gespeicherten Auszug wird die Datei nachgelesen. */
+  async info(media: Media) {
+    let exif = (media.exif ?? null) as ExifSummary | null;
+    if (exif === null && media.type === 'PHOTO' && media.status === 'READY') {
+      const ext = MIME_EXTENSIONS[media.mimeType]?.ext;
+      if (ext && !/^hei[cf]$/.test(ext)) {
+        exif = await readPhotoExif(this.storage.originalPath(media.familyId, media.id, ext)).catch(() => null);
+        if (exif) await this.prisma.media.update({ where: { id: media.id }, data: { exif } });
+      }
+    }
+    return {
+      exif: exif ?? {},
+      originalName: media.originalName,
+      mimeType: media.mimeType,
+      sizeBytes: media.sizeBytes,
+      sha256: media.sha256,
+      uploadedAt: iso(media.uploadedAt),
+      takenAt: iso(media.takenAt),
+    };
   }
 
   /** Soft-Delete: Datensatz bleibt (Dedup, Wiederherstellung), Dateien werden gelöscht. */

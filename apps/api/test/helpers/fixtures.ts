@@ -10,7 +10,7 @@ import sharp from 'sharp';
  * `noise: true` liefert ein schlecht komprimierbares Bild (mehrere Upload-Chunks).
  */
 export async function makeJpeg(
-  opts: { width?: number; height?: number; takenAt?: string; orientation?: number; color?: string; noise?: boolean } = {},
+  opts: { width?: number; height?: number; takenAt?: string; orientation?: number; color?: string; noise?: boolean; camera?: boolean } = {},
 ) {
   const width = opts.width ?? 800;
   const height = opts.height ?? 600;
@@ -21,6 +21,12 @@ export async function makeJpeg(
   ).jpeg({ quality: 80 });
 
   if (opts.orientation) img = img.withMetadata({ orientation: opts.orientation });
+  if (opts.camera) {
+    img = img.withExifMerge({
+      IFD0: { Make: 'TestCam', Model: 'X1' },
+      IFD2: { FNumber: '18/10', ExposureTime: '1/250', ISOSpeedRatings: '400', FocalLength: '26/1', LensModel: 'Test 26mm' },
+    });
+  }
   if (opts.takenAt) img = img.withExifMerge({ IFD2: { DateTimeOriginal: opts.takenAt } }); // "YYYY:MM:DD HH:MM:SS"
 
   return img.toBuffer();
