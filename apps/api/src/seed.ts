@@ -1,7 +1,12 @@
-// Legt den ersten globalen Admin an (idempotent). Aufruf: `npx prisma db seed`
-import 'dotenv/config';
+// Legt den ersten globalen Admin an (idempotent).
+// Entwicklung: `npm run seed` (liest .env) – Betrieb: `docker compose exec api node dist/seed.js` (Umgebung aus Compose).
+try {
+  process.loadEnvFile();
+} catch {
+  // keine .env (Container) – Variablen kommen aus der Umgebung
+}
 import { PrismaClient } from '@prisma/client';
-import { hashPassword } from '../src/lib/password.js';
+import { hashPassword } from './lib/password.js';
 
 const prisma = new PrismaClient();
 

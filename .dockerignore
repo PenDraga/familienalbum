@@ -5,4 +5,12 @@
 .git
 docs
 infra/data
-apps/app
+infra/secrets
+apps/api/data
+apps/app/build
+apps/app/.dart_tool
+apps/app/ios
+apps/app/android
+apps/app/windows
+apps/app/macos
+apps/app/linux

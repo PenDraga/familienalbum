@@ -124,23 +124,46 @@ cd apps/app && node tool/render_branding.mjs && dart run flutter_launcher_icons 
 
 ## Betrieb (Docker Compose)
 
+Alles wird direkt aus dem Git-Checkout gebaut: API-Image (`apps/api/Dockerfile`, Node + ffmpeg + libheif) und
+Web-Image (`apps/app/Dockerfile`: Flutter in der gepinnten Version baut die Web-App, Caddy liefert sie aus und
+proxied `/api`). Auf dem Server braucht es nur Git und Docker.
+
 ```bash
-cd infra && cp .env.example .env
+git clone https://github.com/PenDraga/familienalbum.git /opt/familienalbum && cd /opt/familienalbum/infra
 ```
 
-`.env` ausfüllen (Passwörter, `JWT_SECRET`, Cloudflare-Tunnel-Token, Pfade), dann:
+```bash
+cp .env.example .env
+```
+
+`.env` ausfüllen: Passwörter, `JWT_SECRET` (`openssl rand -base64 48`), Admin-Zugang, Pfade für Medien/Datenbank,
+`HTTP_PORT`. Dann bauen und starten (der erste Web-Build lädt Flutter und dauert einige Minuten):
 
 ```bash
 docker compose up -d --build
 ```
 
-Ersten Admin anlegen:
+Die API spielt beim Start die Migrationen ein. Ersten Admin anlegen:
 
 ```bash
-docker compose exec api npx prisma db seed
+docker compose exec api node dist/seed.js
 ```
 
-Backup (täglich per Cron): `infra/backup.sh` – `pg_dump` + `rsync` von `/data/media`.
+Danach im LAN unter `http://<server>:<HTTP_PORT>` anmelden. Für den Zugriff von aussen den Cloudflare-Tunnel-Token in
+`.env` setzen und mit Profil starten:
+
+```bash
+docker compose --profile tunnel up -d
+```
+
+Update auf eine neue Version:
+
+```bash
+git pull && docker compose up -d --build
+```
+
+Push (optional): Firebase-Dienstkonto-JSON nach `infra/secrets/` legen und `FIREBASE_SERVICE_ACCOUNT=/run/secrets/<datei>.json`
+in `.env` setzen. Backup (täglich per Cron): `infra/backup.sh` – `pg_dump` + `rsync` von `/data/media`.
 
 ### Auto-Upload (M5)
 
