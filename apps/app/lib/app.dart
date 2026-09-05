@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -135,7 +137,7 @@ class FamilienalbumApp extends ConsumerWidget {
         locale: locales.first,
         supportedLocales: locales,
         localizationsDelegates: delegates,
-        home: const Scaffold(body: Center(child: AppLogo(size: 96))),
+        home: const _StartupSplash(),
       );
     }
 
@@ -149,6 +151,77 @@ class FamilienalbumApp extends ConsumerWidget {
       supportedLocales: locales,
       localizationsDelegates: delegates,
       routerConfig: ref.watch(routerProvider),
+    );
+  }
+}
+
+/// Splash während der Session-Prüfung. Antwortet der Server nicht, erscheint nach kurzer Zeit
+/// der Zielserver und ein Ausweg zum Login-Screen (dort lässt sich der Server ändern).
+class _StartupSplash extends ConsumerStatefulWidget {
+  const _StartupSplash();
+
+  @override
+  ConsumerState<_StartupSplash> createState() => _StartupSplashState();
+}
+
+class _StartupSplashState extends ConsumerState<_StartupSplash> {
+  static const _hintAfter = Duration(seconds: 2);
+  static const _escapeAfter = Duration(seconds: 5);
+  Timer? _hintTimer;
+  Timer? _escapeTimer;
+  bool _showHint = false;
+  bool _showEscape = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _hintTimer = Timer(_hintAfter, () => setState(() => _showHint = true));
+    _escapeTimer = Timer(_escapeAfter, () => setState(() => _showEscape = true));
+  }
+
+  @override
+  void dispose() {
+    _hintTimer?.cancel();
+    _escapeTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final baseUrl = ref.watch(settingsProvider.select((s) => s.baseUrl));
+    final host = Uri.tryParse(baseUrl)?.host ?? baseUrl;
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const AppLogo(size: 96),
+            const SizedBox(height: 32),
+            AnimatedOpacity(
+              opacity: _showHint ? 1 : 0,
+              duration: const Duration(milliseconds: 300),
+              child: Column(
+                children: [
+                  const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                  const SizedBox(height: 12),
+                  Text('Verbinde mit $host …', style: TextStyle(color: scheme.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            AnimatedOpacity(
+              opacity: _showEscape ? 1 : 0,
+              duration: const Duration(milliseconds: 300),
+              child: TextButton.icon(
+                onPressed: _showEscape ? () => ref.read(authControllerProvider.notifier).abortStartup() : null,
+                icon: const Icon(Icons.dns_outlined, size: 18),
+                label: const Text('Server ändern oder neu anmelden'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

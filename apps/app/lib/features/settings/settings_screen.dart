@@ -139,6 +139,8 @@ class SettingsScreen extends ConsumerWidget {
               leading: const Icon(Icons.dns_outlined),
               title: const Text('Server'),
               subtitle: Text(settings.baseUrl),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _changeServer(context, ref, settings.baseUrl),
             ),
           ),
           const SizedBox(height: 24),
@@ -188,4 +190,50 @@ class _SectionTitle extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Server wechseln: neue URL abfragen, lokale Session verwerfen, zum Login-Screen.
+Future<void> _changeServer(BuildContext context, WidgetRef ref, String current) async {
+  final controller = TextEditingController(text: current);
+  final formKey = GlobalKey<FormState>();
+  final url = await showDialog<String>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Server wechseln'),
+      content: Form(
+        key: formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Du wirst abgemeldet und musst dich auf dem neuen Server neu anmelden.'),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: controller,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Server-URL', hintText: 'https://album.example.ch'),
+              keyboardType: TextInputType.url,
+              autocorrect: false,
+              validator: (v) {
+                final u = Uri.tryParse((v ?? '').trim());
+                if (u == null || !u.hasScheme || u.host.isEmpty) return 'Bitte eine gültige URL angeben (https://…)';
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen')),
+        FilledButton(
+          onPressed: () {
+            if (formKey.currentState!.validate()) Navigator.pop(ctx, controller.text.trim());
+          },
+          child: const Text('Wechseln'),
+        ),
+      ],
+    ),
+  );
+  controller.dispose();
+  if (url == null || url.isEmpty) return;
+  await ref.read(authControllerProvider.notifier).switchServer(url);
 }

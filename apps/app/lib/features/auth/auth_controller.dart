@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_exception.dart';
@@ -58,19 +60,40 @@ class AuthController extends AsyncNotifier<AuthState> {
     state = AsyncData(Authenticated(me));
   }
 
+  /// Netzwerkaufrufe beim Abmelden dürfen das lokale Abmelden nicht blockieren.
+  static const _logoutNetworkTimeout = Duration(seconds: 5);
+
   Future<void> logout() async {
-    await ref.read(pushServiceProvider).onLogout();
+    try {
+      await ref.read(pushServiceProvider).onLogout().timeout(_logoutNetworkTimeout);
+    } catch (_) {
+      // Push-Token bleibt serverseitig, wird beim nächsten Login umgehängt
+    }
     final tokens = ref.read(tokenStoreProvider);
     final refresh = await tokens.refreshToken();
     if (refresh != null) {
       try {
-        await _repo.logout(refresh);
+        await _repo.logout(refresh).timeout(_logoutNetworkTimeout);
       } catch (_) {
         // Server nicht erreichbar – lokal trotzdem abmelden
       }
     }
     await tokens.clear();
     state = const AsyncData(Unauthenticated());
+  }
+
+  /// Startprüfung abbrechen (Server antwortet nicht): Session verwerfen, Login-Screen zeigen.
+  Future<void> abortStartup() async {
+    await ref.read(tokenStoreProvider).clear();
+    state = const AsyncData(Unauthenticated());
+  }
+
+  /// Zu einem anderen Server wechseln: lokale Session verwerfen, URL speichern, Login-Screen zeigen.
+  /// Die alten Tokens gelten auf dem neuen Server nicht, ein Logout-Aufruf lohnt sich nicht.
+  Future<void> switchServer(String baseUrl) async {
+    await ref.read(tokenStoreProvider).clear();
+    state = const AsyncData(Unauthenticated());
+    await ref.read(settingsProvider.notifier).setBaseUrl(baseUrl);
   }
 
   /// Vom ApiClient aufgerufen, wenn der Refresh scheitert.
@@ -81,7 +104,13 @@ class AuthController extends AsyncNotifier<AuthState> {
   }
 }
 
-final authControllerProvider = AsyncNotifierProvider<AuthController, AuthState>(AuthController.new);
+/// Kein automatisches Riverpod-Retry: Bei unerreichbarem Server würde build() sonst endlos
+/// neu starten (Timeout, Neustart, Timeout …) und die App bliebe auf dem Splash hängen.
+/// Der Fehler landet stattdessen als AsyncError im Router (→ Login-Screen mit Hinweis).
+final authControllerProvider = AsyncNotifierProvider<AuthController, AuthState>(
+  AuthController.new,
+  retry: (_, _) => null,
+);
 
 /// Bequemer Zugriff auf den angemeldeten Benutzer (null wenn nicht angemeldet).
 final meProvider = Provider<Me?>((ref) {

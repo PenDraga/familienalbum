@@ -61,6 +61,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final serverHost = Uri.tryParse(_server.text)?.host ?? _server.text;
+    // Startprüfung gescheitert (z.B. Server umgezogen): Grund zeigen, Server-Feld ist unten änderbar.
+    final startupError = ref.watch(authControllerProvider).error;
 
     return AuthShell(
       title: 'Familienalbum',
@@ -124,7 +126,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     label: Text('Server: $serverHost', style: TextStyle(color: scheme.onSurfaceVariant)),
                   ),
                 ),
-              if (_error != null) ...[const SizedBox(height: 12), ErrorBanner(_error!)],
+              if (_error != null)
+                ...[const SizedBox(height: 12), ErrorBanner(_error!)]
+              else if (startupError != null)
+                ...[const SizedBox(height: 12), ErrorBanner('${errorMessage(startupError)} Server: $serverHost')],
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: _busy ? null : _submit,
