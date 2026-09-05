@@ -53,10 +53,8 @@ services:
   api:
     image: ghcr.io/pendraga/familienalbum-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
-    # Werte kommen aus der .env neben dieser Datei oder aus den Stack-Variablen des Managers (Dockhand, Portainer)
-    env_file:
-      - path: .env
-        required: false
+    # Werte kommen per Variablen-Ersetzung aus der .env neben dieser Datei oder aus den Stack-Variablen
+    # des Managers (Dockhand, Portainer) – siehe x-api-env oben
     environment:
       <<: *api-env
       HOST: 0.0.0.0
@@ -76,9 +74,6 @@ services:
     image: ghcr.io/pendraga/familienalbum-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     command: ['node', 'dist/worker.js']
-    env_file:
-      - path: .env
-        required: false
     environment:
       <<: *api-env
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
