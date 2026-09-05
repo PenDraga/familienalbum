@@ -25,9 +25,12 @@ COPY --from=build /repo/apps/api/node_modules apps/api/node_modules
 COPY --from=build /repo/apps/api/dist apps/api/dist
 COPY --from=build /repo/apps/api/prisma apps/api/prisma
 
+COPY apps/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
 WORKDIR /repo/apps/api
-RUN mkdir -p /data/media && chown -R node:node /data /repo
-USER node
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh && mkdir -p /data/media && chown -R node:node /data /repo
+# Start als root: Entrypoint übergibt den Medien-Mount an "node" und wechselt dann zu diesem Benutzer
+ENTRYPOINT ["docker-entrypoint.sh"]
 EXPOSE 3000
 
 # Migrationen einspielen, dann starten
