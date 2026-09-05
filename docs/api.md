@@ -98,7 +98,7 @@ Die komplette Rechtematrix ist in `test/permissions.test.ts` als Tabelle abgesic
 POST /families/:id/uploads   { sha256, sizeBytes, originalName, mimeType, takenAt? }   (canUpload)
   → 201 UploadSession { id, chunkSize, totalChunks, receivedChunks[] }
   → 409 DUPLICATE_MEDIA { mediaId }       Datei existiert in dieser Familie schon
-  → 415 UNSUPPORTED_MEDIA_TYPE            z.B. HEIC (bitte als JPEG exportieren)
+  → 415 UNSUPPORTED_MEDIA_TYPE            unbekannter Typ (HEIC/HEIF wird akzeptiert und im Worker gewandelt)
 PUT  /uploads/:id/chunks/:index          application/octet-stream, genau chunkSize Bytes (letzter kleiner)
   → 200 UploadSession (receivedChunks aktualisiert; Reihenfolge egal, wiederholbar)
 POST /uploads/:id/complete               → 201 Media (status PROCESSING), Job `process-media` eingereiht
@@ -117,7 +117,8 @@ GET  /uploads/:id                        Session für Wiederaufnahme · DELETE /
 `apps/api/src/worker.ts` (BullMQ, Queue `process-media`, Redis) ruft `MediaProcessor.process(mediaId)`:
 
 - **Foto:** EXIF (`DateTimeOriginal` → `takenAt`, Orientierung), Masse, `thumb_400.webp`, `thumb_1600.webp`
-  (sharp, `fit: inside`, ohne Vergrösserung).
+  (sharp, `fit: inside`, ohne Vergrösserung). HEIC/HEIF wird vorher nach JPEG gewandelt: zuerst `heif-convert`
+  (libheif, im Docker-Image installiert, behält EXIF), sonst `ffmpeg` ≥ 7.1. Das Original bleibt HEIC.
 - **Video:** ffprobe (Dauer, Masse inkl. Rotation, `creation_time`), `preview.mp4` (H.264, max. 1920 px Kante,
   AAC, faststart), Poster-Frame bei 1 s → Thumbnails.
 - Ergebnis `READY` (mit `width/height/durationSec/takenAt`) oder `FAILED` mit `processingError`.

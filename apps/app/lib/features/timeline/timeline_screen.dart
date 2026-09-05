@@ -20,6 +20,7 @@ import '../upload/upload_controller.dart';
 import '../upload/upload_sheet.dart';
 import 'justified_layout.dart';
 import 'media_model.dart';
+import 'selection_controller.dart';
 import 'timeline_controller.dart';
 
 class TimelineScreen extends ConsumerStatefulWidget {
@@ -120,18 +121,39 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
       );
     }
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      floatingActionButton: family.membership.canUpload
-          ? _GlassFab(onPressed: () => pickAndUpload(context, ref, family.id))
-          : null,
-      body: timeline.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => _ErrorView(message: errorMessage(e), onRetry: () => ref.invalidate(timelineControllerProvider)),
-        data: (state) => RefreshIndicator(
-          edgeOffset: 120,
-          onRefresh: () => ref.read(timelineControllerProvider.notifier).refresh(),
-          child: _ImmersiveTimeline(state: state, family: family, me: me, actions: actions, controller: _scroll),
+    final selection = ref.watch(selectionProvider);
+
+    return PopScope(
+      canPop: selection.isEmpty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) ref.read(selectionProvider.notifier).clear();
+      },
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        floatingActionButton: family.membership.canUpload && selection.isEmpty
+            ? _GlassFab(onPressed: () => pickAndUpload(context, ref, family.id))
+            : null,
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: timeline.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => _ErrorView(message: errorMessage(e), onRetry: () => ref.invalidate(timelineControllerProvider)),
+                data: (state) => RefreshIndicator(
+                  edgeOffset: 120,
+                  onRefresh: () => ref.read(timelineControllerProvider.notifier).refresh(),
+                  child: _ImmersiveTimeline(state: state, family: family, me: me, actions: actions, controller: _scroll),
+                ),
+              ),
+            ),
+            if (selection.isNotEmpty)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _SelectionBar(selection: selection, items: timeline.whenOrNull(data: (s) => s)?.items ?? const []),
+              ),
+          ],
         ),
       ),
     );
@@ -292,6 +314,7 @@ class _ImmersiveTimeline extends ConsumerWidget {
                 delegate: _MonthHeaderDelegate(
                   label: monthFormat.format(DateTime.utc(int.parse(month.substring(0, 4)), int.parse(month.substring(5)))),
                   count: items.length,
+                  ids: [for (final m in items) if (m.isReady) m.id],
                 ),
               ),
               _MosaicSliver(rows: computeJustifiedRows(items, width: width, targetHeight: targetHeight)),
@@ -454,9 +477,10 @@ class _HeroHeader extends StatelessWidget {
 
 /// Angehefteter Monatskopf als Glas-Pille; hängt unter der eingeklappten App-Leiste.
 class _MonthHeaderDelegate extends SliverPersistentHeaderDelegate {
-  _MonthHeaderDelegate({required this.label, required this.count});
+  _MonthHeaderDelegate({required this.label, required this.count, required this.ids});
   final String label;
   final int count;
+  final List<String> ids;
 
   @override
   double get minExtent => 52;
@@ -471,23 +495,42 @@ class _MonthHeaderDelegate extends SliverPersistentHeaderDelegate {
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.only(left: 10, top: 6, bottom: 6),
-        child: GlassPill(
-          padding: const EdgeInsets.fromLTRB(14, 7, 12, 7),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(label, style: text.titleMedium?.copyWith(color: scheme.onSurface)),
-              const SizedBox(width: 8),
-              Text('$count', style: text.labelMedium?.copyWith(color: scheme.onSurfaceVariant)),
-            ],
-          ),
+        child: Consumer(
+          builder: (context, ref, _) {
+            final selection = ref.watch(selectionProvider);
+            final allSelected = ids.isNotEmpty && ids.every(selection.contains);
+            return GestureDetector(
+              // Lange drücken (oder Tippen im Auswahlmodus) wählt den ganzen Monat
+              onLongPress: () => ref.read(selectionProvider.notifier).addAll(ids),
+              onTap: selection.isEmpty
+                  ? null
+                  : () => allSelected
+                        ? ref.read(selectionProvider.notifier).removeAll(ids)
+                        : ref.read(selectionProvider.notifier).addAll(ids),
+              child: GlassPill(
+                padding: const EdgeInsets.fromLTRB(14, 7, 12, 7),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (selection.isNotEmpty) ...[
+                      Icon(allSelected ? Icons.check_circle : Icons.radio_button_unchecked, size: 18, color: scheme.primary),
+                      const SizedBox(width: 6),
+                    ],
+                    Text(label, style: text.titleMedium?.copyWith(color: scheme.onSurface)),
+                    const SizedBox(width: 8),
+                    Text('$count', style: text.labelMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
   @override
-  bool shouldRebuild(covariant _MonthHeaderDelegate old) => old.label != label || old.count != count;
+  bool shouldRebuild(covariant _MonthHeaderDelegate old) => old.label != label || old.count != count || old.ids.length != ids.length;
 }
 
 class _MosaicSliver extends StatelessWidget {
@@ -519,17 +562,25 @@ class _MosaicSliver extends StatelessWidget {
   }
 }
 
-class MediaTile extends StatelessWidget {
+class MediaTile extends ConsumerWidget {
   const MediaTile({super.key, required this.item});
   final MediaItem item;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final selection = ref.watch(selectionProvider);
+    final selecting = selection.isNotEmpty;
+    final selected = selection.contains(item.id);
     return Material(
       color: scheme.surfaceContainerHigh,
       child: InkWell(
-        onTap: item.isReady ? () => context.go('/media/${item.id}') : null,
+        onLongPress: item.isReady ? () => ref.read(selectionProvider.notifier).toggle(item.id) : null,
+        onTap: !item.isReady
+            ? null
+            : selecting
+                ? () => ref.read(selectionProvider.notifier).toggle(item.id)
+                : () => context.go('/media/${item.id}'),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -559,10 +610,119 @@ class MediaTile extends StatelessWidget {
                 bottom: 6,
                 child: _Badge(icon: Icons.play_arrow_rounded, text: item.durationSec != null ? formatDuration(item.durationSec!) : null),
               ),
+            if (selecting) ...[
+              if (selected)
+                IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.18),
+                      border: Border.all(color: scheme.primary, width: 3),
+                    ),
+                  ),
+                ),
+              Positioned(
+                left: 6,
+                top: 6,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected ? scheme.primary : Colors.black.withValues(alpha: 0.35),
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: selected ? Icon(Icons.check, size: 16, color: scheme.onPrimary) : null,
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+}
+
+/// Leiste im Auswahlmodus: Anzahl, Löschen, Abbrechen.
+class _SelectionBar extends ConsumerWidget {
+  const _SelectionBar({required this.selection, required this.items});
+  final Set<String> selection;
+  final List<MediaItem> items;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final padding = MediaQuery.paddingOf(context);
+    final text = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    final selectedItems = items.where((m) => selection.contains(m.id)).toList();
+    final deletable = selectedItems.where((m) => m.canEdit).length;
+
+    return Glass(
+      blur: 22,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(8, padding.top + 8, 8, 8),
+        child: Row(
+          children: [
+            IconButton(tooltip: 'Auswahl aufheben', icon: const Icon(Icons.close), onPressed: () => ref.read(selectionProvider.notifier).clear()),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${selection.length} ausgewählt', style: text.titleMedium),
+                  if (deletable < selectedItems.length)
+                    Text('${selectedItems.length - deletable} davon nicht von dir', style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            TextButton.icon(
+              onPressed: deletable == 0 ? null : () => _deleteSelected(context, ref, selectedItems.where((m) => m.canEdit).toList()),
+              icon: const Icon(Icons.delete_outline),
+              label: Text(deletable == 0 ? 'Löschen' : 'Löschen ($deletable)'),
+              style: TextButton.styleFrom(foregroundColor: scheme.error),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteSelected(BuildContext context, WidgetRef ref, List<MediaItem> targets) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(targets.length == 1 ? 'Ein Medium löschen?' : '${targets.length} Medien löschen?'),
+        content: const Text('Die Dateien werden aus dem Album entfernt. Das lässt sich nicht rückgängig machen.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    final repo = ref.read(timelineRepositoryProvider);
+    final timeline = ref.read(timelineControllerProvider.notifier);
+    var deleted = 0;
+    String? firstError;
+    for (final m in targets) {
+      try {
+        await repo.delete(m.id);
+        timeline.removeItem(m.id);
+        deleted++;
+      } catch (e) {
+        firstError ??= errorMessage(e);
+      }
+    }
+    ref.read(selectionProvider.notifier).clear();
+    if (!context.mounted) return;
+    final msg = firstError == null
+        ? (deleted == 1 ? '1 Medium gelöscht' : '$deleted Medien gelöscht')
+        : '$deleted gelöscht, Fehler: $firstError';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 }
 

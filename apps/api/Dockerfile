@@ -1,6 +1,6 @@
 # Build-Kontext ist das Repo-Root (siehe infra/docker-compose.yml)
 FROM node:22-bookworm-slim AS base
-RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates ffmpeg libheif-examples && rm -rf /var/lib/apt/lists/*
 WORKDIR /repo
 
 # --- Abhängigkeiten ---

@@ -113,13 +113,15 @@ export class MediaStorage {
   }
 }
 
-/** Erlaubte MIME-Typen → Dateiendung. HEIC/HEIF fehlt absichtlich (kein HEVC-Decoder in sharp). */
+/** Erlaubte MIME-Typen → Dateiendung. HEIC/HEIF wird im Worker nach JPEG gewandelt (heif-convert/ffmpeg). */
 export const MIME_EXTENSIONS: Record<string, { ext: string; type: 'PHOTO' | 'VIDEO' }> = {
   'image/jpeg': { ext: 'jpg', type: 'PHOTO' },
   'image/png': { ext: 'png', type: 'PHOTO' },
   'image/webp': { ext: 'webp', type: 'PHOTO' },
   'image/gif': { ext: 'gif', type: 'PHOTO' },
   'image/avif': { ext: 'avif', type: 'PHOTO' },
+  'image/heic': { ext: 'heic', type: 'PHOTO' },
+  'image/heif': { ext: 'heif', type: 'PHOTO' },
   'video/mp4': { ext: 'mp4', type: 'VIDEO' },
   'video/quicktime': { ext: 'mov', type: 'VIDEO' },
   'video/webm': { ext: 'webm', type: 'VIDEO' },

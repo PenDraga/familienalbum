@@ -102,6 +102,16 @@ class _UploadSheet extends ConsumerWidget {
               children: [
                 Text('Uploads', style: Theme.of(context).textTheme.titleLarge),
                 const Spacer(),
+                if (tasks.any((t) => t.status == UploadStatus.failed))
+                  TextButton(
+                    onPressed: () => ref.read(uploadControllerProvider.notifier).retryAllFailed(),
+                    child: const Text('Alle wiederholen'),
+                  ),
+                if (tasks.any((t) => t.status == UploadStatus.failed))
+                  TextButton(
+                    onPressed: () => ref.read(uploadControllerProvider.notifier).retryAllFailed(),
+                    child: const Text('Alle wiederholen'),
+                  ),
                 TextButton(
                   onPressed: () => ref.read(uploadControllerProvider.notifier).clearFinished(),
                   child: const Text('Erledigte ausblenden'),
@@ -154,9 +164,19 @@ class _TaskTile extends ConsumerWidget {
           ],
         ],
       ),
-      trailing: (task.status == UploadStatus.running || task.status == UploadStatus.queued)
-          ? IconButton(icon: const Icon(Icons.close), onPressed: () => ref.read(uploadControllerProvider.notifier).cancel(task.id))
-          : null,
+      trailing: switch (task.status) {
+        UploadStatus.running || UploadStatus.queued => IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: 'Abbrechen',
+          onPressed: () => ref.read(uploadControllerProvider.notifier).cancel(task.id),
+        ),
+        UploadStatus.failed || UploadStatus.cancelled => IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: 'Erneut versuchen',
+          onPressed: () => ref.read(uploadControllerProvider.notifier).retry(task.id),
+        ),
+        _ => null,
+      },
     );
   }
 }

@@ -2,7 +2,12 @@ import type { Media, PrismaClient } from '@prisma/client';
 import exifReader from 'exif-reader';
 import ffmpeg, { type FfprobeData } from 'fluent-ffmpeg';
 import sharp, { type Sharp } from 'sharp';
+import { execFile } from 'node:child_process';
+import { rm } from 'node:fs/promises';
+import { promisify } from 'node:util';
 import { MIME_EXTENSIONS, type MediaStorage } from '../lib/storage.js';
+
+const execFileAsync = promisify(execFile);
 
 export interface ProcessorOptions {
   ffmpegPath?: string;
@@ -84,6 +89,36 @@ export class MediaProcessor {
   // ---------- Fotos ----------
 
   private async processPhoto(media: Media, original: string): Promise<Extracted> {
+    const isHeif = /\.(heic|heif)$/i.test(original);
+    // HEIC/HEIF kann sharp nicht dekodieren (kein HEVC) → vorher nach JPEG wandeln
+    const source = isHeif ? await this.convertHeif(original) : original;
+    try {
+      return await this.processPhotoFile(media, source);
+    } finally {
+      if (source !== original) await rm(source, { force: true });
+    }
+  }
+
+  /** HEIC → JPEG: zuerst heif-convert (libheif, behält EXIF), sonst ffmpeg (≥ 7.1 liest HEIF). */
+  private async convertHeif(original: string): Promise<string> {
+    const target = `${original}.converted.jpg`;
+    const attempts: Array<[string, string[]]> = [
+      ['heif-convert', ['-q', '92', original, target]],
+      [this.opts.ffmpegPath ?? 'ffmpeg', ['-y', '-loglevel', 'error', '-i', original, '-frames:v', '1', '-q:v', '2', target]],
+    ];
+    const errors: string[] = [];
+    for (const [cmd, args] of attempts) {
+      try {
+        await execFileAsync(cmd, args, { timeout: 120_000 });
+        if (await this.storage.exists(target)) return target;
+      } catch (err) {
+        errors.push(`${cmd}: ${(err as Error).message.split(/\r?\n/)[0]}`);
+      }
+    }
+    throw new Error(`HEIC konnte nicht umgewandelt werden (${errors.join('; ')})`);
+  }
+
+  private async processPhotoFile(media: Media, original: string): Promise<Extracted> {
     const image = sharp(original, { failOn: 'none', animated: false });
     const meta = await image.metadata();
 

@@ -63,8 +63,7 @@ export class UploadService {
   async createSession(familyId: string, uploaderId: string, input: CreateUploadInput) {
     const kind = MIME_EXTENSIONS[input.mimeType];
     if (!kind) {
-      const hint = /hei[cf]/.test(input.mimeType) ? ' HEIC/HEIF bitte vor dem Upload als JPEG exportieren.' : '';
-      throw new AppError(415, 'Unsupported Media Type', `Dateityp ${input.mimeType} wird nicht unterstützt.${hint}`, 'UNSUPPORTED_MEDIA_TYPE');
+      throw new AppError(415, 'Unsupported Media Type', `Dateityp ${input.mimeType} wird nicht unterstützt.`, 'UNSUPPORTED_MEDIA_TYPE');
     }
     if (input.sizeBytes > this.config.maxUploadBytes) {
       throw new AppError(413, 'Payload Too Large', `Dateien dürfen höchstens ${this.config.maxUploadBytes} Bytes gross sein.`, 'FILE_TOO_LARGE');

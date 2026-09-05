@@ -54,6 +54,14 @@ describe('Verarbeitung (Worker-Logik)', () => {
     expect(t.width).toBe(64);
   });
 
+  it('HEIC: kaputte Datei scheitert sauber, echte Datei wird über heif-convert/ffmpeg gewandelt', async () => {
+    const { family, admin } = await ctx.createFamilyWithAdmin();
+    const junk = Buffer.from('kein heic '.repeat(400));
+    const media = await ctx.uploadAndProcess(admin, family, junk, { name: 'IMG_9.heic', mimeType: 'image/heic' });
+    expect(media.status).toBe('FAILED');
+    expect(media.processingError).toMatch(/HEIC/);
+  });
+
   it('markiert defekte Dateien als FAILED mit Grund', async () => {
     const { family, admin } = await ctx.createFamilyWithAdmin();
     const junk = Buffer.from('das ist kein bild '.repeat(500));

@@ -11,7 +11,7 @@ docs        API-Übersicht, ADRs, generierte OpenAPI-Spezifikation
 
 ## Entwicklung (Backend)
 
-Voraussetzungen: Node 22, Docker (für PostgreSQL und die Tests), `ffmpeg`/`ffprobe` im PATH (Videos).
+Voraussetzungen: Node 22, Docker (für PostgreSQL und die Tests), `ffmpeg`/`ffprobe` im PATH (Videos, HEIC-Umwandlung).
 
 ```bash
 npm install

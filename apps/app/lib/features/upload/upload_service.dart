@@ -89,9 +89,10 @@ class UploadService {
       await _api.dio
           .put<void>(
             '/uploads/${session.id}/chunks/$index',
-            data: Stream.fromIterable([bytes]),
+            // Bytes statt Stream: Dio kann die Anfrage so nach einem Token-Refresh unverändert wiederholen
+            data: bytes,
             options: Options(
-              headers: {Headers.contentTypeHeader: 'application/octet-stream', Headers.contentLengthHeader: bytes.length},
+              headers: {Headers.contentTypeHeader: 'application/octet-stream'},
               sendTimeout: const Duration(minutes: 10),
             ),
             cancelToken: cancel,

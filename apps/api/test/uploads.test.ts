@@ -46,12 +46,12 @@ describe('POST /families/:id/uploads', () => {
     expectProblem(await (await ctx.as(viewer)).post(`/families/${family.id}/uploads`, okBody(buf)), 403, 'PERMISSION_CANUPLOAD');
   });
 
-  it('lehnt unbekannte Typen (z.B. HEIC) mit 415 und Hinweis ab', async () => {
+  it('lehnt unbekannte Typen mit 415 ab, akzeptiert aber HEIC (Umwandlung im Worker)', async () => {
     const { family, admin } = await ctx.createFamilyWithAdmin();
     const buf = await makeJpeg({ noise: true });
-    const res = await (await ctx.as(admin)).post(`/families/${family.id}/uploads`, okBody(buf, { mimeType: 'image/heic' }));
-    const body = expectProblem(res, 415, 'UNSUPPORTED_MEDIA_TYPE');
-    expect(body.detail).toMatch(/JPEG/);
+    const c = await ctx.as(admin);
+    expectProblem(await c.post(`/families/${family.id}/uploads`, okBody(buf, { mimeType: 'application/pdf' })), 415, 'UNSUPPORTED_MEDIA_TYPE');
+    expect((await c.post(`/families/${family.id}/uploads`, okBody(buf, { mimeType: 'image/heic', originalName: 'IMG_1.heic' }))).statusCode).toBe(201);
   });
 
   it('validiert den Hash und lehnt zu grosse Dateien ab', async () => {
