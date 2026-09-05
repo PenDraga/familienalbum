@@ -1,4 +1,4 @@
-import type { Media, PrismaClient } from '@prisma/client';
+import type { Media, Prisma, PrismaClient } from '@prisma/client';
 import exifReader from 'exif-reader';
 import ffmpeg, { type FfprobeData } from 'fluent-ffmpeg';
 import sharp, { type Sharp } from 'sharp';
@@ -68,7 +68,7 @@ export class MediaProcessor {
           width: extracted.width,
           height: extracted.height,
           durationSec: extracted.durationSec,
-          exif: extracted.exif ?? undefined,
+          exif: (extracted.exif ?? undefined) as Prisma.InputJsonValue | undefined,
           // EXIF gewinnt; sonst bleibt der Wert aus dem Upload (Geräte-Hinweis oder Upload-Zeit)
           takenAt: extracted.takenAt ?? media.takenAt,
         },

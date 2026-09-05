@@ -163,7 +163,7 @@ export class MediaService {
       const ext = MIME_EXTENSIONS[media.mimeType]?.ext;
       if (ext && !/^hei[cf]$/.test(ext)) {
         exif = await readPhotoExif(this.storage.originalPath(media.familyId, media.id, ext)).catch(() => null);
-        if (exif) await this.prisma.media.update({ where: { id: media.id }, data: { exif } });
+        if (exif) await this.prisma.media.update({ where: { id: media.id }, data: { exif: exif as Prisma.InputJsonValue } });
       }
     }
     return {
