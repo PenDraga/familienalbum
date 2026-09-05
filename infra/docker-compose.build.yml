@@ -1,0 +1,15 @@
+# Ergänzung zum Selbstbauen aus dem Git-Checkout (Build-Kontext = Repo-Root):
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    image: familienalbum-api:local
+  worker:
+    image: familienalbum-api:local
+  caddy:
+    build:
+      context: ..
+      dockerfile: apps/app/Dockerfile
+    image: familienalbum-web:local

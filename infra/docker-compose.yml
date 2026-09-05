@@ -1,6 +1,7 @@
-# Familienalbum – kompletter Stack. Aufruf aus diesem Ordner: `docker compose up -d --build`
-# Build-Kontext ist das Repo-Root, damit die Images direkt aus dem Git-Checkout gebaut werden
-# (API: apps/api/Dockerfile, Web + Caddy: apps/app/Dockerfile).
+# Familienalbum – kompletter Stack. Aufruf aus diesem Ordner: `docker compose up -d`
+# Die Images baut GitHub Actions (.github/workflows/images.yml) und veröffentlicht sie in der
+# GitHub Container Registry; hier wird nur gezogen. IMAGE_TAG (Standard latest) wählt die Version.
+# Selbst bauen (Repo-Checkout nötig): docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 name: familienalbum
 
 services:
@@ -33,10 +34,7 @@ services:
 
   # API (Fastify). Spielt beim Start die Prisma-Migrationen ein.
   api:
-    build:
-      context: ..
-      dockerfile: apps/api/Dockerfile
-    image: familienalbum-api:local
+    image: ghcr.io/pendraga/familienalbum-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env
     environment:
@@ -58,7 +56,7 @@ services:
 
   # Medien-Worker (BullMQ): gleiches Image, anderer Entrypoint
   worker:
-    image: familienalbum-api:local
+    image: ghcr.io/pendraga/familienalbum-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     command: ['node', 'dist/worker.js']
     env_file: .env
@@ -80,10 +78,7 @@ services:
   # Caddy mit dem im Image gebauten Flutter-Web-Build; proxied /api an die API.
   # Ohne Tunnel im LAN erreichbar unter http://<host>:${HTTP_PORT}
   caddy:
-    build:
-      context: ..
-      dockerfile: apps/app/Dockerfile
-    image: familienalbum-web:local
+    image: ghcr.io/pendraga/familienalbum-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
       - '${HTTP_PORT:-80}:80'

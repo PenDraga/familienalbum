@@ -124,23 +124,28 @@ cd apps/app && node tool/render_branding.mjs && dart run flutter_launcher_icons 
 
 ## Betrieb (Docker Compose)
 
-Alles wird direkt aus dem Git-Checkout gebaut: API-Image (`apps/api/Dockerfile`, Node + ffmpeg + libheif) und
-Web-Image (`apps/app/Dockerfile`: Flutter in der gepinnten Version baut die Web-App, Caddy liefert sie aus und
-proxied `/api`). Auf dem Server braucht es nur Git und Docker.
+Die Images baut GitHub Actions bei jedem Push auf `main` (`.github/workflows/images.yml`) und veröffentlicht sie in der
+GitHub Container Registry: `ghcr.io/pendraga/familienalbum-api` (Node + ffmpeg + libheif) und
+`ghcr.io/pendraga/familienalbum-web` (Flutter-Web-Build, ausgeliefert von Caddy, proxied `/api`). Der Server zieht nur
+fertige Images – ein Stack-Manager wie Dockhand oder Portainer braucht lediglich `infra/docker-compose.yml` und die `.env`.
+
+Solange die Pakete privat sind, muss sich der Server einmal anmelden (GitHub-Token mit `read:packages`):
 
 ```bash
-git clone https://github.com/PenDraga/familienalbum.git /opt/familienalbum && cd /opt/familienalbum/infra
+docker login ghcr.io -u PenDraga
 ```
+
+Alternativ die beiden Pakete unter github.com/PenDraga?tab=packages auf „public“ stellen, dann entfällt das Login.
 
 ```bash
 cp .env.example .env
 ```
 
-`.env` ausfüllen: Passwörter, `JWT_SECRET` (`openssl rand -base64 48`), Admin-Zugang, Pfade für Medien/Datenbank,
-`HTTP_PORT`. Dann bauen und starten (der erste Web-Build lädt Flutter und dauert einige Minuten):
+`.env` ausfüllen: Passwörter, `JWT_SECRET` (`openssl rand -base64 48`), Admin-Zugang, Pfade für Medien/Datenbank/Redis,
+`HTTP_PORT`. Dann:
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
 Die API spielt beim Start die Migrationen ein. Ersten Admin anlegen:
@@ -156,10 +161,11 @@ Danach im LAN unter `http://<server>:<HTTP_PORT>` anmelden. Für den Zugriff von
 docker compose --profile tunnel up -d
 ```
 
-Update auf eine neue Version:
+Update: `docker compose pull && docker compose up -d` (oder `IMAGE_TAG=sha-…` für eine bestimmte Version).
+Selbst bauen ohne Registry, aus dem Git-Checkout:
 
 ```bash
-git pull && docker compose up -d --build
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
 Push (optional): Firebase-Dienstkonto-JSON nach `infra/secrets/` legen und `FIREBASE_SERVICE_ACCOUNT=/run/secrets/<datei>.json`
