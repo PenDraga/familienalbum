@@ -1,12 +1,12 @@
 // Kleiner statischer Server für build/web (Release-Build) mit SPA-Fallback auf index.html.
-// Aufruf: node tool/serve_web.mjs [port] [host]   – Standard 8080 auf 0.0.0.0 (im WLAN erreichbar)
+// Aufruf: node tool/serve_web.mjs [port] [host]   – Standard 8090 auf 0.0.0.0 (im WLAN erreichbar)
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../build/web');
-const port = Number(process.argv[2] ?? 8080);
+const port = Number(process.argv[2] ?? 8090);
 const host = process.argv[3] ?? '0.0.0.0';
 
 const MIME = {

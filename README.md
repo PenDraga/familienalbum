@@ -102,16 +102,16 @@ Der Dev-Server muss auf allen Interfaces lauschen und die App muss die LAN-Adres
 (hier `192.168.0.135`, mit `ipconfig` prüfen). Backend läuft bereits auf `0.0.0.0:3000`.
 
 ```bash
-cd apps/app && flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080 --dart-define=API_BASE_URL=http://192.168.0.135:3000
+cd apps/app && flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8090 --dart-define=API_BASE_URL=http://192.168.0.135:3000
 ```
 
 Schneller auf dem Handy ist der Release-Build, statisch ausgeliefert:
 
 ```bash
-cd apps/app && flutter build web --release --dart-define=API_BASE_URL=http://192.168.0.135:3000 && node tool/serve_web.mjs 8080
+cd apps/app && flutter build web --release --dart-define=API_BASE_URL=http://192.168.0.135:3000 && node tool/serve_web.mjs 8090
 ```
 
-Dann auf dem Handy `http://192.168.0.135:8080` öffnen. Windows fragt beim ersten Start evtl. nach der Firewall-Freigabe
+Dann auf dem Handy `http://192.168.0.135:8090` öffnen. Windows fragt beim ersten Start evtl. nach der Firewall-Freigabe
 für `dart.exe` und `node.exe` (privates Netzwerk erlauben). Über HTTP ohne HTTPS fällt die Token-Ablage im Browser auf
 localStorage zurück – für den Test okay, im Betrieb läuft alles über HTTPS.
 
