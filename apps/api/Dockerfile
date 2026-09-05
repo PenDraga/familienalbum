@@ -31,4 +31,5 @@ USER node
 EXPOSE 3000
 
 # Migrationen einspielen, dann starten
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+# (Prisma-CLI direkt aus node_modules – npx würde im Runtime-Image nachinstallieren wollen)
+CMD ["sh", "-c", "/repo/node_modules/.bin/prisma migrate deploy && node dist/server.js"]
