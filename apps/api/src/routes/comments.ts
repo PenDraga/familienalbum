@@ -3,7 +3,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { requireFamilyPermission } from '../plugins/permissions.js';
 import { commentFamilyResolver, mediaFamilyResolver } from '../plugins/resolvers.js';
-import { commentSchema, createCommentBodySchema } from '../schemas/comment.js';
+import { commentSchema, createCommentBodySchema, updateCommentBodySchema } from '../schemas/comment.js';
 import { emptyResponse, errorResponses, idParamsSchema } from '../schemas/common.js';
 import { CommentService } from '../services/comment.service.js';
 
@@ -11,7 +11,11 @@ const bearer = [{ bearerAuth: [] }];
 
 export const commentRoutes: FastifyPluginAsyncZod = async (app) => {
   const comments = new CommentService(app.prisma);
-  const ctx = (request: FastifyRequest) => ({ userId: request.user!.id, isFamilyAdmin: request.membership!.isFamilyAdmin });
+  const ctx = (request: FastifyRequest) => ({
+    userId: request.user!.id,
+    isFamilyAdmin: request.membership!.isFamilyAdmin,
+    isAdmin: request.user!.isAdmin,
+  });
 
   app.get(
     '/media/:id/comments',
@@ -49,13 +53,29 @@ export const commentRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
+  app.patch(
+    '/comments/:id',
+    {
+      preHandler: requireFamilyPermission('member', commentFamilyResolver),
+      schema: {
+        tags: ['comments'],
+        summary: 'Kommentar bearbeiten (Autor, Familien-Admin oder globaler Admin)',
+        security: bearer,
+        params: idParamsSchema,
+        body: updateCommentBodySchema,
+        response: { 200: commentSchema, ...errorResponses(400, 401, 403, 404) },
+      },
+    },
+    async (request) => comments.update(request.params.id, request.body.body, ctx(request)),
+  );
+
   app.delete(
     '/comments/:id',
     {
       preHandler: requireFamilyPermission('member', commentFamilyResolver),
       schema: {
         tags: ['comments'],
-        summary: 'Kommentar löschen (Autor oder Familien-Admin)',
+        summary: 'Kommentar löschen (Autor, Familien-Admin oder globaler Admin)',
         security: bearer,
         params: idParamsSchema,
         response: { 204: emptyResponse, ...errorResponses(401, 403, 404) },

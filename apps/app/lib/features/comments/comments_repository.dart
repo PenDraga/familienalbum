@@ -12,6 +12,8 @@ class CommentItem {
     required this.body,
     required this.createdAt,
     required this.canDelete,
+    this.canEdit = false,
+    this.editedAt,
   });
 
   final String id;
@@ -21,6 +23,8 @@ class CommentItem {
   final String body;
   final DateTime createdAt;
   final bool canDelete;
+  final bool canEdit;
+  final DateTime? editedAt;
 
   factory CommentItem.fromJson(Map<String, dynamic> j) => CommentItem(
     id: j['id'] as String,
@@ -30,6 +34,8 @@ class CommentItem {
     body: j['body'] as String,
     createdAt: DateTime.parse(j['createdAt'] as String),
     canDelete: j['canDelete'] as bool,
+    canEdit: (j['canEdit'] as bool?) ?? false,
+    editedAt: j['editedAt'] == null ? null : DateTime.parse(j['editedAt'] as String),
   );
 }
 
@@ -59,6 +65,9 @@ class CommentsRepository {
 
   Future<CommentItem> create(String mediaId, String body) async =>
       CommentItem.fromJson(await _api.dio.post<Map<String, dynamic>>('/media/$mediaId/comments', data: {'body': body}).unwrap());
+
+  Future<CommentItem> update(String commentId, String body) async =>
+      CommentItem.fromJson(await _api.dio.patch<Map<String, dynamic>>('/comments/$commentId', data: {'body': body}).unwrap());
 
   Future<void> delete(String commentId) => _api.dio.delete<void>('/comments/$commentId').unwrap();
 

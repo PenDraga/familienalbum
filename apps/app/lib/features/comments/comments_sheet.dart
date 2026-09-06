@@ -28,11 +28,14 @@ class _CommentsSheet extends ConsumerStatefulWidget {
 
 class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
   final _input = TextEditingController();
+  final _inputFocus = FocusNode();
   final _scroll = ScrollController();
   List<CommentItem>? _comments;
   String? _error;
   bool _sending = false;
   int? _changedCount;
+  /// Kommentar, der gerade im Eingabefeld bearbeitet wird (null = neuer Kommentar).
+  CommentItem? _editing;
 
   @override
   void initState() {
@@ -43,6 +46,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
   @override
   void dispose() {
     _input.dispose();
+    _inputFocus.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -56,11 +60,37 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
     }
   }
 
+  void _startEdit(CommentItem c) {
+    setState(() {
+      _editing = c;
+      _input.text = c.body;
+      _input.selection = TextSelection.collapsed(offset: c.body.length);
+    });
+    _inputFocus.requestFocus();
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _editing = null;
+      _input.clear();
+    });
+  }
+
   Future<void> _send() async {
     final text = _input.text.trim();
     if (text.isEmpty || _sending) return;
     setState(() => _sending = true);
     try {
+      final editing = _editing;
+      if (editing != null) {
+        final updated = await ref.read(commentsRepositoryProvider).update(editing.id, text);
+        _input.clear();
+        setState(() {
+          _editing = null;
+          _comments = _comments!.map((x) => x.id == updated.id ? updated : x).toList();
+        });
+        return;
+      }
       final c = await ref.read(commentsRepositoryProvider).create(widget.item.id, text);
       _input.clear();
       setState(() {
@@ -79,9 +109,25 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
   }
 
   Future<void> _delete(CommentItem c) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Kommentar löschen?'),
+        content: Text(c.body, maxLines: 4, overflow: TextOverflow.ellipsis),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Löschen')),
+        ],
+      ),
+    );
+    if (ok != true) return;
     try {
       await ref.read(commentsRepositoryProvider).delete(c.id);
       setState(() {
+        if (_editing?.id == c.id) {
+          _editing = null;
+          _input.clear();
+        }
         _comments = _comments!.where((x) => x.id != c.id).toList();
         _changedCount = _comments!.length;
       });
@@ -98,6 +144,8 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
     final family = ref.watch(selectedFamilyProvider);
     final canComment = family?.membership.canComment ?? false;
     final comments = _comments;
+    // Admins ohne canComment dürfen trotzdem bearbeiten – dann braucht es das Eingabefeld ebenfalls
+    final showInput = canComment || _editing != null;
 
     return DraggableScrollableSheet(
       expand: false,
@@ -146,37 +194,69 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                     itemBuilder: (_, i) => _CommentBubble(
                       comment: comments[i],
                       isMine: comments[i].authorId == me?.id,
+                      isEditing: _editing?.id == comments[i].id,
+                      onEdit: comments[i].canEdit ? () => _startEdit(comments[i]) : null,
                       onDelete: comments[i].canDelete ? () => _delete(comments[i]) : null,
                     ),
                   ),
           ),
-          if (canComment)
+          if (showInput)
             Container(
               padding: EdgeInsets.fromLTRB(12, 8, 8, 8 + MediaQuery.viewInsetsOf(context).bottom),
               decoration: BoxDecoration(
                 color: scheme.surfaceContainer,
                 border: Border(top: BorderSide(color: scheme.outlineVariant)),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _input,
-                      minLines: 1,
-                      maxLines: 4,
-                      maxLength: 2000,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: const InputDecoration(hintText: 'Kommentar schreiben …', counterText: '', isDense: true),
-                      onSubmitted: (_) => _send(),
+                  if (_editing != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_outlined, size: 16, color: scheme.primary),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Kommentar von ${_editing!.authorName} bearbeiten',
+                              style: text.labelMedium?.copyWith(color: scheme.primary),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          TextButton(onPressed: _sending ? null : _cancelEdit, child: const Text('Abbrechen')),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  IconButton.filled(
-                    onPressed: _sending ? null : _send,
-                    icon: _sending
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.send_rounded),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _input,
+                          focusNode: _inputFocus,
+                          minLines: 1,
+                          maxLines: 4,
+                          maxLength: 2000,
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: InputDecoration(
+                            hintText: _editing != null ? 'Neuer Text …' : 'Kommentar schreiben …',
+                            counterText: '',
+                            isDense: true,
+                          ),
+                          onSubmitted: (_) => _send(),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      IconButton.filled(
+                        onPressed: _sending ? null : _send,
+                        tooltip: _editing != null ? 'Speichern' : 'Senden',
+                        icon: _sending
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                            : Icon(_editing != null ? Icons.check_rounded : Icons.send_rounded),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -188,9 +268,11 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
 }
 
 class _CommentBubble extends StatelessWidget {
-  const _CommentBubble({required this.comment, required this.isMine, this.onDelete});
+  const _CommentBubble({required this.comment, required this.isMine, this.isEditing = false, this.onEdit, this.onDelete});
   final CommentItem comment;
   final bool isMine;
+  final bool isEditing;
+  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
   @override
@@ -214,7 +296,10 @@ class _CommentBubble extends StatelessWidget {
           Expanded(
             child: Container(
               padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-              decoration: BoxDecoration(color: scheme.surfaceContainerLow, borderRadius: BorderRadius.circular(AppTokens.radiusM)),
+              decoration: BoxDecoration(
+                color: isEditing ? scheme.primaryContainer.withValues(alpha: 0.35) : scheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(AppTokens.radiusM),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -230,10 +315,23 @@ class _CommentBubble extends StatelessWidget {
                                 style: TextStyle(fontWeight: FontWeight.w700, color: scheme.onSurface),
                               ),
                               TextSpan(text: '  $when'),
+                              if (comment.editedAt != null) const TextSpan(text: ' · bearbeitet'),
                             ],
                           ),
                         ),
                       ),
+                      if (onEdit != null)
+                        SizedBox(
+                          height: 28,
+                          width: 28,
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            iconSize: 18,
+                            tooltip: 'Bearbeiten',
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: onEdit,
+                          ),
+                        ),
                       if (onDelete != null)
                         SizedBox(
                           height: 28,

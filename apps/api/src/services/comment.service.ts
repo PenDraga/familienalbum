@@ -5,18 +5,28 @@ import { iso, toUserBrief } from './dto.js';
 export interface CommentViewContext {
   userId: string;
   isFamilyAdmin: boolean;
+  /** Globaler Admin: darf in Familien, deren Mitglied er ist, alle Kommentare moderieren (ADR-0003). */
+  isAdmin: boolean;
 }
 
 export type CommentWithAuthor = Comment & { author: { id: string; displayName: string } };
 
+/** Autor, Familien-Admin oder globaler Admin dürfen Kommentare bearbeiten und löschen. */
+export function canModerateComment(c: Pick<Comment, 'authorId'>, ctx: CommentViewContext) {
+  return c.authorId === ctx.userId || ctx.isFamilyAdmin || ctx.isAdmin;
+}
+
 export function toCommentDto(c: CommentWithAuthor, ctx: CommentViewContext) {
+  const allowed = canModerateComment(c, ctx);
   return {
     id: c.id,
     mediaId: c.mediaId,
     author: toUserBrief(c.author),
     body: c.body,
     createdAt: iso(c.createdAt),
-    canDelete: c.authorId === ctx.userId || ctx.isFamilyAdmin,
+    editedAt: c.editedAt ? iso(c.editedAt) : null,
+    canEdit: allowed,
+    canDelete: allowed,
   };
 }
 
@@ -36,13 +46,29 @@ export class CommentService {
     return toCommentDto(comment, ctx);
   }
 
-  /** Autor oder Familien-Admin. Das Medium wurde vom Rechte-Hook bereits geprüft. */
+  /** Text ändern – Autor, Familien-Admin oder globaler Admin. Das Medium wurde vom Rechte-Hook bereits geprüft. */
+  async update(commentId: string, body: string, ctx: CommentViewContext) {
+    const comment = await this.requireModeratable(commentId, ctx, 'bearbeiten');
+    const updated = await this.prisma.comment.update({
+      where: { id: comment.id },
+      data: body === comment.body ? {} : { body, editedAt: new Date() },
+      include,
+    });
+    return toCommentDto(updated, ctx);
+  }
+
+  /** Autor, Familien-Admin oder globaler Admin. Das Medium wurde vom Rechte-Hook bereits geprüft. */
   async delete(commentId: string, ctx: CommentViewContext) {
+    const comment = await this.requireModeratable(commentId, ctx, 'löschen');
+    await this.prisma.comment.delete({ where: { id: comment.id } });
+  }
+
+  private async requireModeratable(commentId: string, ctx: CommentViewContext, verb: string) {
     const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
     if (!comment) throw Errors.notFound('Kommentar nicht gefunden.', 'COMMENT_NOT_FOUND');
-    if (comment.authorId !== ctx.userId && !ctx.isFamilyAdmin) {
-      throw Errors.forbidden('Nur der Autor oder ein Familien-Admin darf Kommentare löschen.', 'NOT_COMMENT_OWNER');
+    if (!canModerateComment(comment, ctx)) {
+      throw Errors.forbidden(`Nur der Autor oder ein Admin darf Kommentare ${verb}.`, 'NOT_COMMENT_OWNER');
     }
-    await this.prisma.comment.delete({ where: { id: commentId } });
+    return comment;
   }
 }

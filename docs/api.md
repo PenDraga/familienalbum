@@ -165,9 +165,12 @@ Chunks unter `MEDIA_ROOT/_uploads/<sessionId>/`.
 |---|---|
 | `GET /media/:id/comments` (älteste zuerst) | Mitglied |
 | `POST /media/:id/comments` `{ body }` (1–2000 Zeichen, nur bei `READY`) | canComment |
-| `DELETE /comments/:id` | Autor oder Familien-Admin |
+| `PATCH /comments/:id` `{ body }` | Autor, Familien-Admin oder globaler Admin |
+| `DELETE /comments/:id` | Autor, Familien-Admin oder globaler Admin |
 
-`Comment` enthält `canDelete` für die App; `Media.commentCount` zählt mit. Soft-gelöschte Medien liefern 404.
+`Comment` enthält `canEdit`/`canDelete` für die App und `editedAt`, sobald der Text geändert wurde; der Autor bleibt
+beim Bearbeiten erhalten. `Media.commentCount` zählt mit. Soft-gelöschte Medien liefern 404. Der globale Admin muss
+Mitglied der Familie sein (ADR-0003) – ohne Mitgliedschaft sieht er weder Medien noch Kommentare.
 
 ## Push & Aktivität (M4)
 

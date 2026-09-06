@@ -129,7 +129,7 @@ Dateien liegen unter `/data/media/<familyId>/<mediaId>/{original.ext, thumb_400.
 | Hochladen | `canUpload` |
 | Eigenes Medium löschen / Caption ändern | Uploader oder `isFamilyAdmin` |
 | Kommentieren | `canComment` |
-| Eigenen Kommentar löschen | Autor oder `isFamilyAdmin` |
+| Kommentar bearbeiten / löschen | Autor, `isFamilyAdmin` oder `isAdmin` (als Mitglied; ADR-0003) |
 | Mitglieder-Flags ändern, Einladungen erzeugen, Mitglied entfernen | `isFamilyAdmin` |
 | User anlegen/sperren, Familien anlegen/löschen, Storage-Statistik | `isAdmin` (global) |
 
