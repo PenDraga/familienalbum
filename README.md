@@ -123,6 +123,11 @@ Optional. Ohne Konfiguration pollen die Clients jede Minute.
    bauen – das Skript setzt die `--dart-define`s. Ohne `firebase.env` startet die App ohne Firebase und pollt.
    Die Push-Berechtigung (`aps-environment`) liegt in `ios/Runner/Runner.entitlements`; Xcode aktiviert die Capability
    über das automatische Signing selbst.
+4. **Android-APK:** Release-Schlüssel einmalig anlegen (siehe `apps/app/android/key.properties.example`), dann
+   `apps/app/tool/build.sh apk` → `build/app/outputs/flutter-apk/app-release.apk` zum direkten Verteilen. Der Schlüssel
+   muss für alle künftigen Versionen derselbe bleiben (Backup!). Hinweis SDK 2026: `flutter_secure_storage` verlangt
+   API 37, das SDK liefert die Plattform aber nur als `android-37.0`; AGP 9.1 sucht `android-37` – Ordner kopieren und in
+   `source.properties` `AndroidVersion.ApiLevel=37` setzen.
 
 ## Entwicklung (Backend)
 

@@ -1,0 +1,8 @@
+# Release-Signierung für Android. Kopie als android/key.properties (ist in .gitignore).
+# Schlüssel einmalig erzeugen (im Ordner android/):
+#   keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+# Der Schlüssel muss für alle künftigen Versionen derselbe bleiben – sicher aufbewahren (Passwort-Manager).
+storePassword=…
+keyPassword=…
+keyAlias=upload
+storeFile=upload-keystore.jks
