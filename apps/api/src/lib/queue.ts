@@ -49,8 +49,23 @@ export class BullMqMediaQueue implements MediaQueue {
   }
 
   async enqueueProcessMedia(mediaId: string) {
-    // jobId = mediaId → derselbe Job wird nicht doppelt eingereiht (BullMQ erlaubt kein „:“ in eigenen IDs)
-    await this.queue.add('process', { mediaId }, { jobId: `process-${mediaId}` });
+    // jobId = mediaId → derselbe Job wird nicht doppelt eingereiht (BullMQ erlaubt kein „:“ in eigenen IDs).
+    // Ein alter Job mit dieser ID blockiert das Einreihen: fehlgeschlagene neu starten, erledigte entfernen.
+    const jobId = `process-${mediaId}`;
+    const existing = await this.queue.getJob(jobId);
+    if (existing) {
+      const state = await existing.getState();
+      if (state === 'failed') {
+        await existing.retry();
+        return;
+      }
+      if (state === 'completed' || state === 'unknown') {
+        await existing.remove();
+      } else {
+        return; // wartet oder läuft bereits
+      }
+    }
+    await this.queue.add('process', { mediaId }, { jobId });
   }
 
   async enqueueNotifyMedia(familyId: string, uploaderId: string) {

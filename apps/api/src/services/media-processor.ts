@@ -5,6 +5,7 @@ import sharp, { type Sharp } from 'sharp';
 import { execFile } from 'node:child_process';
 import { rm } from 'node:fs/promises';
 import { promisify } from 'node:util';
+import { sniffImageFile } from '../lib/image-format.js';
 import { MIME_EXTENSIONS, type MediaStorage } from '../lib/storage.js';
 import { readPhotoExif, readVideoExif, type ExifSummary } from './exif.js';
 
@@ -27,6 +28,18 @@ interface Extracted {
 }
 
 const MAX_PREVIEW_EDGE = 1920;
+
+/** Fehler eines Kommandozeilen-Werkzeugs lesbar machen: Exit-Code plus die letzte stderr-Zeile (der eigentliche Grund). */
+function describeExecError(err: unknown): string {
+  const e = err as { code?: unknown; signal?: string; stderr?: string; message?: string };
+  const stderr = (e.stderr ?? '')
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const reason = stderr.at(-1) ?? (e.message ?? String(err)).split(/\r?\n/)[0] ?? 'unbekannt';
+  const exit = typeof e.code === 'number' ? `exit ${e.code}` : e.signal ? `signal ${e.signal}` : String(e.code ?? 'fehlgeschlagen');
+  return `${exit}: ${reason}`.slice(0, 300);
+}
 
 /**
  * Verarbeitet ein hochgeladenes Original: EXIF/Metadaten lesen, Thumbnails (400/1600 WebP),
@@ -92,8 +105,13 @@ export class MediaProcessor {
   // ---------- Fotos ----------
 
   private async processPhoto(media: Media, original: string): Promise<Extracted> {
-    const isHeif = /\.(heic|heif)$/i.test(original);
-    // HEIC/HEIF kann sharp nicht dekodieren (kein HEVC) → vorher nach JPEG wandeln
+    // Nicht auf Endung/MIME vom Client verlassen: iOS nennt bearbeitete Fotos "FullSizeRender.heic",
+    // auch wenn ein JPEG drinsteckt. Nur echtes HEIF muss gewandelt werden (sharp hat kein HEVC).
+    const container = await sniffImageFile(original);
+    const isHeif = container === 'heif' || (container === 'unknown' && /\.(heic|heif)$/i.test(original));
+    if (container !== 'heif' && /\.(heic|heif)$/i.test(original)) {
+      this.log.info({ mediaId: media.id, container }, 'heic-Endung, aber anderer Inhalt – direkt verarbeitet');
+    }
     const source = isHeif ? await this.convertHeif(original) : original;
     try {
       return await this.processPhotoFile(media, source);
@@ -115,7 +133,7 @@ export class MediaProcessor {
         await execFileAsync(cmd, args, { timeout: 120_000 });
         if (await this.storage.exists(target)) return target;
       } catch (err) {
-        errors.push(`${cmd}: ${(err as Error).message.split(/\r?\n/)[0]}`);
+        errors.push(`${cmd}: ${describeExecError(err)}`);
       }
     }
     throw new Error(`HEIC konnte nicht umgewandelt werden (${errors.join('; ')})`);

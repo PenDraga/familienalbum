@@ -79,11 +79,18 @@ async function main() {
 
   // Hängengebliebene Medien (z.B. Neustart oder Fehler beim Einreihen) erneut einreihen – die feste jobId
   // verhindert Doppel-Jobs, wenn der Job noch in der Queue steht.
-  const stuck = await prisma.media.findMany({ where: { status: 'PROCESSING', deletedAt: null }, select: { id: true } });
+  // FAILED ebenfalls: nach einem Update (z.B. besserer HEIC-Konverter) bekommen sie so einen neuen Versuch,
+  // ohne dass jemand löschen und neu hochladen muss. Kaputte Dateien scheitern erneut und bleiben FAILED.
+  const stuck = await prisma.media.findMany({
+    where: { status: { in: ['PROCESSING', 'FAILED'] }, deletedAt: null },
+    select: { id: true, status: true },
+  });
   for (const m of stuck) {
     await queue.enqueueProcessMedia(m.id).catch((err) => app.log.warn({ err, mediaId: m.id }, 'requeue failed'));
   }
-  if (stuck.length) app.log.info({ count: stuck.length }, 'media in PROCESSING erneut eingereiht');
+  const processing = stuck.filter((m) => m.status === 'PROCESSING').length;
+  const failed = stuck.length - processing;
+  if (stuck.length) app.log.info({ processing, failed }, 'hängende und fehlgeschlagene Medien erneut eingereiht');
 }
 
 main().catch((err) => {
