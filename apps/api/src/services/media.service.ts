@@ -181,7 +181,8 @@ export class MediaService {
   async softDelete(media: Media, ctx: MediaViewContext) {
     this.assertCanEdit(media, ctx);
     await this.prisma.media.update({ where: { id: media.id }, data: { deletedAt: new Date() } });
-    await this.storage.remove(this.storage.mediaDir(media.familyId, media.id));
+    // Ein Rest-Verzeichnis (FUSE, Worker schreibt noch) ist harmlos; das Löschen gilt trotzdem.
+    await this.storage.removeQuietly(this.storage.mediaDir(media.familyId, media.id));
   }
 }
 

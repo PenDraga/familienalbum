@@ -75,8 +75,9 @@ export class UploadService {
         throw new AppError(409, 'Conflict', 'Diese Datei ist in der Familie bereits vorhanden.', 'DUPLICATE_MEDIA', { mediaId: existing.id });
       }
       // Soft-gelöschtes Duplikat: endgültig entfernen, damit der neue Upload durchgeht.
+      // Der neue Upload bekommt eine eigene mediaId – ein Rest-Verzeichnis darf ihn nicht blockieren.
       await this.prisma.media.delete({ where: { id: existing.id } });
-      await this.storage.remove(this.storage.mediaDir(familyId, existing.id));
+      await this.storage.removeQuietly(this.storage.mediaDir(familyId, existing.id));
     }
 
     await this.cleanupExpired();

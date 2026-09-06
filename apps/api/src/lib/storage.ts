@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
-import { mkdir, rename, rm, stat } from 'node:fs/promises';
+import { mkdir, readdir, rename, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Readable } from 'node:stream';
 import { once } from 'node:events';
@@ -43,8 +43,45 @@ export class MediaStorage {
     await mkdir(dir, { recursive: true });
   }
 
+  /**
+   * Verzeichnis oder Datei rekursiv löschen. Auf FUSE-Dateisystemen (Unraid /mnt/user) und wenn der
+   * Worker gleichzeitig noch schreibt, meldet rmdir gelegentlich ENOTEMPTY, obwohl die Einträge gerade
+   * gelöscht wurden – darum mit Wiederholungen, und als letzte Stufe Eintrag für Eintrag von Hand.
+   */
   async remove(path: string) {
-    await rm(path, { recursive: true, force: true });
+    try {
+      await rm(path, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    } catch (err) {
+      if ((err as { code?: string }).code !== 'ENOTEMPTY') throw err;
+      await this.removeEntriesThenDir(path);
+    }
+  }
+
+  private async removeEntriesThenDir(dir: string) {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const entries = await readdir(dir).catch(() => [] as string[]);
+      for (const entry of entries) {
+        await rm(join(dir, entry), { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
+      }
+      try {
+        await rm(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
+        return;
+      } catch (err) {
+        if ((err as { code?: string }).code !== 'ENOTEMPTY') throw err;
+        await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+      }
+    }
+    await rm(dir, { recursive: true, force: true });
+  }
+
+  /** Aufräumen, das den Request nicht scheitern lassen darf (Datensatz ist bereits angepasst). */
+  async removeQuietly(path: string): Promise<Error | null> {
+    try {
+      await this.remove(path);
+      return null;
+    } catch (err) {
+      return err instanceof Error ? err : new Error(String(err));
+    }
   }
 
   async exists(path: string) {
