@@ -62,6 +62,10 @@ class PushService {
           ),
         );
         final messaging = FirebaseMessaging.instance;
+        // Das iOS-Plugin registriert sich bei APNs nur beim App-Start und nur, wenn Firebase da schon
+        // konfiguriert ist. Wir konfigurieren erst hier (Werte per dart-define) – setAutoInitEnabled
+        // stösst die APNs-Registrierung nachträglich an, sonst kommt nie ein Token.
+        await messaging.setAutoInitEnabled(true);
         await messaging.requestPermission(alert: true, badge: true, sound: true);
         FirebaseMessaging.onMessage.listen((m) => _emit(m, opened: false));
         FirebaseMessaging.onMessageOpenedApp.listen((m) => _emit(m, opened: true));
@@ -73,11 +77,23 @@ class PushService {
         });
         _initialized = true;
       }
+      await _waitForApnsToken();
       _token = await FirebaseMessaging.instance.getToken();
       await _register();
     } catch (e, st) {
       debugPrint('Push nicht verfügbar: $e\n$st');
     }
+  }
+
+  /// iOS meldet den APNs-Token asynchron nach der Berechtigungsabfrage; getToken() wirft vorher
+  /// `apns-token-not-set`. Kurz darauf warten (bis ~10 s), sonst bleibt das Gerät unregistriert.
+  Future<void> _waitForApnsToken() async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
+    for (var i = 0; i < 20; i++) {
+      if (await FirebaseMessaging.instance.getAPNSToken() != null) return;
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+    debugPrint('Push: APNs-Token nach 10 s noch nicht da – Registrierung folgt beim Token-Refresh');
   }
 
   /// Vor dem Abmelden aufrufen (braucht noch ein gültiges Access-Token).
@@ -96,6 +112,7 @@ class PushService {
     if (t == null) return;
     try {
       await _ref.read(commentsRepositoryProvider).registerDevice(t, _platform);
+      debugPrint('Push-Token registriert ($_platform)');
     } catch (e) {
       debugPrint('Push-Token konnte nicht registriert werden: $e');
     }
