@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api_exception.dart';
@@ -183,7 +184,7 @@ class SettingsScreen extends ConsumerWidget {
                 const AppLogo(size: 40),
                 const SizedBox(height: 8),
                 Text('Familienalbum', style: text.labelLarge?.copyWith(color: scheme.onSurfaceVariant)),
-                Text('Selbst gehostet · Milestone 3', style: text.bodySmall?.copyWith(color: scheme.outline)),
+                _VersionLabel(style: text.bodySmall?.copyWith(color: scheme.outline)),
               ],
             ),
           ),
@@ -322,4 +323,22 @@ Future<void> _exportMonth(BuildContext context, WidgetRef ref, String familyId) 
   );
   if (scope == null || !context.mounted) return;
   await _export(context, ref, familyId, scope);
+}
+
+/// «Version 0.1.0 (14)» aus dem Build – damit Tester sagen können, welchen Stand sie haben.
+class _VersionLabel extends StatelessWidget {
+  const _VersionLabel({this.style});
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snap) {
+        final info = snap.data;
+        final label = info == null ? 'Selbst gehostet' : 'Version ${info.version} (${info.buildNumber}) · selbst gehostet';
+        return Text(label, style: style);
+      },
+    );
+  }
 }

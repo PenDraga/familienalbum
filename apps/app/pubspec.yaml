@@ -1,7 +1,7 @@
 name: familienalbum
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.1.0+14
+version: 0.1.0+15
 
 environment:
   sdk: ^3.13.2
@@ -34,6 +34,7 @@ dependencies:
   flutter_image_compress: ^2.5.1
   share_plus: ^13.3.0
   web: ^1.1.1
+  package_info_plus: ^10.2.1
 
 dev_dependencies:
   flutter_test:
