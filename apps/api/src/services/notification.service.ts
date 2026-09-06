@@ -66,17 +66,9 @@ export class NotificationService {
     });
     if (!comment) return NONE;
 
-    const others = await this.prisma.comment.findMany({
-      where: { mediaId: comment.mediaId, NOT: { authorId: comment.authorId } },
-      select: { authorId: true },
-      distinct: ['authorId'],
-    });
-    const candidates = new Set<string>([comment.media.uploaderId, ...others.map((c) => c.authorId)]);
-    candidates.delete(comment.authorId);
-
-    // Nur noch aktive Mitglieder der Familie
+    // Alle Mitglieder der Familie ausser dem Autor – die Familie ist klein, jeder Kommentar interessiert
     const members = await this.prisma.familyMember.findMany({
-      where: { familyId: comment.media.familyId, userId: { in: [...candidates] } },
+      where: { familyId: comment.media.familyId, NOT: { userId: comment.authorId } },
       select: { userId: true },
     });
 

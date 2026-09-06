@@ -192,7 +192,7 @@ Mitglied der Familie sein (ADR-0003) – ohne Mitgliedschaft sieht er weder Medi
   verzögerten Job `notify` ein (`NOTIFY_DIGEST_SECONDS`, Standard 90 s, feste jobId → keine Duplikate).
   Beim Ausführen werden alle Medien mit `notifiedAt = null` gezählt, markiert und als eine Nachricht an alle
   anderen Mitglieder geschickt („Anna hat 3 neue Fotos und 1 neues Video hinzugefügt“).
-- Kommentare gehen sofort an den Uploader und alle bisherigen Kommentierenden des Mediums, nie an den Autor.
+- Kommentare gehen sofort an alle Mitglieder der Familie, nie an den Autor.
 - FCM antwortet mit ungültigen Tokens → diese Geräte werden gelöscht.
 - Ohne `FIREBASE_SERVICE_ACCOUNT` (Pfad zur Service-Account-JSON) ist Push aus; alles andere funktioniert,
   die Clients pollen.

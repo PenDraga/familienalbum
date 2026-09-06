@@ -102,7 +102,7 @@ describe('Push: neue Medien (Digest)', () => {
 });
 
 describe('Push: Kommentare', () => {
-  it('benachrichtigt Uploader und bisherige Kommentierende, nicht den Autor selbst', async () => {
+  it('benachrichtigt alle Mitglieder der Familie, nicht den Autor selbst', async () => {
     const { family, admin } = await ctx.createFamilyWithAdmin();
     const oma = await ctx.createUser({ displayName: 'Oma' });
     const opa = await ctx.createUser({ displayName: 'Opa' });
@@ -113,23 +113,23 @@ describe('Push: Kommentare', () => {
     }
     const media = await ctx.uploadAndProcess(admin, family, await makeJpeg());
 
-    // Oma kommentiert → nur der Uploader (Admin) wird benachrichtigt
+    // Oma kommentiert → alle ausser Oma
     const c1 = (await (await ctx.as(oma)).post(`/media/${media.id}/comments`, { body: 'Herzig!' })).json();
     await ctx.app.notifications.notifyNewComment(c1.id);
-    expect(ctx.push.sent.at(-1)!.tokens).toEqual([token(admin.id)]);
+    expect(ctx.push.sent.at(-1)!.tokens.sort()).toEqual([token(admin.id), token(opa.id), token(tante.id)].sort());
     expect(ctx.push.sent.at(-1)!.message).toMatchObject({ title: `Oma · ${family.name}`, body: 'Herzig!', data: { type: 'comment', mediaId: media.id } });
 
-    // Opa kommentiert → Admin und Oma, nicht Opa, nicht Tante
+    // Opa kommentiert → alle ausser Opa
     const c2 = (await (await ctx.as(opa)).post(`/media/${media.id}/comments`, { body: 'x'.repeat(150) })).json();
     const outcome = await ctx.app.notifications.notifyNewComment(c2.id);
-    expect(outcome.recipients).toBe(2);
-    expect(ctx.push.sent.at(-1)!.tokens.sort()).toEqual([token(admin.id), token(oma.id)].sort());
+    expect(outcome.recipients).toBe(3);
+    expect(ctx.push.sent.at(-1)!.tokens.sort()).toEqual([token(admin.id), token(oma.id), token(tante.id)].sort());
     expect(ctx.push.sent.at(-1)!.message.body).toMatch(/^x{97}…$/);
 
-    // Der Uploader kommentiert selbst → Oma und Opa
+    // Der Uploader kommentiert selbst → alle ausser ihm
     const c3 = (await (await ctx.as(admin)).post(`/media/${media.id}/comments`, { body: 'Danke' })).json();
     await ctx.app.notifications.notifyNewComment(c3.id);
-    expect(ctx.push.sent.at(-1)!.tokens.sort()).toEqual([token(oma.id), token(opa.id)].sort());
+    expect(ctx.push.sent.at(-1)!.tokens.sort()).toEqual([token(oma.id), token(opa.id), token(tante.id)].sort());
   });
 
   it('die Route stösst den Push an (asynchron)', async () => {
