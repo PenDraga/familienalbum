@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +16,7 @@ import '../auth/auth_controller.dart';
 import '../auth/auth_models.dart';
 import '../autoupload/auto_upload_section.dart';
 import 'avatar_sheet.dart';
+import 'export_download.dart';
 import 'profile_dialogs.dart';
 import '../autoupload/auto_upload_service.dart';
 import '../timeline/timeline_controller.dart';
@@ -285,8 +289,61 @@ Future<void> _export(BuildContext context, WidgetRef ref, String familyId, Strin
   final messenger = ScaffoldMessenger.of(context);
   try {
     final url = await ref.read(timelineRepositoryProvider).exportLink(familyId, scope);
-    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    if (!ok) messenger.showSnackBar(const SnackBar(content: Text('Download konnte nicht geöffnet werden.')));
+    if (!exportInApp) {
+      final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      if (!ok) messenger.showSnackBar(const SnackBar(content: Text('Download konnte nicht geöffnet werden.')));
+      return;
+    }
+    if (!context.mounted) return;
+    // Handy: in der App laden (Fortschritt, abbrechbar), danach Teilen-Blatt → «In Dateien sichern»
+    final cancel = CancelToken();
+    final progress = ValueNotifier<String>('Wird vorbereitet …');
+    var dialogOpen = true;
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Export wird geladen'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const LinearProgressIndicator(),
+              const SizedBox(height: 12),
+              ValueListenableBuilder<String>(valueListenable: progress, builder: (_, v, _) => Text(v)),
+              const SizedBox(height: 4),
+              Text('Danach erscheint das Teilen-Blatt – dort «In Dateien sichern» wählen.', style: Theme.of(ctx).textTheme.bodySmall),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                cancel.cancel();
+                Navigator.pop(ctx);
+              },
+              child: const Text('Abbrechen'),
+            ),
+          ],
+        ),
+      ).then((_) => dialogOpen = false),
+    );
+    try {
+      await downloadAndShareExport(
+        ref.read(apiClientProvider).dio,
+        url: url,
+        fileName: 'Familienalbum-$scope.zip',
+        cancel: cancel,
+        onProgress: (received, total) {
+          final mb = (received / (1024 * 1024)).toStringAsFixed(1);
+          progress.value = total == null ? '$mb MB geladen …' : '$mb von ${(total / (1024 * 1024)).toStringAsFixed(1)} MB';
+        },
+      );
+    } finally {
+      if (dialogOpen && context.mounted) Navigator.of(context, rootNavigator: true).pop();
+    }
+  } on DioException catch (e) {
+    if (e.type != DioExceptionType.cancel) messenger.showSnackBar(SnackBar(content: Text(errorMessage(e))));
   } catch (e) {
     messenger.showSnackBar(SnackBar(content: Text(errorMessage(e))));
   }
