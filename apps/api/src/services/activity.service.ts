@@ -18,7 +18,7 @@ export interface FeedItem {
   id: string;
   type: 'UPLOAD' | 'COMMENT';
   at: string;
-  actor: { id: string; displayName: string };
+  actor: { id: string; displayName: string; avatarUrl: string | null };
   /** Eigene Aktion des Aufrufers */
   mine: boolean;
   /** Neuer als der „gesehen“-Zeitpunkt und nicht eigene Aktion */
@@ -55,7 +55,7 @@ export class ActivityService {
     const [mediaRows, commentRows] = await Promise.all([
       this.prisma.media.findMany({
         where: { familyId, status: 'READY', deletedAt: null, ...(before ? { uploadedAt: { lt: before } } : {}) },
-        select: { id: true, type: true, uploadedAt: true, uploader: { select: { id: true, displayName: true } } },
+        select: { id: true, type: true, uploadedAt: true, uploader: { select: { id: true, displayName: true, avatarUpdatedAt: true } } },
         orderBy: [{ uploadedAt: 'desc' }, { id: 'desc' }],
         take: mediaTake,
       }),
@@ -65,7 +65,7 @@ export class ActivityService {
           id: true,
           body: true,
           createdAt: true,
-          author: { select: { id: true, displayName: true } },
+          author: { select: { id: true, displayName: true, avatarUpdatedAt: true } },
           media: { select: { id: true, type: true } },
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],

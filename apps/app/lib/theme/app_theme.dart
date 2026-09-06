@@ -1,19 +1,31 @@
 import 'package:flutter/material.dart';
 
 /// Design-Tokens: warme, ruhige Palette – die Fotos sollen im Vordergrund stehen.
+/// Design-Tokens – Richtung «Kinderbuch»: warme Vanille, Koralle für Aktionen, Lagune für Bestätigungen,
+/// Sonne und Heidelbeere als Akzente. Rund, weich, freundlich – die Fotos bleiben das Bunteste.
 abstract final class AppTokens {
-  static const accent = Color(0xFFB8552E); // Terracotta
-  static const accentDark = Color(0xFFF0A07C);
-  static const sage = Color(0xFF6B7F6A);
-  static const amber = Color(0xFFC9963C);
+  static const accent = Color(0xFFFF7A59); // Koralle
+  static const accentDark = Color(0xFFFF9A80);
+  static const lagoon = Color(0xFF2BB3A3);
+  static const sun = Color(0xFFFFC93C);
+  static const berry = Color(0xFF6C63FF);
+  static const vanilla = Color(0xFFFFF8E7);
+  static const ink = Color(0xFF2E2A3A);
 
-  static const radiusS = 10.0;
-  static const radiusM = 14.0;
-  static const radiusL = 20.0;
-  static const radiusXL = 28.0;
+  // Kompatibilität für bestehende Aufrufer
+  static const sage = lagoon;
+  static const amber = sun;
+
+  static const radiusS = 14.0;
+  static const radiusM = 20.0;
+  static const radiusL = 24.0;
+  static const radiusXL = 32.0;
 
   static const gap = 8.0;
   static const pagePadding = EdgeInsets.symmetric(horizontal: 16);
+
+  static const displayFont = 'Baloo 2';
+  static const bodyFont = 'Nunito';
 }
 
 abstract final class AppTheme {
@@ -26,41 +38,47 @@ abstract final class AppTheme {
       seedColor: AppTokens.accent,
       brightness: brightness,
       primary: isDark ? AppTokens.accentDark : AppTokens.accent,
-      onPrimary: isDark ? const Color(0xFF4A1F0B) : Colors.white,
-      primaryContainer: isDark ? const Color(0xFF7A3418) : const Color(0xFFFFDCCF),
-      onPrimaryContainer: isDark ? const Color(0xFFFFDCCF) : const Color(0xFF3B1607),
-      secondary: isDark ? const Color(0xFFA9BFA6) : AppTokens.sage,
-      onSecondary: isDark ? const Color(0xFF1B2A1B) : Colors.white,
-      secondaryContainer: isDark ? const Color(0xFF34473A) : const Color(0xFFD9E5D6),
-      onSecondaryContainer: isDark ? const Color(0xFFD9E5D6) : const Color(0xFF18261A),
-      tertiary: isDark ? const Color(0xFFE6B865) : AppTokens.amber,
-      tertiaryContainer: isDark ? const Color(0xFF5C4210) : const Color(0xFFFBE7BD),
-      onTertiaryContainer: isDark ? const Color(0xFFFBE7BD) : const Color(0xFF2E2000),
-      surface: isDark ? const Color(0xFF171412) : const Color(0xFFFBF8F3),
-      onSurface: isDark ? const Color(0xFFEDE6DF) : const Color(0xFF2B2622),
-      onSurfaceVariant: isDark ? const Color(0xFFB9AEA4) : const Color(0xFF6E645C),
-      surfaceContainerLowest: isDark ? const Color(0xFF110F0D) : Colors.white,
-      surfaceContainerLow: isDark ? const Color(0xFF1E1A17) : const Color(0xFFF6F1EA),
-      surfaceContainer: isDark ? const Color(0xFF241F1B) : const Color(0xFFF1EBE2),
-      surfaceContainerHigh: isDark ? const Color(0xFF2B2521) : const Color(0xFFEBE4DA),
-      surfaceContainerHighest: isDark ? const Color(0xFF332C27) : const Color(0xFFE5DDD2),
-      outline: isDark ? const Color(0xFF85796F) : const Color(0xFF9C9086),
-      outlineVariant: isDark ? const Color(0xFF3F3731) : const Color(0xFFE2D9CE),
-      inverseSurface: isDark ? const Color(0xFFEDE6DF) : const Color(0xFF332C27),
-      onInverseSurface: isDark ? const Color(0xFF2B2622) : const Color(0xFFF6F1EA),
+      onPrimary: isDark ? const Color(0xFF3E1408) : Colors.white,
+      primaryContainer: isDark ? const Color(0xFF7A3520) : const Color(0xFFFFD6C9),
+      onPrimaryContainer: isDark ? const Color(0xFFFFD6C9) : const Color(0xFF5A2414),
+      secondary: isDark ? const Color(0xFF6ED4C7) : AppTokens.lagoon,
+      onSecondary: isDark ? const Color(0xFF0B3A35) : Colors.white,
+      secondaryContainer: isDark ? const Color(0xFF1F5C55) : const Color(0xFFBFE9E3),
+      onSecondaryContainer: isDark ? const Color(0xFFBFE9E3) : const Color(0xFF0F3F39),
+      tertiary: isDark ? const Color(0xFFFFD873) : AppTokens.sun,
+      onTertiary: isDark ? const Color(0xFF3F2E00) : const Color(0xFF3F2E00),
+      tertiaryContainer: isDark ? const Color(0xFF6B5210) : const Color(0xFFFFECB3),
+      onTertiaryContainer: isDark ? const Color(0xFFFFECB3) : const Color(0xFF3F2E00),
+      surface: isDark ? const Color(0xFF1E1B2A) : AppTokens.vanilla,
+      onSurface: isDark ? const Color(0xFFF3EEFF) : AppTokens.ink,
+      onSurfaceVariant: isDark ? const Color(0xFFB7B0CC) : const Color(0xFF7C7689),
+      surfaceContainerLowest: isDark ? const Color(0xFF17151F) : Colors.white,
+      surfaceContainerLow: isDark ? const Color(0xFF262233) : const Color(0xFFFFFDF7),
+      surfaceContainer: isDark ? const Color(0xFF2C283A) : const Color(0xFFFFF3D9),
+      surfaceContainerHigh: isDark ? const Color(0xFF342F44) : const Color(0xFFFFEDC8),
+      surfaceContainerHighest: isDark ? const Color(0xFF3D374E) : const Color(0xFFFFE6B8),
+      outline: isDark ? const Color(0xFF8A839E) : const Color(0xFFB9B3C6),
+      outlineVariant: isDark ? const Color(0xFF3F3A50) : const Color(0xFFEFE7D6),
+      inverseSurface: isDark ? const Color(0xFFF3EEFF) : AppTokens.ink,
+      onInverseSurface: isDark ? AppTokens.ink : const Color(0xFFFFF8E7),
     );
   }
 
   static ThemeData _build(Brightness brightness) {
     final scheme = _scheme(brightness);
-    final base = ThemeData(colorScheme: scheme, useMaterial3: true, brightness: brightness);
+    final base = ThemeData(colorScheme: scheme, useMaterial3: true, brightness: brightness, fontFamily: AppTokens.bodyFont);
+    TextStyle? display(TextStyle? s, {FontWeight weight = FontWeight.w700, double? size}) =>
+        s?.copyWith(fontFamily: AppTokens.displayFont, fontWeight: weight, fontSize: size, letterSpacing: 0, height: 1.1);
     final text = base.textTheme.copyWith(
-      displaySmall: base.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.5),
-      headlineMedium: base.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.4),
-      headlineSmall: base.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600, letterSpacing: -0.3),
-      titleLarge: base.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, letterSpacing: -0.2),
-      titleMedium: base.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-      labelLarge: base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600, letterSpacing: 0.2),
+      displaySmall: display(base.textTheme.displaySmall, weight: FontWeight.w800),
+      headlineMedium: display(base.textTheme.headlineMedium, weight: FontWeight.w800),
+      headlineSmall: display(base.textTheme.headlineSmall),
+      titleLarge: display(base.textTheme.titleLarge, size: 24),
+      titleMedium: display(base.textTheme.titleMedium, size: 18),
+      titleSmall: base.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+      labelLarge: base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.1),
+      bodyLarge: base.textTheme.bodyLarge?.copyWith(height: 1.4),
+      bodyMedium: base.textTheme.bodyMedium?.copyWith(height: 1.4),
     );
 
     RoundedRectangleBorder rounded(double r) => RoundedRectangleBorder(borderRadius: BorderRadius.circular(r));
@@ -79,7 +97,7 @@ abstract final class AppTheme {
         toolbarHeight: 60,
       ),
       cardTheme: CardThemeData(
-        color: scheme.surfaceContainerLow,
+        color: scheme.surfaceContainerLowest,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         margin: EdgeInsets.zero,
@@ -87,8 +105,8 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surfaceContainerLow,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        fillColor: scheme.surfaceContainer,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTokens.radiusM), borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTokens.radiusM), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(
@@ -108,14 +126,14 @@ abstract final class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size.fromHeight(56),
           shape: rounded(AppTokens.radiusM),
-          textStyle: text.labelLarge?.copyWith(fontSize: 16),
+          textStyle: text.labelLarge?.copyWith(fontSize: 17, fontFamily: AppTokens.displayFont, fontWeight: FontWeight.w700),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(48),
+          minimumSize: const Size.fromHeight(52),
           shape: rounded(AppTokens.radiusM),
           side: BorderSide(color: scheme.outlineVariant),
         ),
@@ -125,17 +143,17 @@ abstract final class AppTheme {
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,
-        elevation: 2,
-        highlightElevation: 4,
-        shape: rounded(AppTokens.radiusL),
+        elevation: 4,
+        highlightElevation: 6,
+        shape: rounded(22),
         extendedTextStyle: text.labelLarge?.copyWith(fontSize: 15),
       ),
       chipTheme: ChipThemeData(
-        shape: rounded(AppTokens.radiusS),
+        shape: rounded(999),
         side: BorderSide.none,
-        backgroundColor: scheme.surfaceContainerHigh,
-        labelStyle: text.labelMedium?.copyWith(color: scheme.onSurface),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        backgroundColor: scheme.tertiaryContainer,
+        labelStyle: text.labelMedium?.copyWith(color: scheme.onTertiaryContainer, fontWeight: FontWeight.w700),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       ),
       dialogTheme: DialogThemeData(
         shape: rounded(AppTokens.radiusXL),

@@ -59,7 +59,7 @@ export class MediaService {
     };
   }
 
-  private readonly include = { uploader: { select: { id: true, displayName: true } }, _count: { select: { comments: true } } } as const;
+  private readonly include = { uploader: { select: { id: true, displayName: true, avatarUpdatedAt: true } }, _count: { select: { comments: true } } } as const;
 
   /**
    * Timeline: neueste zuerst, cursor-paginiert (takenAt, id), nach Monat gruppiert.

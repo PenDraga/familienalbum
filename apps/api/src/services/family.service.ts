@@ -78,7 +78,7 @@ export class FamilyService {
   async listMembers(familyId: string) {
     const members = await this.prisma.familyMember.findMany({
       where: { familyId },
-      include: { user: { select: { id: true, displayName: true } } },
+      include: { user: { select: { id: true, displayName: true, avatarUpdatedAt: true } } },
       orderBy: [{ isFamilyAdmin: 'desc' }, { joinedAt: 'asc' }],
     });
     return members.map(toMemberDto);
@@ -109,7 +109,7 @@ export class FamilyService {
           canDownload: input.canDownload,
           canComment: input.canComment,
         },
-        include: { user: { select: { id: true, displayName: true } } },
+        include: { user: { select: { id: true, displayName: true, avatarUpdatedAt: true } } },
       });
     });
     return toMemberDto(member);
@@ -136,7 +136,7 @@ export class FamilyService {
 
     const member = await this.prisma.familyMember.create({
       data: { familyId, userId, ...flags },
-      include: { user: { select: { id: true, displayName: true } } },
+      include: { user: { select: { id: true, displayName: true, avatarUpdatedAt: true } } },
     });
     return toMemberDto(member);
   }
@@ -152,7 +152,7 @@ export class FamilyService {
     const updated = await this.prisma.familyMember.update({
       where: { userId_familyId: { userId, familyId } },
       data: flags,
-      include: { user: { select: { id: true, displayName: true } } },
+      include: { user: { select: { id: true, displayName: true, avatarUpdatedAt: true } } },
     });
     return toMemberDto(updated);
   }

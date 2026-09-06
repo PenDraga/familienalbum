@@ -51,8 +51,8 @@ export class ExportService {
       },
       orderBy: [{ takenAt: 'asc' }, { uploadedAt: 'asc' }],
       include: {
-        uploader: { select: { id: true, displayName: true } },
-        comments: { orderBy: { createdAt: 'asc' }, include: { author: { select: { id: true, displayName: true } } } },
+        uploader: { select: { id: true, displayName: true, avatarUpdatedAt: true } },
+        comments: { orderBy: { createdAt: 'asc' }, include: { author: { select: { id: true, displayName: true, avatarUpdatedAt: true } } } },
       },
     });
 
@@ -79,12 +79,12 @@ export class ExportService {
         durationSec: m.durationSec,
         takenAt: iso(m.takenAt),
         uploadedAt: iso(m.uploadedAt),
-        uploader: m.uploader,
+        uploader: { id: m.uploader.id, displayName: m.uploader.displayName },
         caption: m.caption,
         exif: m.exif ?? null,
         comments: m.comments.map((c) => ({
           id: c.id,
-          author: c.author,
+          author: { id: c.author.id, displayName: c.author.displayName },
           body: c.body,
           createdAt: iso(c.createdAt),
           editedAt: c.editedAt ? iso(c.editedAt) : null,

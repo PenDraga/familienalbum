@@ -176,7 +176,7 @@ export class UploadService {
 
     let media;
     try {
-      media = await this.prisma.media.create({ data, include: { uploader: { select: { id: true, displayName: true } } } });
+      media = await this.prisma.media.create({ data, include: { uploader: { select: { id: true, displayName: true, avatarUpdatedAt: true } } } });
     } catch (err) {
       await this.storage.remove(dir);
       if ((err as { code?: string }).code === 'P2002') {

@@ -1,7 +1,7 @@
 name: familienalbum
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.1.0+15
+version: 0.1.0+16
 
 environment:
   sdk: ^3.13.2
@@ -47,20 +47,39 @@ flutter:
   uses-material-design: true
   assets:
     - assets/branding/icon.png
+  fonts:
+    - family: Baloo 2
+      fonts:
+        - asset: assets/fonts/Baloo2-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Baloo2-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Baloo2-ExtraBold.ttf
+          weight: 800
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Nunito-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Nunito-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Nunito-ExtraBold.ttf
+          weight: 800
 
 # App-Icons: dart run flutter_launcher_icons
 flutter_launcher_icons:
   image_path: assets/branding/icon.png
   android: true
-  adaptive_icon_background: "#B8552E"
+  adaptive_icon_background: "#FFF8E7"
   adaptive_icon_foreground: assets/branding/icon_foreground.png
   ios: true
   remove_alpha_ios: true
   web:
     generate: true
     image_path: assets/branding/icon.png
-    background_color: "#B8552E"
-    theme_color: "#B8552E"
+    background_color: "#FFF8E7"
+    theme_color: "#FF7A59"
   windows:
     generate: true
     image_path: assets/branding/icon.png
@@ -68,11 +87,11 @@ flutter_launcher_icons:
 
 # Splash: dart run flutter_native_splash:create
 flutter_native_splash:
-  color: "#B8552E"
-  color_dark: "#B8552E"
+  color: "#FFF8E7"
+  color_dark: "#2E2A3A"
   image: assets/branding/splash.png
   android_12:
-    color: "#B8552E"
-    color_dark: "#B8552E"
+    color: "#FFF8E7"
+    color_dark: "#2E2A3A"
     image: assets/branding/splash.png
   web: false

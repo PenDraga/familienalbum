@@ -20,18 +20,11 @@ class AuthShell extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: const [0, 0.45, 1],
-                  colors: [scheme.primaryContainer.withValues(alpha: 0.9), scheme.surface, scheme.surface],
-                ),
-              ),
-            ),
-          ),
+          Positioned.fill(child: ColoredBox(color: scheme.surface)),
+          // Weiche Farbblasen (Richtung «Kinderbuch»)
+          Positioned(left: -70, bottom: -90, child: _Blob(color: scheme.secondaryContainer, size: 260)),
+          Positioned(right: -60, bottom: 90, child: _Blob(color: scheme.tertiaryContainer, size: 190)),
+          Positioned(right: -40, top: 60, child: _Blob(color: scheme.primaryContainer.withValues(alpha: 0.7), size: 150)),
           if (onBack != null)
             SafeArea(
               child: Padding(
@@ -48,7 +41,7 @@ class AuthShell extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const AppLogo(size: 88),
+                      const AppLogo(size: 104),
                       const SizedBox(height: 20),
                       Text(title, textAlign: TextAlign.center, style: text.headlineMedium),
                       const SizedBox(height: 6),
@@ -97,6 +90,19 @@ class ErrorBanner extends StatelessWidget {
           Expanded(child: Text(message, style: TextStyle(color: scheme.onErrorContainer))),
         ],
       ),
+    );
+  }
+}
+
+class _Blob extends StatelessWidget {
+  const _Blob({required this.color, required this.size});
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(width: size, height: size, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
     );
   }
 }

@@ -28,6 +28,7 @@ model User {
   displayName   String
   isAdmin       Boolean        @default(false) // globaler Admin
   isDisabled    Boolean        @default(false)
+  avatarUpdatedAt DateTime?                    // gesetzt, wenn ein Profilbild unter _avatars/<id>.webp liegt
   createdAt     DateTime       @default(now())
   memberships   FamilyMember[]
   refreshTokens RefreshToken[]

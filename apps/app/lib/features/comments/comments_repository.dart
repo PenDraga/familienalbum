@@ -9,6 +9,7 @@ class CommentItem {
     required this.mediaId,
     required this.authorId,
     required this.authorName,
+    this.authorAvatarUrl,
     required this.body,
     required this.createdAt,
     required this.canDelete,
@@ -20,6 +21,7 @@ class CommentItem {
   final String mediaId;
   final String authorId;
   final String authorName;
+  final String? authorAvatarUrl;
   final String body;
   final DateTime createdAt;
   final bool canDelete;
@@ -31,6 +33,7 @@ class CommentItem {
     mediaId: j['mediaId'] as String,
     authorId: (j['author'] as Map<String, dynamic>)['id'] as String,
     authorName: (j['author'] as Map<String, dynamic>)['displayName'] as String,
+    authorAvatarUrl: (j['author'] as Map<String, dynamic>)['avatarUrl'] as String?,
     body: j['body'] as String,
     createdAt: DateTime.parse(j['createdAt'] as String),
     canDelete: j['canDelete'] as bool,

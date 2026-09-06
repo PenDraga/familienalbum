@@ -9,6 +9,8 @@ export const userPublicSchema = z
     isAdmin: z.boolean(),
     isDisabled: z.boolean(),
     createdAt: z.iso.datetime(),
+    /** Signierter Link auf das Profilbild (512×512 WebP), null ohne Bild */
+    avatarUrl: z.string().nullable(),
   })
   .meta({ id: 'User' });
 
@@ -17,8 +19,12 @@ export const userBriefSchema = z
   .object({
     id: uuidSchema,
     displayName: z.string(),
+    /** Signierter Link auf das Profilbild, null ohne Bild */
+    avatarUrl: z.string().nullable(),
   })
   .meta({ id: 'UserBrief' });
+
+export const avatarResponseSchema = z.object({ avatarUrl: z.string().nullable() }).meta({ id: 'AvatarResponse' });
 
 export const createUserBodySchema = z.object({
   email: emailSchema,

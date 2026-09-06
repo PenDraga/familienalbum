@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../widgets/user_avatar.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -199,10 +201,12 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                 return Card(
                   child: ListTile(
                     onTap: () => _editRights(m),
-                    leading: CircleAvatar(
-                      backgroundColor: m.flags.isFamilyAdmin ? scheme.primaryContainer : scheme.secondaryContainer,
-                      foregroundColor: m.flags.isFamilyAdmin ? scheme.onPrimaryContainer : scheme.onSecondaryContainer,
-                      child: Text(m.displayName.isNotEmpty ? m.displayName[0].toUpperCase() : '?'),
+                    leading: UserAvatar(
+                      name: m.displayName,
+                      avatarUrl: m.avatarUrl,
+                      size: 44,
+                      color: m.flags.isFamilyAdmin ? scheme.primary : scheme.secondary,
+                      foregroundColor: m.flags.isFamilyAdmin ? scheme.onPrimary : scheme.onSecondary,
                     ),
                     title: Text(isMe ? '${m.displayName} (du)' : m.displayName, style: text.titleMedium),
                     subtitle: Text(

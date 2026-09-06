@@ -88,6 +88,12 @@
             "type": "string",
             "format": "date-time",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -96,7 +102,8 @@
           "displayName",
           "isAdmin",
           "isDisabled",
-          "createdAt"
+          "createdAt",
+          "avatarUrl"
         ]
       },
       "UserBriefInput": {
@@ -109,11 +116,32 @@
           },
           "displayName": {
             "type": "string"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "id",
-          "displayName"
+          "displayName",
+          "avatarUrl"
+        ]
+      },
+      "AvatarResponseInput": {
+        "type": "object",
+        "properties": {
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "avatarUrl"
         ]
       },
       "MediaUrlsInput": {
@@ -1120,6 +1148,12 @@
             "format": "date-time",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
           },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "families": {
             "type": "array",
             "items": {
@@ -1197,6 +1231,7 @@
           "isAdmin",
           "isDisabled",
           "createdAt",
+          "avatarUrl",
           "families"
         ]
       },
@@ -1360,6 +1395,12 @@
             "type": "string",
             "format": "date-time",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -1368,7 +1409,8 @@
           "displayName",
           "isAdmin",
           "isDisabled",
-          "createdAt"
+          "createdAt",
+          "avatarUrl"
         ],
         "additionalProperties": false
       },
@@ -1382,11 +1424,33 @@
           },
           "displayName": {
             "type": "string"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "id",
-          "displayName"
+          "displayName",
+          "avatarUrl"
+        ],
+        "additionalProperties": false
+      },
+      "AvatarResponse": {
+        "type": "object",
+        "properties": {
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "avatarUrl"
         ],
         "additionalProperties": false
       },
@@ -2421,6 +2485,12 @@
             "format": "date-time",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
           },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "families": {
             "type": "array",
             "items": {
@@ -2500,6 +2570,7 @@
           "isAdmin",
           "isDisabled",
           "createdAt",
+          "avatarUrl",
           "families"
         ],
         "additionalProperties": false
@@ -2989,6 +3060,126 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/me/avatar": {
+      "put": {
+        "summary": "Profilbild setzen (Body: JPEG/PNG/WebP als Rohdaten)",
+        "tags": [
+          "me"
+        ],
+        "description": "Der Server schneidet quadratisch zu und speichert 512×512 als WebP. HEIC vorher auf dem Gerät wandeln.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvatarResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Profilbild entfernen",
+        "tags": [
+          "me"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvatarResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}/avatar": {
+      "get": {
+        "summary": "Profilbild (512×512 WebP) – signierter Link aus den DTOs oder Bearer",
+        "tags": [
+          "me"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
           }
         }
       }
@@ -6422,6 +6613,12 @@
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                     },
+                    "avatarUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "deviceCount": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -6506,6 +6703,7 @@
                     "isAdmin",
                     "isDisabled",
                     "createdAt",
+                    "avatarUrl",
                     "deviceCount",
                     "families"
                   ],

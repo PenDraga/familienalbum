@@ -142,6 +142,8 @@ automatisch – sie müssen sich selbst als Mitglied hinzufügen.
 ```
 POST   /auth/login | /auth/refresh | /auth/logout
 GET    /me
+PUT    /me/avatar | DELETE /me/avatar   Profilbild (Rohdaten JPEG/PNG/WebP → 512×512 WebP)
+GET    /users/:id/avatar                 signierter Link (in UserBrief.avatarUrl) oder Bearer
 GET    /families                         eigene Familien
 POST   /families                         (isAdmin)
 GET    /families/:id/members

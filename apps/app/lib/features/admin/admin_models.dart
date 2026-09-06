@@ -5,6 +5,7 @@ class MemberItem {
     required this.userId,
     required this.familyId,
     required this.displayName,
+    this.avatarUrl,
     required this.flags,
     required this.joinedAt,
     this.lastSeenAt,
@@ -13,6 +14,7 @@ class MemberItem {
   final String userId;
   final String familyId;
   final String displayName;
+  final String? avatarUrl;
   final MembershipFlags flags;
   final DateTime joinedAt;
   final DateTime? lastSeenAt;
@@ -21,6 +23,7 @@ class MemberItem {
     userId: j['userId'] as String,
     familyId: j['familyId'] as String,
     displayName: (j['user'] as Map<String, dynamic>)['displayName'] as String,
+    avatarUrl: (j['user'] as Map<String, dynamic>)['avatarUrl'] as String?,
     flags: MembershipFlags.fromJson(j),
     joinedAt: DateTime.parse(j['joinedAt'] as String),
     lastSeenAt: j['lastSeenAt'] == null ? null : DateTime.parse(j['lastSeenAt'] as String),

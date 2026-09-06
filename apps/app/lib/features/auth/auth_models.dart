@@ -35,13 +35,15 @@ class Family {
 
 /// Antwort von GET /me
 class Me {
-  const Me({required this.id, required this.email, required this.displayName, required this.isAdmin, required this.families});
+  const Me({required this.id, required this.email, required this.displayName, required this.isAdmin, required this.families, this.avatarUrl});
 
   final String id;
   final String email;
   final String displayName;
   final bool isAdmin;
   final List<Family> families;
+  /// Signierter, relativer Link auf das Profilbild (null ohne Bild)
+  final String? avatarUrl;
 
   factory Me.fromJson(Map<String, dynamic> j) => Me(
     id: j['id'] as String,
@@ -49,6 +51,7 @@ class Me {
     displayName: j['displayName'] as String,
     isAdmin: j['isAdmin'] as bool,
     families: (j['families'] as List<dynamic>).map((e) => Family.fromJson(e as Map<String, dynamic>)).toList(),
+    avatarUrl: j['avatarUrl'] as String?,
   );
 }
 

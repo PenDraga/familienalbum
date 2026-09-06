@@ -32,6 +32,11 @@ export class MediaStorage {
     return join(this.mediaDir(familyId, mediaId), 'poster.jpg');
   }
 
+  /** Profilbilder: <root>/_avatars/<userId>.webp (512×512, vom Server erzeugt) */
+  avatarPath(userId: string) {
+    return join(this.root, '_avatars', `${userId}.webp`);
+  }
+
   sessionDir(sessionId: string) {
     return join(this.root, '_uploads', sessionId);
   }

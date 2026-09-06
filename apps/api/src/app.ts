@@ -8,6 +8,7 @@ import type { AppConfig } from './config/env.js';
 import { registerErrorHandling } from './lib/errors.js';
 import type { MediaQueue } from './lib/queue.js';
 import { UrlSigner } from './lib/signed-url.js';
+import { configureDto } from './services/dto.js';
 import { MediaStorage } from './lib/storage.js';
 import './lib/types.js';
 import authPlugin from './plugins/auth.js';
@@ -56,6 +57,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   app.decorate('config', opts.config);
   app.decorate('storage', new MediaStorage(opts.config.mediaRoot));
   app.decorate('signer', new UrlSigner(opts.config.jwtSecret, opts.config.signedUrlTtlSeconds));
+  configureDto({ signer: app.signer });
   app.decorate('mediaQueue', opts.mediaQueue);
   app.decorate('notifications', new NotificationService(opts.prisma, opts.pushSender ?? new NoopPushSender(), app.log));
 

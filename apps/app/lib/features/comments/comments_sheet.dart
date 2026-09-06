@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/api_exception.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/emoji_text.dart';
+import '../../widgets/user_avatar.dart';
 import '../auth/auth_controller.dart';
 import '../timeline/media_model.dart';
 import 'comments_repository.dart';
@@ -319,6 +320,10 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                                   : 'Kommentar schreiben …',
                               counterText: '',
                               isDense: true,
+                              fillColor: scheme.surfaceContainerLowest,
+                              border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(999)), borderSide: BorderSide.none),
+                              enabledBorder: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(999)), borderSide: BorderSide.none),
+                              focusedBorder: OutlineInputBorder(borderRadius: const BorderRadius.all(Radius.circular(999)), borderSide: BorderSide(color: scheme.secondary, width: 1.6)),
                             ),
                             onSubmitted: (_) => _send(),
                           ),
@@ -326,6 +331,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                         const SizedBox(width: 6),
                         IconButton.filled(
                           onPressed: _sending ? null : _send,
+                          style: IconButton.styleFrom(backgroundColor: scheme.secondary, foregroundColor: scheme.onSecondary, minimumSize: const Size(48, 48)),
                           tooltip: _editing != null ? 'Speichern' : 'Senden',
                           icon: _sending
                               ? const SizedBox(
@@ -380,30 +386,25 @@ class _CommentBubble extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: isMine
-                ? scheme.primaryContainer
-                : scheme.secondaryContainer,
-            foregroundColor: isMine
-                ? scheme.onPrimaryContainer
-                : scheme.onSecondaryContainer,
-            child: Text(
-              comment.authorName.isNotEmpty
-                  ? comment.authorName[0].toUpperCase()
-                  : '?',
-              style: text.labelLarge,
-            ),
+          UserAvatar(
+            name: comment.authorName,
+            avatarUrl: comment.authorAvatarUrl,
+            size: 36,
+            color: isMine ? scheme.primary : scheme.secondary,
+            foregroundColor: isMine ? scheme.onPrimary : scheme.onSecondary,
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Container(
               padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
               decoration: BoxDecoration(
-                color: isEditing
-                    ? scheme.primaryContainer.withValues(alpha: 0.35)
-                    : scheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(AppTokens.radiusM),
+                color: isEditing ? scheme.primaryContainer.withValues(alpha: 0.5) : scheme.surfaceContainerLowest,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(6),
+                  topRight: Radius.circular(AppTokens.radiusL),
+                  bottomLeft: Radius.circular(AppTokens.radiusL),
+                  bottomRight: Radius.circular(AppTokens.radiusL),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

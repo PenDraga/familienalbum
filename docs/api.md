@@ -159,6 +159,19 @@ bereits ausgegebene Links erst nach Ablauf der TTL.
 Dateiablage: `MEDIA_ROOT/<familyId>/<mediaId>/{original.<ext>, thumb_400.webp, thumb_1600.webp, preview.mp4, poster.jpg}`,
 Chunks unter `MEDIA_ROOT/_uploads/<sessionId>/`.
 
+## Profilbild
+
+| Route | Recht |
+|---|---|
+| `PUT /me/avatar` (Body: JPEG/PNG/WebP als Rohdaten, max. 12 MB) → `{ avatarUrl }` | angemeldet |
+| `DELETE /me/avatar` → `{ avatarUrl: null }` | angemeldet |
+| `GET /users/:id/avatar` (signierter Link **oder** Bearer) | angemeldet |
+
+Der Server schneidet quadratisch zu (Motiv-Erkennung), speichert 512×512 als WebP unter `_avatars/<userId>.webp` und
+setzt `User.avatarUpdatedAt`. Jedes `UserBrief` (Kommentar-Autor, Uploader, Mitglied, Aktivität) und `User`/`Me` tragen
+`avatarUrl`: ein signierter Link mit einer Woche Gültigkeit und `v=<Zeitstempel>` als Cache-Brecher, `null` ohne Bild.
+HEIC wandelt die App vor dem Upload auf dem Gerät in JPEG.
+
 ## Export (M8)
 
 | Route | Recht |

@@ -8,9 +8,11 @@ import '../../core/api_exception.dart';
 import '../../core/providers.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_logo.dart';
+import '../../widgets/user_avatar.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_models.dart';
 import '../autoupload/auto_upload_section.dart';
+import 'avatar_sheet.dart';
 import 'profile_dialogs.dart';
 import '../autoupload/auto_upload_service.dart';
 import '../timeline/timeline_controller.dart';
@@ -36,14 +38,26 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: scheme.primaryContainer,
-                      foregroundColor: scheme.onPrimaryContainer,
-                      child: Text(me.displayName.isNotEmpty ? me.displayName[0].toUpperCase() : '?'),
+                    leading: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        UserAvatar(name: me.displayName, avatarUrl: me.avatarUrl, size: 56),
+                        Positioned(
+                          right: -6,
+                          bottom: -6,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(color: scheme.secondary, shape: BoxShape.circle, border: Border.all(color: scheme.surfaceContainerLowest, width: 2)),
+                            child: Icon(Icons.photo_camera_outlined, size: 14, color: scheme.onSecondary),
+                          ),
+                        ),
+                      ],
                     ),
                     title: Text(me.displayName, style: text.titleMedium),
-                    subtitle: Text(me.email),
+                    subtitle: Text(me.avatarUrl == null ? 'Tippen für ein Profilbild' : me.email),
                     trailing: me.isAdmin ? const Chip(label: Text('Admin')) : null,
+                    onTap: () => showAvatarSheet(context, ref),
                   ),
                   const Divider(height: 1),
                   ListTile(

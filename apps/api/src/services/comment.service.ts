@@ -30,7 +30,7 @@ export function toCommentDto(c: CommentWithAuthor, ctx: CommentViewContext) {
   };
 }
 
-const include = { author: { select: { id: true, displayName: true } } } as const;
+const include = { author: { select: { id: true, displayName: true, avatarUpdatedAt: true } } } as const;
 
 export class CommentService {
   constructor(private readonly prisma: PrismaClient) {}

@@ -40,7 +40,7 @@ export class NotificationService {
 
     const [family, uploader, members] = await Promise.all([
       this.prisma.family.findUnique({ where: { id: familyId }, select: { name: true } }),
-      this.prisma.user.findUnique({ where: { id: uploaderId }, select: { displayName: true } }),
+      this.prisma.user.findUnique({ where: { id: uploaderId }, select: { id: true, displayName: true, avatarUpdatedAt: true } }),
       this.prisma.familyMember.findMany({ where: { familyId, NOT: { userId: uploaderId } }, select: { userId: true } }),
     ]);
     if (!family || !uploader) return NONE;
@@ -60,7 +60,7 @@ export class NotificationService {
     const comment = await this.prisma.comment.findUnique({
       where: { id: commentId },
       include: {
-        author: { select: { displayName: true } },
+        author: { select: { id: true, displayName: true, avatarUpdatedAt: true } },
         media: { select: { id: true, familyId: true, uploaderId: true, family: { select: { name: true } } } },
       },
     });

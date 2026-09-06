@@ -514,7 +514,11 @@ class _MonthHeaderDelegate extends SliverPersistentHeaderDelegate {
                     ],
                     Text(label, style: text.titleMedium?.copyWith(color: scheme.onSurface)),
                     const SizedBox(width: 8),
-                    Text('$count', style: text.labelMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(color: scheme.tertiaryContainer, borderRadius: BorderRadius.circular(999)),
+                      child: Text('$count', style: text.labelMedium?.copyWith(color: scheme.onTertiaryContainer, fontWeight: FontWeight.w800)),
+                    ),
                   ],
                 ),
               ),
@@ -804,23 +808,12 @@ class _GlassFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Glass(
-      blur: 18,
-      borderRadius: BorderRadius.circular(999),
-      tint: scheme.primary.withValues(alpha: 0.88),
-      child: SizedBox(
-        height: 54,
-        child: TextButton.icon(
-          onPressed: onPressed,
-          style: TextButton.styleFrom(
-            foregroundColor: scheme.onPrimary,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            shape: const StadiumBorder(),
-          ),
-          icon: const Icon(Icons.add_photo_alternate_outlined),
-          label: const Text('Hochladen'),
-        ),
-      ),
+    return FloatingActionButton.extended(
+      onPressed: onPressed,
+      backgroundColor: scheme.primary,
+      foregroundColor: scheme.onPrimary,
+      icon: const Icon(Icons.add_photo_alternate_outlined),
+      label: const Text('Hochladen'),
     );
   }
 }

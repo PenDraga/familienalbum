@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../widgets/user_avatar.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -146,7 +148,7 @@ class _FeedTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Avatar(name: item.actorName, unread: item.unread),
+            _Avatar(name: item.actorName, avatarUrl: item.actorAvatarUrl, unread: item.unread),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -257,22 +259,18 @@ class _Thumb extends StatelessWidget {
 }
 
 class _Avatar extends StatelessWidget {
-  const _Avatar({required this.name, required this.unread});
+  const _Avatar({required this.name, this.avatarUrl, required this.unread});
   final String name;
+  final String? avatarUrl;
   final bool unread;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final initial = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        CircleAvatar(
-          radius: 20,
-          backgroundColor: scheme.primaryContainer,
-          child: Text(initial, style: TextStyle(color: scheme.onPrimaryContainer, fontWeight: FontWeight.w700)),
-        ),
+        UserAvatar(name: name, avatarUrl: avatarUrl, size: 40, color: scheme.secondary, foregroundColor: scheme.onSecondary),
         if (unread)
           Positioned(
             right: -2,

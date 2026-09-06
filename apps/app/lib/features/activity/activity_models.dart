@@ -25,6 +25,7 @@ class FeedItem {
     required this.at,
     required this.actorId,
     required this.actorName,
+    this.actorAvatarUrl,
     required this.mine,
     required this.unread,
     required this.media,
@@ -41,6 +42,7 @@ class FeedItem {
   final DateTime at;
   final String actorId;
   final String actorName;
+  final String? actorAvatarUrl;
   final bool mine;
   final bool unread;
   final List<FeedMediaRef> media;
@@ -69,6 +71,7 @@ class FeedItem {
     at: at,
     actorId: actorId,
     actorName: actorName,
+    actorAvatarUrl: actorAvatarUrl,
     mine: mine,
     unread: unread ?? this.unread,
     media: media,
@@ -89,6 +92,7 @@ class FeedItem {
       at: DateTime.parse(j['at'] as String),
       actorId: actor['id'] as String,
       actorName: actor['displayName'] as String,
+      actorAvatarUrl: actor['avatarUrl'] as String?,
       mine: j['mine'] as bool,
       unread: j['unread'] as bool,
       media: (j['media'] as List<dynamic>).map((m) => FeedMediaRef.fromJson(m as Map<String, dynamic>, absolute)).toList(),
