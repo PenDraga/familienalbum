@@ -14,6 +14,33 @@ enum MediaType {
   VIDEO
 }
 
+enum RecapKind {
+  MONTH
+  YEAR
+  SECONDS
+}
+
+/// Rückblick-Video (Monat, Jahr, Sekunden-Film) – vom Worker aus Fotos und Video-Ausschnitten gebaut.
+model Recap {
+  id          String      @id @default(uuid())
+  familyId    String
+  kind        RecapKind
+  periodStart DateTime
+  periodEnd   DateTime
+  title       String
+  status      MediaStatus @default(PROCESSING)
+  error       String?
+  durationSec Float?
+  mediaCount  Int         @default(0)
+  musicTrack  String?
+  createdAt   DateTime    @default(now())
+  readyAt     DateTime?
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, kind, periodStart])
+  @@index([familyId, createdAt])
+}
+
 enum MediaStatus {
   UPLOADING
   PROCESSING
@@ -46,6 +73,7 @@ model Family {
   members   FamilyMember[]
   media     Media[]
   invites   Invite[]
+  recaps    Recap[]
   uploadSessions UploadSession[]
 }
 

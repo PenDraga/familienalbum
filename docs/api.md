@@ -172,6 +172,25 @@ setzt `User.avatarUpdatedAt`. Jedes `UserBrief` (Kommentar-Autor, Uploader, Mitg
 `avatarUrl`: ein signierter Link mit einer Woche Gültigkeit und `v=<Zeitstempel>` als Cache-Brecher, `null` ohne Bild.
 HEIC wandelt die App vor dem Upload auf dem Gerät in JPEG.
 
+## Rückblicke (M9)
+
+| Route | Recht |
+|---|---|
+| `GET /families/:id/recaps` | Mitglied |
+| `POST /families/:id/recaps` `{ kind: MONTH\|YEAR\|SECONDS, period: JJJJ-MM \| JJJJ }` → 202 | canUpload |
+| `DELETE /recaps/:id` | Familien-Admin |
+| `GET /recaps/:id/video`, `GET /recaps/:id/poster` (signiert **oder** Mitglied) | Mitglied |
+| `GET /families/:id/on-this-day` → `{ groups: [{ label, date, monthsAgo, items: Media[] }] }` | Mitglied |
+
+Der Worker wählt die Medien gleichmässig über den Zeitraum verteilt (Monat: ~32 pro Tag verteilt, Jahr: ~60 nach
+Wochen, Sekunden-Film: genau eines pro Tag, je 1 s), bevorzugt Kommentiertes, begrenzt Videos, und baut mit ffmpeg
+ein 1080p-Video: Titelkarte, Fotos mit Kamerafahrt vor unscharfem Hintergrund, Ausschnitte aus der Mitte der Videos,
+Überblendungen, Abspann mit Musik-Nachweis. Musik: zufälliges Stück aus `MUSIC_PATH` (Standard `<Medien>/_music`,
+eigene MP3s) oder den mitgelieferten Stücken von Kevin MacLeod (CC BY 4.0, Nachweis im Abspann).
+Automatik über BullMQ-Job-Scheduler: am 1. jedes Monats 06:00 der Vormonat, am 2. Januar 07:00 das Vorjahr
+(Europe/Zurich), nur für Familien mit Medien im Zeitraum. Fertige Videos lösen einen Push an alle Mitglieder aus
+(`type: recap`, `recapId`). `POST` auf einen bestehenden Zeitraum baut das Video neu (409 `RECAP_EMPTY` ohne Medien).
+
 ## Export (M8)
 
 | Route | Recht |

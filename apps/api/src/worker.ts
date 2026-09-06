@@ -7,6 +7,10 @@ import { BullMqMediaQueue, MEDIA_QUEUE, redisConnectionFromUrl, type MediaJobDat
 import { MediaStorage } from './lib/storage.js';
 import { MediaProcessor } from './services/media-processor.js';
 import { NotificationService } from './services/notification.service.js';
+import { RecapService, type RecapBuildEnv } from './services/recap.service.js';
+import { UrlSigner } from './lib/signed-url.js';
+import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { createPushSender } from './services/push.js';
 
 async function main() {
@@ -18,6 +22,15 @@ async function main() {
   const queue = new BullMqMediaQueue(config.redisUrl, config.notifyDigestSeconds);
   const pushSender = createPushSender(env.FIREBASE_SERVICE_ACCOUNT, log);
   const notifications = new NotificationService(prisma, pushSender, log);
+  const recaps = new RecapService(prisma, storage, new UrlSigner(config.jwtSecret, config.signedUrlTtlSeconds), queue);
+  const assetsDir = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'assets');
+  const recapEnv: RecapBuildEnv = {
+    ffmpegPath: config.ffmpegPath ?? 'ffmpeg',
+    fontPath: process.env.RECAP_FONT ?? join(assetsDir, 'fonts', 'Baloo2-Bold.ttf'),
+    // eigene Musik (MUSIC_PATH, Standard <Medien>/_music) vor den mitgelieferten Stücken
+    musicDirs: [process.env.MUSIC_PATH ?? join(config.mediaRoot, '_music'), join(assetsDir, 'music')],
+    log,
+  };
   const processor = new MediaProcessor(prisma, storage, {
     ffmpegPath: config.ffmpegPath,
     ffprobePath: config.ffprobePath,
@@ -34,6 +47,20 @@ async function main() {
         log.info({ familyId, ...outcome }, 'media digest');
         return;
       }
+      if (job.name === 'recap') {
+        const { recapId } = job.data as { recapId: string };
+        const recap = await recaps.build(recapId, recapEnv);
+        if (recap.status === 'FAILED') throw new Error(recap.error ?? 'recap failed');
+        const outcome = await notifications.notifyRecap(recapId);
+        log.info({ recapId, ...outcome }, 'recap push');
+        return;
+      }
+      if (job.name === 'recap-schedule') {
+        const { kind } = job.data as { kind: 'MONTH' | 'YEAR' };
+        const { created } = await recaps.scheduleDue(kind);
+        log.info({ kind, created: created.length }, 'recap schedule');
+        return;
+      }
       const { mediaId } = job.data as { mediaId: string };
       const media = await processor.process(mediaId);
       if (media.status === 'FAILED') {
@@ -44,7 +71,7 @@ async function main() {
     {
       connection: redisConnectionFromUrl(config.redisUrl),
       concurrency: Number(process.env.WORKER_CONCURRENCY ?? 2),
-      lockDuration: 10 * 60 * 1000, // lange Videos
+      lockDuration: 30 * 60 * 1000, // lange Videos, Rückblicke mit vielen Segmenten
     },
   );
 
@@ -62,7 +89,8 @@ async function main() {
   process.on('SIGTERM', () => void shutdown('SIGTERM'));
   process.on('SIGINT', () => void shutdown('SIGINT'));
 
-  log.info({ queue: MEDIA_QUEUE, mediaRoot: config.mediaRoot, push: pushSender.enabled ? 'fcm' : 'off' }, 'worker started');
+  await queue.ensureRecapSchedules().catch((err) => log.warn({ err }, 'recap schedules not registered'));
+  log.info({ queue: MEDIA_QUEUE, mediaRoot: config.mediaRoot, push: pushSender.enabled ? 'fcm' : 'off', recaps: 'monthly + yearly' }, 'worker started');
 }
 
 main().catch((err) => {

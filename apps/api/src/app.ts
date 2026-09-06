@@ -23,6 +23,7 @@ import { healthRoutes } from './routes/health.js';
 import { inviteRoutes } from './routes/invites.js';
 import { meRoutes } from './routes/me.js';
 import { exportRoutes } from './routes/export.js';
+import { recapRoutes } from './routes/recaps.js';
 import { mediaRoutes } from './routes/media.js';
 import { uploadRoutes } from './routes/uploads.js';
 import { NotificationService } from './services/notification.service.js';
@@ -87,6 +88,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
       await api.register(uploadRoutes);
       await api.register(mediaRoutes);
       await api.register(exportRoutes);
+      await api.register(recapRoutes);
       await api.register(commentRoutes);
       await api.register(deviceRoutes);
       await api.register(activityRoutes);

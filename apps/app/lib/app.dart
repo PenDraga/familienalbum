@@ -21,6 +21,8 @@ import 'features/push/push_service.dart';
 import 'features/timeline/timeline_controller.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/timeline/timeline_screen.dart';
+import 'features/recaps/recap_screen.dart';
+import 'features/recaps/recaps_repository.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_logo.dart';
 
@@ -80,6 +82,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(path: 'activity', builder: (_, _) => const ActivityScreen()),
+          GoRoute(path: 'recaps/:id', builder: (_, state) => RecapScreen(recapId: state.pathParameters['id']!)),
           GoRoute(
             path: 'settings',
             builder: (_, _) => const SettingsScreen(),
@@ -111,7 +114,10 @@ class FamilienalbumApp extends ConsumerWidget {
       if (event == null) return;
       ref.read(timelineControllerProvider.notifier).refresh();
       ref.read(unreadProvider.notifier).refresh();
-      if (event.openedFromNotification && event.mediaId != null) {
+      if (event.type == 'recap') ref.invalidate(recapsProvider);
+      if (event.openedFromNotification && event.recapId != null) {
+        ref.read(routerProvider).go('/recaps/${event.recapId}');
+      } else if (event.openedFromNotification && event.mediaId != null) {
         ref.read(routerProvider).go('/media/${event.mediaId}');
       } else if (event.openedFromNotification) {
         ref.read(routerProvider).go('/activity');

@@ -17,6 +17,7 @@ import '../auth/auth_models.dart';
 import '../autoupload/auto_upload_section.dart';
 import 'avatar_sheet.dart';
 import 'export_download.dart';
+import '../recaps/create_recap_dialog.dart';
 import 'profile_dialogs.dart';
 import '../autoupload/auto_upload_service.dart';
 import '../timeline/timeline_controller.dart';
@@ -154,6 +155,19 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
+          if (selected != null && selected.membership.canUpload) ...[
+            const SizedBox(height: 24),
+            _SectionTitle('Rückblicke'),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.movie_creation_outlined),
+                title: const Text('Rückblick erstellen'),
+                subtitle: const Text('Monat, Jahr oder Sekunden-Film. Monats- und Jahresvideos entstehen auch automatisch.'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => showCreateRecapDialog(context, ref, selected.id),
+              ),
+            ),
+          ],
           if (selected != null && selected.membership.canDownload) ...[
             const SizedBox(height: 24),
             _SectionTitle('Export'),

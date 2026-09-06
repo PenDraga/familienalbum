@@ -4,7 +4,7 @@
 # In Trixie sind die libheif-Decoder Plugins – libde265 (HEVC) muss ausdrücklich mit, weil Recommends aus sind.
 FROM node:22-trixie-slim AS base
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends openssl ca-certificates ffmpeg libheif-examples libheif-plugin-libde265 \
+  && apt-get install -y --no-install-recommends openssl ca-certificates curl fontconfig ffmpeg libheif-examples libheif-plugin-libde265 \
   && rm -rf /var/lib/apt/lists/*
 WORKDIR /repo
 
@@ -17,6 +17,8 @@ RUN npm ci --no-audit --no-fund
 # --- Build ---
 FROM deps AS build
 COPY apps/api apps/api
+# Lizenzfreie Musik für Rückblicke (Kevin MacLeod, CC BY 4.0) – Fehler sind nicht fatal
+RUN sh apps/api/scripts/fetch-music.sh
 RUN npm run prisma:generate -w apps/api && npm run build -w apps/api
 RUN npm prune --omit=dev --no-audit --no-fund
 
@@ -29,6 +31,9 @@ COPY --from=build /repo/apps/api/package.json apps/api/
 COPY --from=build /repo/apps/api/node_modules apps/api/node_modules
 COPY --from=build /repo/apps/api/dist apps/api/dist
 COPY --from=build /repo/apps/api/prisma apps/api/prisma
+COPY --from=build /repo/apps/api/assets apps/api/assets
+# Schrift für Titelkarten (sharp/SVG findet sie über fontconfig)
+RUN mkdir -p /usr/share/fonts/truetype/familienalbum && cp apps/api/assets/fonts/*.ttf /usr/share/fonts/truetype/familienalbum/ && fc-cache -f
 
 COPY apps/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 

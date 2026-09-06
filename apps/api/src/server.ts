@@ -7,6 +7,9 @@ import { MediaStorage } from './lib/storage.js';
 import { MediaProcessor } from './services/media-processor.js';
 import { NotificationService } from './services/notification.service.js';
 import { createPushSender } from './services/push.js';
+import { RecapService } from './services/recap.service.js';
+import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
 async function main() {
   const env = loadEnv();
@@ -24,6 +27,7 @@ async function main() {
     mediaQueue: {
       enqueueProcessMedia: (id) => queue.enqueueProcessMedia(id),
       enqueueNotifyMedia: (f, u) => queue.enqueueNotifyMedia(f, u),
+      enqueueRecap: (id) => queue.enqueueRecap(id),
       close: () => queue.close(),
     },
     logger:
@@ -44,6 +48,22 @@ async function main() {
         },
         notify: async (familyId, uploaderId) => {
           await notifications.notifyNewMedia(familyId, uploaderId);
+        },
+        recap: async (recapId) => {
+          const assetsDir = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'assets');
+          const recapSvc = new RecapService(prisma, app.storage, app.signer, {
+            enqueueProcessMedia: (id) => queue.enqueueProcessMedia(id),
+            enqueueNotifyMedia: (f, u) => queue.enqueueNotifyMedia(f, u),
+            enqueueRecap: (id) => queue.enqueueRecap(id),
+            close: async () => {},
+          });
+          const recap = await recapSvc.build(recapId, {
+            ffmpegPath: config.ffmpegPath ?? 'ffmpeg',
+            fontPath: process.env.RECAP_FONT ?? join(assetsDir, 'fonts', 'Baloo2-Bold.ttf'),
+            musicDirs: [process.env.MUSIC_PATH ?? join(config.mediaRoot, '_music'), join(assetsDir, 'music')],
+            log: app.log,
+          });
+          if (recap.status === 'READY') await notifications.notifyRecap(recapId);
         },
       },
       config.notifyDigestSeconds,

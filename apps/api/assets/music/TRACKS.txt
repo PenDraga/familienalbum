@@ -1,0 +1,13 @@
+# Musik für Rückblick-Videos – Kevin MacLeod (incompetech.com), Lizenz CC BY 4.0.
+# Namensnennung erfolgt im Abspann jedes Videos. Format: Titel|URL
+# Eigene Stücke: als MP3 in den Ordner MUSIC_PATH (Standard <Medien>/_music) legen, Dateiname = Titel.
+Wallpaper|https://incompetech.com/music/royalty-free/mp3-royaltyfree/Wallpaper.mp3
+Carefree|https://incompetech.com/music/royalty-free/mp3-royaltyfree/Carefree.mp3
+Fretless|https://incompetech.com/music/royalty-free/mp3-royaltyfree/Fretless.mp3
+Cheery Monday|https://incompetech.com/music/royalty-free/mp3-royaltyfree/Cheery%20Monday.mp3
+Life of Riley|https://incompetech.com/music/royalty-free/mp3-royaltyfree/Life%20of%20Riley.mp3
+Wholesome|https://incompetech.com/music/royalty-free/mp3-royaltyfree/Wholesome.mp3
+Sweeter Vermouth|https://incompetech.com/music/royalty-free/mp3-royaltyfree/Sweeter%20Vermouth.mp3
+Bright Wish|https://incompetech.com/music/royalty-free/mp3-royaltyfree/Bright%20Wish.mp3
+Dreamy Flashback|https://incompetech.com/music/royalty-free/mp3-royaltyfree/Dreamy%20Flashback.mp3
+Pamgaea|https://incompetech.com/music/royalty-free/mp3-royaltyfree/Pamgaea.mp3

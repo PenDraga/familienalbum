@@ -32,6 +32,17 @@ export class MediaStorage {
     return join(this.mediaDir(familyId, mediaId), 'poster.jpg');
   }
 
+  /** Rückblick-Videos: <root>/<familyId>/_recaps/<recapId>/{video.mp4, poster.jpg} */
+  recapDir(familyId: string, recapId: string) {
+    return join(this.root, familyId, '_recaps', recapId);
+  }
+  recapVideoPath(familyId: string, recapId: string) {
+    return join(this.recapDir(familyId, recapId), 'video.mp4');
+  }
+  recapPosterPath(familyId: string, recapId: string) {
+    return join(this.recapDir(familyId, recapId), 'poster.jpg');
+  }
+
   /** Profilbilder: <root>/_avatars/<userId>.webp (512×512, vom Server erzeugt) */
   avatarPath(userId: string) {
     return join(this.root, '_avatars', `${userId}.webp`);

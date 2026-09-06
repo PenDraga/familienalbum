@@ -4,7 +4,9 @@ export const MEDIA_QUEUE = 'process-media';
 
 export type MediaJobData =
   | { mediaId: string } // name: 'process'
-  | { familyId: string; uploaderId: string }; // name: 'notify'
+  | { familyId: string; uploaderId: string } // name: 'notify'
+  | { recapId: string } // name: 'recap'
+  | { kind: 'MONTH' | 'YEAR' }; // name: 'recap-schedule' (Job-Scheduler, monatlich/jährlich)
 
 /** Abstraktion über die Job-Queue, damit Tests ohne Redis laufen. */
 export interface MediaQueue {
@@ -12,6 +14,8 @@ export interface MediaQueue {
   enqueueProcessMedia(mediaId: string): Promise<void>;
   /** Push "neue Medien" – gebündelt pro Familie und Uploader (Digest). */
   enqueueNotifyMedia(familyId: string, uploaderId: string): Promise<void>;
+  /** Rückblick-Video bauen. */
+  enqueueRecap(recapId: string): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -78,6 +82,27 @@ export class BullMqMediaQueue implements MediaQueue {
     );
   }
 
+  async enqueueRecap(recapId: string) {
+    const jobId = `recap-${recapId}`;
+    const existing = await this.queue.getJob(jobId);
+    if (existing) {
+      const state = await existing.getState();
+      if (state === 'failed') return existing.retry();
+      if (state === 'completed' || state === 'unknown') await existing.remove();
+      else return;
+    }
+    await this.queue.add('recap', { recapId }, { jobId, attempts: 2, backoff: { type: 'fixed', delay: 60_000 } });
+  }
+
+  /**
+   * Zeitpläne für automatische Rückblicke (idempotent; BullMQ Job Scheduler): am 1. jedes Monats
+   * um 06:00 der Vormonat, am 2. Januar um 07:00 das Vorjahr – Zeitzone Europe/Zurich.
+   */
+  async ensureRecapSchedules() {
+    await this.queue.upsertJobScheduler('recap-monthly', { pattern: '0 6 1 * *', tz: 'Europe/Zurich' }, { name: 'recap-schedule', data: { kind: 'MONTH' } });
+    await this.queue.upsertJobScheduler('recap-yearly', { pattern: '0 7 2 1 *', tz: 'Europe/Zurich' }, { name: 'recap-schedule', data: { kind: 'YEAR' } });
+  }
+
   close() {
     return this.queue.close();
   }
@@ -96,17 +121,24 @@ export class RecordingMediaQueue implements MediaQueue {
     this.notifications.push({ familyId, uploaderId });
   }
 
+  readonly recaps: string[] = [];
+  async enqueueRecap(recapId: string) {
+    this.recaps.push(recapId);
+  }
+
   async close() {}
 
   reset() {
     this.enqueued.length = 0;
     this.notifications.length = 0;
+    this.recaps.length = 0;
   }
 }
 
 export interface InlineHandlers {
   process: (mediaId: string) => Promise<void>;
   notify: (familyId: string, uploaderId: string) => Promise<void>;
+  recap?: (recapId: string) => Promise<void>;
 }
 
 /** Verarbeitet sofort im selben Prozess (Dev ohne Redis/Worker); Benachrichtigungen mit Timer gebündelt. */
@@ -133,6 +165,12 @@ export class InlineMediaQueue implements MediaQueue {
     }, this.digestSeconds * 1000);
     timer.unref();
     this.pending.set(key, timer);
+  }
+
+  async enqueueRecap(recapId: string) {
+    const handler = this.handlers.recap;
+    if (!handler) return;
+    handler(recapId).catch((err) => this.onError(err, `recap:${recapId}`));
   }
 
   async close() {

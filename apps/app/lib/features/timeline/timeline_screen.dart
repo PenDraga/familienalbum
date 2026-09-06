@@ -19,6 +19,7 @@ import '../media/taken_at_dialog.dart';
 import '../upload/upload_controller.dart';
 import '../upload/upload_sheet.dart';
 import 'justified_layout.dart';
+import '../recaps/collections_strip.dart';
 import 'media_model.dart';
 import 'selection_controller.dart';
 import 'timeline_controller.dart';
@@ -291,6 +292,7 @@ class _ImmersiveTimeline extends ConsumerWidget {
             oldestMonth: state.items.isEmpty ? null : state.items.last.monthKey,
           ),
         ),
+        SliverToBoxAdapter(child: CollectionsStrip(family: family)),
         if (state.items.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,

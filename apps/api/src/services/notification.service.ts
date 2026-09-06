@@ -82,6 +82,20 @@ export class NotificationService {
     return { ...sent, count: 1 };
   }
 
+  /** Rückblick fertig: alle Mitglieder der Familie. */
+  async notifyRecap(recapId: string): Promise<NotifyOutcome> {
+    const recap = await this.prisma.recap.findUnique({ where: { id: recapId }, include: { family: { select: { name: true } } } });
+    if (!recap || recap.status !== 'READY') return NONE;
+    const members = await this.prisma.familyMember.findMany({ where: { familyId: recap.familyId }, select: { userId: true } });
+    const message: PushMessage = {
+      title: `Rückblick ${recap.title}`,
+      body: `Euer Video ist da – ${recap.mediaCount} Momente aus ${recap.title} · ${recap.family.name}`,
+      data: { type: 'recap', familyId: recap.familyId, recapId: recap.id },
+    };
+    const sent = await this.sendToUsers(members.map((m) => m.userId), message);
+    return { ...sent, count: 1 };
+  }
+
   private async sendToUsers(userIds: string[], message: PushMessage): Promise<Omit<NotifyOutcome, 'count'>> {
     if (userIds.length === 0) return { recipients: 0, sent: 0 };
     if (!this.sender.enabled) {

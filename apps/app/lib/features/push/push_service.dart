@@ -26,10 +26,11 @@ abstract final class PushConfig {
 
 /// Eingehende Nachricht, reduziert auf das, was die App braucht.
 class PushEvent {
-  const PushEvent({required this.type, this.familyId, this.mediaId, this.title, this.body, required this.openedFromNotification});
+  const PushEvent({required this.type, this.familyId, this.mediaId, this.recapId, this.title, this.body, required this.openedFromNotification});
   final String type; // media | comment
   final String? familyId;
   final String? mediaId;
+  final String? recapId;
   final String? title;
   final String? body;
   final bool openedFromNotification;
@@ -125,6 +126,7 @@ class PushService {
         type: (d['type'] as String?) ?? 'unknown',
         familyId: d['familyId'] as String?,
         mediaId: d['mediaId'] as String?,
+        recapId: d['recapId'] as String?,
         title: m.notification?.title,
         body: m.notification?.body,
         openedFromNotification: opened,
