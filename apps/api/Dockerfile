@@ -1,6 +1,11 @@
 # Build-Kontext ist das Repo-Root (siehe infra/docker-compose.yml)
-FROM node:22-bookworm-slim AS base
-RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates ffmpeg libheif-examples && rm -rf /var/lib/apt/lists/*
+# Trixie statt Bookworm: libheif 1.19 (Bookworm 1.15 scheitert an iOS-17/18-HEIC mit HDR-Gain-Map und
+# Tiefenkarte: "Too many auxiliary image references") und ffmpeg 7.1, das HEIF als Rückfall selbst liest.
+# In Trixie sind die libheif-Decoder Plugins – libde265 (HEVC) muss ausdrücklich mit, weil Recommends aus sind.
+FROM node:22-trixie-slim AS base
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates ffmpeg libheif-examples libheif-plugin-libde265 \
+  && rm -rf /var/lib/apt/lists/*
 WORKDIR /repo
 
 # --- Abhängigkeiten ---

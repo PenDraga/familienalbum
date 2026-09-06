@@ -120,10 +120,11 @@ export class MediaProcessor {
     }
   }
 
-  /** HEIC → JPEG: zuerst heif-convert (libheif, behält EXIF), sonst ffmpeg (≥ 7.1 liest HEIF). */
+  /** HEIC → JPEG: zuerst libheif (heif-dec ab 1.18, sonst heif-convert; behält EXIF), dann ffmpeg (≥ 7.1 liest HEIF). */
   private async convertHeif(original: string): Promise<string> {
     const target = `${original}.converted.jpg`;
     const attempts: Array<[string, string[]]> = [
+      ['heif-dec', ['-q', '92', original, target]],
       ['heif-convert', ['-q', '92', original, target]],
       [this.opts.ffmpegPath ?? 'ffmpeg', ['-y', '-loglevel', 'error', '-i', original, '-frames:v', '1', '-q:v', '2', target]],
     ];
