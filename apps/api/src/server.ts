@@ -1,3 +1,4 @@
+import pino from 'pino';
 import { buildApp } from './app.js';
 import { configFromEnv, loadEnv } from './config/env.js';
 import { createPrismaClient } from './lib/prisma.js';
@@ -5,14 +6,14 @@ import { BullMqMediaQueue, InlineMediaQueue, type MediaQueue } from './lib/queue
 import { MediaStorage } from './lib/storage.js';
 import { MediaProcessor } from './services/media-processor.js';
 import { NotificationService } from './services/notification.service.js';
-import { FcmPushSender, NoopPushSender, type PushSender } from './services/push.js';
+import { createPushSender } from './services/push.js';
 
 async function main() {
   const env = loadEnv();
   const config = configFromEnv(env);
   const prisma = createPrismaClient(env.DATABASE_URL, env.LOG_LEVEL === 'trace');
 
-  const pushSender: PushSender = env.FIREBASE_SERVICE_ACCOUNT ? new FcmPushSender(env.FIREBASE_SERVICE_ACCOUNT) : new NoopPushSender();
+  const pushSender = createPushSender(env.FIREBASE_SERVICE_ACCOUNT, pino({ level: env.LOG_LEVEL, name: 'api' }));
 
   // Die Queue braucht im Inline-Modus die App (Logger, Notifications) – deshalb erst Platzhalter, dann füllen.
   let queue: MediaQueue;

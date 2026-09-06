@@ -114,8 +114,10 @@ Optional. Ohne Konfiguration pollen die Clients jede Minute.
 
 1. Firebase-Projekt anlegen, iOS-App (Bundle-ID `ch.familienalbum.familienalbum`) und Android-App (gleicher Paketname)
    hinzufügen; für iOS den APNs-Schlüssel (.p8 aus dem Apple-Developer-Konto) in Firebase unter Cloud Messaging hochladen.
-2. **Server:** Dienstkonto-Schlüssel (JSON, Firebase → Projekteinstellungen → Dienstkonten) nach `infra/secrets/` legen
-   und `FIREBASE_SERVICE_ACCOUNT=/run/secrets/<datei>.json` in der `.env` setzen, danach `docker compose up -d`.
+2. **Server:** Dienstkonto-Schlüssel (JSON, Firebase → Projekteinstellungen → Dienstkonten) in den Secrets-Ordner legen
+   (`SECRETS_PATH`, Standard `./secrets` neben der Compose-Datei; bei Dockhand/Portainer absolut setzen) und
+   `FIREBASE_SERVICE_ACCOUNT=/run/secrets/<datei>.json` setzen, danach `docker compose up -d`. Ist der Schlüssel
+   unbrauchbar, startet die API trotzdem – ohne Push, mit dem Grund im Log.
 3. **App:** Werte aus den Firebase-Projekteinstellungen in `apps/app/firebase.env` eintragen (Vorlage
    `firebase.env.example`, je ein API-Key und eine App-ID für iOS und Android) und mit `apps/app/tool/build.sh ipa|apk`
    bauen – das Skript setzt die `--dart-define`s. Ohne `firebase.env` startet die App ohne Firebase und pollt.

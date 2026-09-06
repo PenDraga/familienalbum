@@ -62,7 +62,7 @@ services:
       MEDIA_PROCESSING: queue
     volumes:
       - ${MEDIA_PATH:-./data/media}:/data/media
-      - ./secrets:/run/secrets:ro
+      - ${SECRETS_PATH:-./secrets}:/run/secrets:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,7 +79,7 @@ services:
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
     volumes:
       - ${MEDIA_PATH:-./data/media}:/data/media
-      - ./secrets:/run/secrets:ro
+      - ${SECRETS_PATH:-./secrets}:/run/secrets:ro
     depends_on:
       api:
         condition: service_started

@@ -7,7 +7,7 @@ import { BullMqMediaQueue, MEDIA_QUEUE, redisConnectionFromUrl, type MediaJobDat
 import { MediaStorage } from './lib/storage.js';
 import { MediaProcessor } from './services/media-processor.js';
 import { NotificationService } from './services/notification.service.js';
-import { FcmPushSender, NoopPushSender } from './services/push.js';
+import { createPushSender } from './services/push.js';
 
 async function main() {
   const env = loadEnv();
@@ -16,7 +16,7 @@ async function main() {
   const prisma = createPrismaClient(env.DATABASE_URL);
   const storage = new MediaStorage(config.mediaRoot);
   const queue = new BullMqMediaQueue(config.redisUrl, config.notifyDigestSeconds);
-  const pushSender = env.FIREBASE_SERVICE_ACCOUNT ? new FcmPushSender(env.FIREBASE_SERVICE_ACCOUNT) : new NoopPushSender();
+  const pushSender = createPushSender(env.FIREBASE_SERVICE_ACCOUNT, log);
   const notifications = new NotificationService(prisma, pushSender, log);
   const processor = new MediaProcessor(prisma, storage, {
     ffmpegPath: config.ffmpegPath,

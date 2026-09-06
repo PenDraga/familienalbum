@@ -1,3 +1,4 @@
+import { accessSync, constants, readFileSync } from 'node:fs';
 import { cert, initializeApp, type App } from 'firebase-admin/app';
 import { getMessaging, type Messaging } from 'firebase-admin/messaging';
 
@@ -79,5 +80,34 @@ export class FcmPushSender implements PushSender {
       });
     }
     return result;
+  }
+}
+
+/**
+ * Push-Sender aus der Konfiguration bauen. Ein fehlender oder kaputter Dienstkonto-Schlüssel darf den
+ * Server nicht in eine Neustart-Schleife schicken: dann Push aus, Clients pollen, Grund im Log.
+ */
+export function createPushSender(
+  serviceAccountPath: string | undefined,
+  log: { error: (o: object, msg: string) => void },
+): PushSender {
+  if (!serviceAccountPath) return new NoopPushSender();
+  try {
+    accessSync(serviceAccountPath, constants.R_OK);
+    const parsed = JSON.parse(readFileSync(serviceAccountPath, 'utf8')) as Record<string, unknown>;
+    for (const key of ['project_id', 'client_email', 'private_key']) {
+      if (typeof parsed[key] !== 'string') throw new Error(`Feld "${key}" fehlt – ist das die Dienstkonto-JSON aus Firebase?`);
+    }
+    return new FcmPushSender(serviceAccountPath);
+  } catch (err) {
+    const e = err as NodeJS.ErrnoException;
+    const reason =
+      e.code === 'ENOENT'
+        ? 'Datei nicht gefunden (Pfad aus Sicht des Containers, z.B. /run/secrets/…; ist ./secrets eingehängt?)'
+        : e.code === 'EACCES'
+          ? 'keine Leserechte (Container läuft als Benutzer "node")'
+          : e.message;
+    log.error({ path: serviceAccountPath, reason }, 'FIREBASE_SERVICE_ACCOUNT unbrauchbar – Push bleibt aus, Clients pollen');
+    return new NoopPushSender();
   }
 }
