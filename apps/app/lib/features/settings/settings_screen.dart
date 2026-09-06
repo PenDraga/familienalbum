@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/api_exception.dart';
 import '../../core/providers.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_logo.dart';
@@ -10,6 +12,7 @@ import '../auth/auth_models.dart';
 import '../autoupload/auto_upload_section.dart';
 import 'profile_dialogs.dart';
 import '../autoupload/auto_upload_service.dart';
+import '../timeline/timeline_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -132,6 +135,30 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
+          if (selected != null && selected.membership.canDownload) ...[
+            const SizedBox(height: 24),
+            _SectionTitle('Export'),
+            Card(
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.archive_outlined),
+                    title: const Text('Alle Fotos, Videos und Kommentare'),
+                    subtitle: const Text('ZIP mit Originalen nach Jahr/Monat, Kommentare als Datei. Am besten am Computer.'),
+                    trailing: const Icon(Icons.download_outlined),
+                    onTap: () => _export(context, ref, selected.id, 'alle'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.calendar_month_outlined),
+                    title: const Text('Einzelnen Monat exportieren'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _exportMonth(context, ref, selected.id),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           _SectionTitle('Verbindung'),
           Card(
@@ -236,4 +263,63 @@ Future<void> _changeServer(BuildContext context, WidgetRef ref, String current) 
   controller.dispose();
   if (url == null || url.isEmpty) return;
   await ref.read(authControllerProvider.notifier).switchServer(url);
+}
+
+/// Export starten: signierten Link holen und im Browser öffnen – der Download läuft dort, ohne Token.
+Future<void> _export(BuildContext context, WidgetRef ref, String familyId, String scope) async {
+  final messenger = ScaffoldMessenger.of(context);
+  try {
+    final url = await ref.read(timelineRepositoryProvider).exportLink(familyId, scope);
+    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    if (!ok) messenger.showSnackBar(const SnackBar(content: Text('Download konnte nicht geöffnet werden.')));
+  } catch (e) {
+    messenger.showSnackBar(SnackBar(content: Text(errorMessage(e))));
+  }
+}
+
+/// Monat wählen (Jahr/Monat), dann exportieren.
+Future<void> _exportMonth(BuildContext context, WidgetRef ref, String familyId) async {
+  final now = DateTime.now();
+  var year = now.year;
+  var month = now.month;
+  const months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+  final scope = await showDialog<String>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setState) => AlertDialog(
+        title: const Text('Monat exportieren'),
+        content: Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<int>(
+                initialValue: month,
+                decoration: const InputDecoration(labelText: 'Monat'),
+                items: [for (var i = 1; i <= 12; i++) DropdownMenuItem(value: i, child: Text(months[i - 1]))],
+                onChanged: (v) => setState(() => month = v ?? month),
+              ),
+            ),
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 100,
+              child: DropdownButtonFormField<int>(
+                initialValue: year,
+                decoration: const InputDecoration(labelText: 'Jahr'),
+                items: [for (var y = now.year; y >= now.year - 30; y--) DropdownMenuItem(value: y, child: Text('$y'))],
+                onChanged: (v) => setState(() => year = v ?? year),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, '$year-${month.toString().padLeft(2, '0')}'),
+            child: const Text('Exportieren'),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (scope == null || !context.mounted) return;
+  await _export(context, ref, familyId, scope);
 }

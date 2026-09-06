@@ -159,6 +159,20 @@ bereits ausgegebene Links erst nach Ablauf der TTL.
 Dateiablage: `MEDIA_ROOT/<familyId>/<mediaId>/{original.<ext>, thumb_400.webp, thumb_1600.webp, preview.mp4, poster.jpg}`,
 Chunks unter `MEDIA_ROOT/_uploads/<sessionId>/`.
 
+## Export (M8)
+
+| Route | Recht |
+|---|---|
+| `GET /families/:id/export-link/:scope` → `{ url, expiresAt, scope }` | canDownload |
+| `GET /families/:id/export/:scope` (Bearer mit canDownload **oder** signierter Link) | canDownload |
+
+`scope` ist `alle` oder ein Monat `JJJJ-MM`. Die Antwort ist ein ZIP-Stream ohne Kompression (Fotos und Videos sind
+schon komprimiert): Originale unter `JJJJ/MM/JJJJ-MM-TT_HHMMSS_<Originalname>`, `index.json` mit allen Metadaten
+(Aufnahmedatum, Uploader, Beschreibung, EXIF-Auszug) und Kommentaren, `kommentare.md` zum Lesen, `LIESMICH.txt`.
+Der signierte Link ist eine Stunde gültig und braucht kein Token – so kann der Browser den Download direkt starten.
+Gelöschte und noch nicht verarbeitete Medien fehlen. Das ist die Datenhoheit, die uns FamilyAlbum verweigert hat:
+alles jederzeit in einem Rutsch, ohne App.
+
 ## Kommentare (M4)
 
 | Route | Recht |

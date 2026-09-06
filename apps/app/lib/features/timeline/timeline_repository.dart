@@ -41,6 +41,13 @@ class TimelineRepository {
 
   Future<void> delete(String mediaId) => _api.dio.delete<void>('/media/$mediaId').unwrap();
 
+  /// Signierter Download-Link für den Export (ZIP mit Originalen und Kommentaren); [scope] = 'alle' oder 'JJJJ-MM'.
+  /// Liefert die absolute URL, die der Browser ohne Token öffnen kann.
+  Future<String> exportLink(String familyId, String scope) async {
+    final data = await _api.dio.get<Map<String, dynamic>>('/families/$familyId/export-link/$scope').unwrap();
+    return _api.absolute(data['url'] as String);
+  }
+
   Future<Map<String, dynamic>> createInvite(String familyId, {bool canUpload = false, bool canDownload = false}) =>
       _api.dio
           .post<Map<String, dynamic>>(

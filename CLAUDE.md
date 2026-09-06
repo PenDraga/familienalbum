@@ -152,6 +152,8 @@ GET    /families/:id/timeline?cursor=&month=   gruppiert nach Monat, cursor-pagi
 GET    /media/:id
 GET    /media/:id/thumb/:size            400 | 1600
 GET    /media/:id/original               (canDownload)
+GET    /families/:id/export-link/:scope  signierter Link (canDownload); scope = alle | JJJJ-MM
+GET    /families/:id/export/:scope       ZIP-Stream: Originale JJJJ/MM/, index.json, kommentare.md
 PATCH  /media/:id                        caption
 DELETE /media/:id
 POST   /families/:id/uploads             UploadSession anlegen (sha256, size, name) → 409 wenn Hash existiert
@@ -190,7 +192,8 @@ Services: `api`, `worker` (gleiches Image, anderer Entrypoint), `postgres`, `red
 5. **M5 Auto-Upload** im Hintergrund (iOS und Android getrennt testen)
 6. **M6 iOS + Windows Builds**, TestFlight-Verteilung
 7. **M7 Admin-Bereich** im Web (User, Familien, Storage)
-8. Später: Monats-Rückblick-Video, Export-Zip, Besucher-Anzeige (`lastSeenAt`)
+8. **M8 Export-Zip** (erledigt: alle Fotos, Videos und Kommentare, gesamt oder pro Monat)
+9. Später: Monats-Rückblick-Video, Besucher-Anzeige (`lastSeenAt`)
 
 ## Konventionen
 
