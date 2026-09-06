@@ -112,12 +112,15 @@ docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 
 Optional. Ohne Konfiguration pollen die Clients jede Minute.
 
-1. Firebase-Projekt anlegen, iOS-App (Bundle-ID `ch.familienalbum.familienalbum`) und Android-App hinzufügen;
-   für iOS den APNs-Schlüssel in Firebase hochladen.
-2. **Server:** Dienstkonto-Schlüssel (JSON) nach `infra/secrets/` legen und
-   `FIREBASE_SERVICE_ACCOUNT=/run/secrets/<datei>.json` setzen.
-3. **App:** Werte aus den Firebase-Projekteinstellungen beim Bauen als `--dart-define` mitgeben
-   (`FIREBASE_API_KEY`, `FIREBASE_APP_ID`, `FIREBASE_PROJECT_ID`, `FIREBASE_SENDER_ID`). Fehlen sie, startet die App ohne Firebase.
+1. Firebase-Projekt anlegen, iOS-App (Bundle-ID `ch.familienalbum.familienalbum`) und Android-App (gleicher Paketname)
+   hinzufügen; für iOS den APNs-Schlüssel (.p8 aus dem Apple-Developer-Konto) in Firebase unter Cloud Messaging hochladen.
+2. **Server:** Dienstkonto-Schlüssel (JSON, Firebase → Projekteinstellungen → Dienstkonten) nach `infra/secrets/` legen
+   und `FIREBASE_SERVICE_ACCOUNT=/run/secrets/<datei>.json` in der `.env` setzen, danach `docker compose up -d`.
+3. **App:** Werte aus den Firebase-Projekteinstellungen in `apps/app/firebase.env` eintragen (Vorlage
+   `firebase.env.example`, je ein API-Key und eine App-ID für iOS und Android) und mit `apps/app/tool/build.sh ipa|apk`
+   bauen – das Skript setzt die `--dart-define`s. Ohne `firebase.env` startet die App ohne Firebase und pollt.
+   Die Push-Berechtigung (`aps-environment`) liegt in `ios/Runner/Runner.entitlements`; Xcode aktiviert die Capability
+   über das automatische Signing selbst.
 
 ## Entwicklung (Backend)
 

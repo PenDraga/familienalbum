@@ -49,3 +49,6 @@ app.*.map.json
 
 # Xcode SwiftPM-Cache (Package.resolved wird von Flutter erzeugt)
 **/xcshareddata/swiftpm/
+
+# Firebase-Werte für Push-Builds (lokal, siehe firebase.env.example)
+firebase.env

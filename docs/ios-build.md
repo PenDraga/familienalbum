@@ -77,16 +77,26 @@ flutter build ipa --release --build-name=1.0.0 --build-number=2
 
 ## 5. Push (optional, später)
 
-1. Firebase-Projekt anlegen, iOS-App mit der Bundle-ID hinzufügen.
-2. Im Apple-Developer-Konto einen **APNs Auth Key** (.p8) erzeugen und in Firebase unter Cloud Messaging hochladen.
-3. In Xcode die Capability **Push Notifications** hinzufügen.
-4. App mit den vier Firebase-Werten bauen:
+1. [Firebase-Konsole](https://console.firebase.google.com): Projekt anlegen (Analytics kann aus bleiben), dann
+   «App hinzufügen» → iOS mit Bundle-ID `ch.familienalbum.familienalbum` und nochmals → Android mit demselben Paketnamen.
+   Die angebotenen Dateien `GoogleService-Info.plist`/`google-services.json` werden **nicht** gebraucht, die App bekommt
+   die Werte beim Bauen.
+2. Apple Developer → Certificates, Identifiers & Profiles → **Keys** → «+» → Apple Push Notifications service (APNs)
+   → .p8 herunterladen (nur einmal möglich). In Firebase: Projekteinstellungen → Cloud Messaging → Apple-App →
+   APNs-Authentifizierungsschlüssel hochladen (Key-ID und Team-ID K4GN98FN45 dazu).
+3. Firebase → Projekteinstellungen → Allgemein: pro App «API-Schlüssel», «App-ID», dazu «Projekt-ID» und
+   «Absender-ID» (Cloud Messaging) in `apps/app/firebase.env` eintragen (Vorlage `firebase.env.example`).
+4. Bauen mit Push:
    ```bash
-   flutter build ipa --release \
-     --dart-define=FIREBASE_API_KEY=… --dart-define=FIREBASE_APP_ID=… \
-     --dart-define=FIREBASE_PROJECT_ID=… --dart-define=FIREBASE_SENDER_ID=…
+   cd apps/app && tool/build.sh ipa --build-number=<nächste Nummer>
    ```
-5. Server: Service-Account-JSON nach `infra/secrets/` und `FIREBASE_SERVICE_ACCOUNT` in der `.env` setzen.
+   Die Push-Berechtigung steckt in `ios/Runner/Runner.entitlements`; das automatische Signing schaltet die
+   Capability im Apple-Konto selbst frei.
+5. Server: Firebase → Projekteinstellungen → Dienstkonten → «Neuen privaten Schlüssel generieren», die JSON nach
+   `infra/secrets/` und `FIREBASE_SERVICE_ACCOUNT=/run/secrets/<datei>.json` in der `.env` setzen, `docker compose up -d`.
+   Im API-Log steht danach `push: fcm` statt `off (polling)`.
+6. Prüfen: In der App anmelden (fragt nach Mitteilungs-Erlaubnis), auf einem zweiten Konto ein Foto hochladen –
+   nach der Digest-Wartezeit kommt die Mitteilung.
 
 ## Was auf dem Gerät zu testen ist (bisher ungeprüft)
 
