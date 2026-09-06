@@ -8,9 +8,11 @@ import 'token_store.dart';
 /// Dio-Client mit Bearer-Token, automatischem Refresh (einmaliger Retry) und Problem-JSON-Fehlern.
 class ApiClient {
   ApiClient({required this.baseUrl, required this.tokens, required this.onSessionExpired}) {
+    // Ohne konfigurierten Server (Erststart) darf der Client nicht werfen – Dio verlangt einen Host.
+    // Anfragen laufen dann ins Leere, der Login-Screen fragt die Adresse ab.
     dio = Dio(
       BaseOptions(
-        baseUrl: '$baseUrl/api/v1',
+        baseUrl: baseUrl.isEmpty ? 'http://server-nicht-konfiguriert.invalid/api/v1' : '$baseUrl/api/v1',
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(minutes: 2),
         headers: {'accept': 'application/json'},

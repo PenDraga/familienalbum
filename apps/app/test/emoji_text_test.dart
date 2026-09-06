@@ -1,19 +1,36 @@
 import 'package:familienalbum/widgets/emoji_text.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('ergänzt FE0F bei Text-Herzen und anderen Text-Emoji', () {
-    expect(withEmojiPresentation('Schatz♥♥'), 'Schatz♥️♥️');
-    expect(withEmojiPresentation('a ❤ b'), 'a ❤️ b');
-    expect(withEmojiPresentation('☀ ☕ ⚠'), '☀️ ☕️ ⚠️');
+  test('erkennt Symbole mit Emoji-Kennung (FE0F), nicht aber blanke Textzeichen oder echte Emoji', () {
+    expect(needsEmojiFont('Schatz♥️♥️'), isTrue);
+    expect(needsEmojiFont('✔️ erledigt'), isTrue);
+    expect(needsEmojiFont('Schatz♥'), isFalse);
+    expect(needsEmojiFont('schono \u{1F602}'), isFalse);
+    expect(needsEmojiFont('Nur Text, äöü.'), isFalse);
   });
 
-  test('lässt bereits korrekte Emoji, Tastenkappen und Hauttöne in Ruhe', () {
-    expect(withEmojiPresentation('❤️'), '❤️');
-    expect(withEmojiPresentation('❤︎'), '❤︎');
-    expect(withEmojiPresentation('✌\u{1F3FD}'), '✌\u{1F3FD}');
-    expect(withEmojiPresentation('schono \u{1F602}'), 'schono \u{1F602}');
-    expect(withEmojiPresentation(''), '');
-    expect(withEmojiPresentation('Nur Text, äöü.'), 'Nur Text, äöü.');
+  testWidgets('setzt nur die Emoji-Sequenzen in die Emoji-Schrift', (
+    tester,
+  ) async {
+    const style = TextStyle(fontSize: 14);
+    final span = emojiTextSpan('Mi Hübsch Schatz♥️ ok', style: style);
+    final parts = span.children!.cast<TextSpan>();
+    expect(parts.map((p) => p.text), ['Mi Hübsch Schatz', '♥️', ' ok']);
+    expect(
+      parts[1].style?.fontFamily,
+      anyOf('Apple Color Emoji', 'Noto Color Emoji'),
+    );
+    expect(parts[0].style?.fontFamily, isNull);
+    expect(span.toPlainText(), 'Mi Hübsch Schatz♥️ ok');
+  });
+
+  testWidgets('ohne betroffene Zeichen bleibt ein einfacher Span', (
+    tester,
+  ) async {
+    final span = emojiTextSpan('schono \u{1F602}');
+    expect(span.children, isNull);
+    expect(span.text, 'schono \u{1F602}');
   });
 }

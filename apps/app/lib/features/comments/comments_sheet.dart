@@ -28,7 +28,7 @@ class _CommentsSheet extends ConsumerStatefulWidget {
 }
 
 class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
-  final _input = TextEditingController();
+  final _input = EmojiTextEditingController();
   final _inputFocus = FocusNode();
   final _scroll = ScrollController();
   final _sheet = DraggableScrollableController();
@@ -129,7 +129,8 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage(e))));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(errorMessage(e))));
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -167,7 +168,8 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage(e))));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(errorMessage(e))));
       }
     }
   }
@@ -456,10 +458,7 @@ class _CommentBubble extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    withEmojiPresentation(comment.body),
-                    style: text.bodyMedium,
-                  ),
+                  EmojiText(comment.body, style: text.bodyMedium),
                 ],
               ),
             ),

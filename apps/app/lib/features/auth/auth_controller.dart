@@ -27,6 +27,9 @@ class AuthController extends AsyncNotifier<AuthState> {
 
   @override
   Future<AuthState> build() async {
+    // Erststart ohne Server-Adresse: direkt zum Login, dort wird sie abgefragt
+    final baseUrl = ref.watch(settingsProvider.select((s) => s.baseUrl));
+    if (baseUrl.isEmpty) return const Unauthenticated();
     // Bei geänderter Server-URL neu prüfen
     ref.watch(apiClientProvider);
     final tokens = ref.read(tokenStoreProvider);
