@@ -93,7 +93,11 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
 
     return AuthShell(
       title: 'Einladung',
-      subtitle: preview == null ? 'Gib den Code ein, den du bekommen hast.' : 'Du wurdest eingeladen.',
+      subtitle: preview == null
+          ? 'Gib den Code ein, den du bekommen hast.'
+          : loggedIn
+          ? 'Du wurdest eingeladen. Tritt der Familie bei.'
+          : 'Du wurdest eingeladen. Lege dein eigenes Konto an, um beizutreten.',
       onBack: () => context.go(loggedIn ? '/' : '/login'),
       child: Form(
         key: _form,
@@ -145,6 +149,8 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                       style: text.bodyMedium?.copyWith(color: preview.isValid ? scheme.onSurfaceVariant : scheme.error),
                     ),
                     const SizedBox(height: 10),
+                    Text('Du darfst:', style: text.labelMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                    const SizedBox(height: 6),
                     Wrap(
                       spacing: 8,
                       runSpacing: 6,
@@ -160,11 +166,17 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
               ),
               const SizedBox(height: 20),
               if (!loggedIn) ...[
-                Text('Dein Konto', style: text.titleMedium),
-                const SizedBox(height: 10),
+                Text('Neues Konto anlegen', style: text.titleMedium),
+                const SizedBox(height: 4),
+                Text(
+                  'Zum Beitreten brauchst du ein eigenes Konto. Mit dieser E-Mail und diesem Passwort '
+                  'meldest du dich künftig in der App an.',
+                  style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _name,
-                  decoration: const InputDecoration(labelText: 'Anzeigename', prefixIcon: Icon(Icons.person_outline)),
+                  decoration: const InputDecoration(labelText: 'Dein Name (wird der Familie angezeigt)', prefixIcon: Icon(Icons.person_outline)),
                   textInputAction: TextInputAction.next,
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Bitte Namen angeben' : null,
                 ),
@@ -179,7 +191,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _password,
-                  decoration: const InputDecoration(labelText: 'Passwort (min. 8 Zeichen)', prefixIcon: Icon(Icons.lock_outline)),
+                  decoration: const InputDecoration(labelText: 'Passwort wählen (min. 8 Zeichen)', prefixIcon: Icon(Icons.lock_outline)),
                   obscureText: true,
                   onFieldSubmitted: (_) => _accept(),
                   validator: (v) => (v == null || v.length < 8) ? 'Mindestens 8 Zeichen' : null,
@@ -195,6 +207,11 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                 onPressed: _busy ? null : () => setState(() => _preview = null),
                 child: const Text('Anderen Code eingeben'),
               ),
+              if (!loggedIn)
+                TextButton(
+                  onPressed: _busy ? null : () => context.go('/login'),
+                  child: const Text('Ich habe schon ein Konto – zuerst anmelden'),
+                ),
             ],
             if (_error != null) ...[const SizedBox(height: 12), ErrorBanner(_error!)],
           ],
