@@ -147,17 +147,17 @@ class _CreateCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppTokens.radiusL),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(color: scheme.tertiaryContainer, borderRadius: BorderRadius.circular(16)),
                   child: Icon(Icons.movie_creation_outlined, color: scheme.onTertiaryContainer),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Text('Rückblick erstellen', textAlign: TextAlign.center, style: text.labelLarge),
                 Text('Monat, Jahr oder Sekunden-Film', textAlign: TextAlign.center, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               ],
