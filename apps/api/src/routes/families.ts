@@ -7,6 +7,7 @@ import {
   createFamilyBodySchema,
   createMemberAccountBodySchema,
   familySchema,
+  familyStorageSchema,
   familyWithMembershipSchema,
   memberParamsSchema,
   memberSchema,
@@ -119,6 +120,25 @@ export const familyRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request) => families.listMembers(request.params.id),
+  );
+
+  app.get(
+    '/families/:id/storage',
+    {
+      preHandler: requireFamilyPermission('member'),
+      schema: {
+        tags: ['families'],
+        summary: 'Speicherplatz der Familie (Originale nach Typ); freier Platz nur für Admins',
+        security: bearer,
+        params: idParamsSchema,
+        response: { 200: familyStorageSchema, ...errorResponses(401, 403, 404) },
+      },
+    },
+    async (request) => {
+      const usage = await families.storage(request.params.id);
+      const seesDisk = request.membership!.isFamilyAdmin || request.user!.isAdmin;
+      return { ...usage, disk: seesDisk ? await app.storage.diskSpace() : null };
+    },
   );
 
   app.post(

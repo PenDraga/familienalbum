@@ -172,4 +172,18 @@ export class FamilyService {
       throw Errors.conflict('Die Familie braucht mindestens einen Familien-Administrator.', 'LAST_FAMILY_ADMIN');
     }
   }
+
+  /** Belegter Speicher (Originale, ohne Thumbnails/Vorschauen) pro Medientyp; gelöschte Medien zählen nicht. */
+  async storage(familyId: string) {
+    const rows = await this.prisma.media.groupBy({
+      by: ['type'],
+      where: { familyId, deletedAt: null },
+      _sum: { sizeBytes: true },
+      _count: { _all: true },
+    });
+    const of = (type: 'PHOTO' | 'VIDEO') => rows.find((r) => r.type === type);
+    const photoBytes = of('PHOTO')?._sum.sizeBytes ?? 0;
+    const videoBytes = of('VIDEO')?._sum.sizeBytes ?? 0;
+    return { totalBytes: photoBytes + videoBytes, photoBytes, videoBytes, photoCount: of('PHOTO')?._count._all ?? 0, videoCount: of('VIDEO')?._count._all ?? 0 };
+  }
 }

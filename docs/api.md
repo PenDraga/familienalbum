@@ -45,6 +45,7 @@ Es gibt **keine offene Registrierung**. Konten entstehen durch einen globalen Ad
 | `PATCH /families/:id` `{ name }` | Familien-Admin |
 | `DELETE /families/:id` | globaler Admin |
 | `GET /families/:id/members` | Mitglied |
+| `GET /families/:id/storage` → Originale nach Typ (Bytes, Anzahl); `disk` (gesamt/frei unter `MEDIA_ROOT`) nur für Familien-/globale Admins, sonst `null` | Mitglied |
 | `PATCH /families/:id/members/:userId` `{ isFamilyAdmin?, canUpload?, canDownload?, canComment? }` | Familien-Admin |
 | `DELETE /families/:id/members/:userId` | Familien-Admin, oder man selbst (Austritt) |
 

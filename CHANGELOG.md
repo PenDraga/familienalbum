@@ -15,6 +15,7 @@ Seit der ersten Beta, Stand 2026-09-07.
 - Kommentare bearbeiten; Familien- und globale Admins moderieren alle Kommentare (ADR-0003);
   Kommentar-Push an alle Mitglieder
 - Timeline-Filter `type` und `commented`
+- `GET /families/:id/storage`: belegter Speicher pro Familie (Fotos/Videos), freier Platz unter `MEDIA_ROOT` für Admins
 - Robustes Löschen auf FUSE-Dateisystemen (Unraid), fehlgeschlagene Medien werden beim Start neu eingereiht,
   Bildformat wird an den Bytes erkannt; Image auf Debian Trixie (libheif 1.19, ffmpeg 7.1) für iOS-17/18-HEIC
 - Unbrauchbarer Firebase-Schlüssel legt die API nicht mehr lahm; `SECRETS_PATH` für Stack-Manager
@@ -29,6 +30,8 @@ Seit der ersten Beta, Stand 2026-09-07.
 - Start hängt nicht mehr bei unerreichbarem Server; Server wechseln in den Einstellungen
 - Einladungs-Screen erklärt das neue Konto; Version in den Einstellungen; Filter-Chips; Einstellungen im
   neuen Design; Android-Build mit Release-Signierung
+- Einstellungen → «Speicherplatz»: Verbrauch des Albums nach Fotos/Videos, für Admins zusätzlich freier Platz auf dem Server
+- Play-Store-Eintrag mit Screenshots; Android-Name «Familienalbum»; Build 21 auf beiden Plattformen
 
 ## [0.1.0-beta.1] – 2026-09-05
 

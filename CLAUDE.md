@@ -147,6 +147,7 @@ GET    /users/:id/avatar                 signierter Link (in UserBrief.avatarUrl
 GET    /families                         eigene Familien
 POST   /families                         (isAdmin)
 GET    /families/:id/members
+GET    /families/:id/storage             Speicher der Familie (Originale nach Typ); disk (gesamt/frei) nur Admins
 PATCH  /families/:id/members/:userId     Flags (isFamilyAdmin)
 POST   /families/:id/invites             (isFamilyAdmin)
 POST   /invites/:code/accept

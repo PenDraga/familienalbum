@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
-import { mkdir, readdir, rename, rm, stat } from 'node:fs/promises';
+import { mkdir, readdir, rename, rm, stat, statfs } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Readable } from 'node:stream';
 import { once } from 'node:events';
@@ -15,6 +15,16 @@ export type ThumbSize = 400 | 1600;
  */
 export class MediaStorage {
   constructor(readonly root: string) {}
+
+  /** Gesamt- und freier Platz des Dateisystems unter MEDIA_ROOT (null, wenn nicht ermittelbar). */
+  async diskSpace(): Promise<{ totalBytes: number; freeBytes: number } | null> {
+    try {
+      const s = await statfs(this.root);
+      return { totalBytes: s.blocks * s.bsize, freeBytes: s.bavail * s.bsize };
+    } catch {
+      return null;
+    }
+  }
 
   mediaDir(familyId: string, mediaId: string) {
     return join(this.root, familyId, mediaId);

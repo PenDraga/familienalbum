@@ -82,3 +82,15 @@ export const addMemberBodySchema = z.object({
   canDownload: z.boolean().default(false),
   canComment: z.boolean().default(true),
 });
+
+/** Speicherplatz einer Familie: Originale nach Typ; `disk` nur für Familien-/globale Admins. */
+export const familyStorageSchema = z
+  .object({
+    totalBytes: z.number(),
+    photoBytes: z.number(),
+    videoBytes: z.number(),
+    photoCount: z.number().int(),
+    videoCount: z.number().int(),
+    disk: z.object({ totalBytes: z.number(), freeBytes: z.number() }).nullable(),
+  })
+  .meta({ id: 'FamilyStorage' });

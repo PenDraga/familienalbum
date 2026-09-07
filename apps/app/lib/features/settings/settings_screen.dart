@@ -21,6 +21,7 @@ import 'avatar_sheet.dart';
 import 'export_download.dart';
 import '../recaps/create_recap_dialog.dart';
 import 'profile_dialogs.dart';
+import 'storage_card.dart';
 import '../autoupload/auto_upload_service.dart';
 import '../timeline/timeline_controller.dart';
 
@@ -136,6 +137,9 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             _SectionTitle('Zuletzt im Album'),
             _LastSeenCard(familyId: selected.id, meId: me?.id),
+            const SizedBox(height: 24),
+            _SectionTitle('Speicherplatz'),
+            StorageCard(familyId: selected.id),
           ],
           const SizedBox(height: 24),
           _SectionTitle('Familien'),
