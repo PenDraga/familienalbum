@@ -224,6 +224,11 @@ class SettingsScreen extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Text('Familienalbum', style: text.labelLarge?.copyWith(color: scheme.onSurfaceVariant)),
                 _VersionLabel(style: text.bodySmall?.copyWith(color: scheme.outline)),
+                if (settings.baseUrl.isNotEmpty)
+                  TextButton(
+                    onPressed: () => launchUrl(Uri.parse('${settings.baseUrl}/datenschutz.html'), mode: LaunchMode.externalApplication),
+                    child: const Text('Datenschutzerklärung'),
+                  ),
               ],
             ),
           ),
