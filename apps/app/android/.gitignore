@@ -12,3 +12,6 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Google-Play-Service-Account für Uploads (siehe tool/play_upload.mjs)
+play-service-account.json

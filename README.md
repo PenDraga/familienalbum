@@ -136,7 +136,12 @@ Optional. Ohne Konfiguration pollen die Clients jede Minute.
    über das automatische Signing selbst.
 4. **Rückblick-Musik:** Beim Image-Build werden zehn lizenzfreie Stücke von Kevin MacLeod (incompetech.com, CC BY 4.0)
    geladen; der Nachweis steht im Abspann jedes Videos. Eigene MP3s in `MUSIC_PATH` (Standard `<Medien>/_music`) haben Vorrang.
-5. **Android-APK:** Release-Schlüssel einmalig anlegen (siehe `apps/app/android/key.properties.example`), dann
+5. **Google Play (interner Test):** Erstes Bundle von Hand in der Play Console hochladen (`apps/app/tool/build.sh appbundle`
+   → `build/app/outputs/bundle/release/app-release.aab`). Danach automatisiert: in der Play Console unter
+   Einrichtung → API-Zugriff einen Service-Account mit der Rolle «Releases verwalten» anlegen, dessen JSON-Schlüssel
+   als `apps/app/android/play-service-account.json` ablegen (nicht im Git) und mit `node apps/app/tool/play_upload.mjs`
+   hochladen (`--track=internal|alpha|beta|production`, `--notes="…"`).
+6. **Android-APK:** Release-Schlüssel einmalig anlegen (siehe `apps/app/android/key.properties.example`), dann
    `apps/app/tool/build.sh apk` → `build/app/outputs/flutter-apk/app-release.apk` zum direkten Verteilen. Der Schlüssel
    muss für alle künftigen Versionen derselbe bleiben (Backup!). Hinweis SDK 2026: `flutter_secure_storage` verlangt
    API 37, das SDK liefert die Plattform aber nur als `android-37.0`; AGP 9.1 sucht `android-37` – Ordner kopieren und in
