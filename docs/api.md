@@ -130,7 +130,7 @@ GET  /uploads/:id                        Session für Wiederaufnahme · DELETE /
 
 | Route | Recht |
 |---|---|
-| `GET /families/:id/timeline?limit=&cursor=&month=YYYY-MM` | Mitglied |
+| `GET /families/:id/timeline?limit=&cursor=&month=YYYY-MM&type=PHOTO\|VIDEO&commented=true` (Filter kombinierbar) | Mitglied |
 | `GET /families/:id/timeline/months` → `[{ month, count }]` | Mitglied |
 | `GET /media/:id` | Mitglied |
 | `PATCH /media/:id` `{ caption?, takenAt? }` · `DELETE /media/:id` (Soft-Delete, Dateien weg) | Uploader oder Familien-Admin |

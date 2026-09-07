@@ -150,7 +150,7 @@ GET    /families/:id/members
 PATCH  /families/:id/members/:userId     Flags (isFamilyAdmin)
 POST   /families/:id/invites             (isFamilyAdmin)
 POST   /invites/:code/accept
-GET    /families/:id/timeline?cursor=&month=   gruppiert nach Monat, cursor-paginiert
+GET    /families/:id/timeline?cursor=&month=&type=PHOTO|VIDEO&commented=true   gruppiert nach Monat, cursor-paginiert
 GET    /media/:id
 GET    /media/:id/thumb/:size            400 | 1600
 GET    /media/:id/original               (canDownload)
@@ -200,7 +200,7 @@ Services: `api`, `worker` (gleiches Image, anderer Entrypoint), `postgres`, `red
 8. **M8 Export-Zip** (erledigt: alle Fotos, Videos und Kommentare, gesamt oder pro Monat)
 9. **M9 Rückblicke** (erledigt: Monats-/Jahres-Video und Sekunden-Film per ffmpeg im Worker, automatisch am 1. des Monats
    bzw. 2. Januar und per Knopf; «An diesem Tag»; Musik: Kevin MacLeod CC BY 4.0 mit Nachweis im Abspann)
-10. Später: Besucher-Anzeige (`lastSeenAt`)
+10. **Besucher-Anzeige** (erledigt: Einstellungen → «Zuletzt im Album» aus `lastSeenAt`)
 
 ## Konventionen
 

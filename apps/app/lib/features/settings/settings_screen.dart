@@ -14,6 +14,8 @@ import '../../widgets/app_logo.dart';
 import '../../widgets/user_avatar.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_models.dart';
+import '../admin/admin_models.dart';
+import '../admin/admin_repository.dart';
 import '../autoupload/auto_upload_section.dart';
 import 'avatar_sheet.dart';
 import 'export_download.dart';
@@ -66,13 +68,13 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.badge_outlined),
+                    leading: _IconBadge(Icons.badge_outlined, scheme.primaryContainer),
                     title: const Text('Anzeigename ändern'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => showRenameDialog(context, ref),
                   ),
                   ListTile(
-                    leading: const Icon(Icons.lock_reset),
+                    leading: _IconBadge(Icons.lock_reset, scheme.tertiaryContainer),
                     title: const Text('Passwort ändern'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => showChangePasswordDialog(context, ref),
@@ -88,7 +90,7 @@ class SettingsScreen extends ConsumerWidget {
                 children: [
                   if (selected != null && selected.membership.isFamilyAdmin)
                     ListTile(
-                      leading: const Icon(Icons.group_outlined),
+                      leading: _IconBadge(Icons.group_outlined, scheme.secondaryContainer),
                       title: Text('Mitglieder von ${selected.name}'),
                       subtitle: const Text('Rechte, Konten anlegen, Einladungen'),
                       trailing: const Icon(Icons.chevron_right),
@@ -96,14 +98,14 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   if (me.isAdmin) ...[
                     ListTile(
-                      leading: const Icon(Icons.manage_accounts_outlined),
+                      leading: _IconBadge(Icons.manage_accounts_outlined, scheme.primaryContainer),
                       title: const Text('Benutzer'),
                       subtitle: const Text('Alle Konten, Admin-Rechte, Sperren'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => context.push('/settings/users'),
                     ),
                     ListTile(
-                      leading: const Icon(Icons.family_restroom),
+                      leading: _IconBadge(Icons.family_restroom, scheme.tertiaryContainer),
                       title: const Text('Familien'),
                       subtitle: const Text('Anlegen, löschen, Mitglied werden'),
                       trailing: const Icon(Icons.chevron_right),
@@ -130,6 +132,11 @@ class SettingsScreen extends ConsumerWidget {
             _SectionTitle('Automatischer Upload'),
             const AutoUploadSection(),
           ],
+          if (selected != null) ...[
+            const SizedBox(height: 24),
+            _SectionTitle('Zuletzt im Album'),
+            _LastSeenCard(familyId: selected.id, meId: me?.id),
+          ],
           const SizedBox(height: 24),
           _SectionTitle('Familien'),
           Card(
@@ -147,7 +154,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                 ListTile(
-                  leading: const Icon(Icons.key_outlined),
+                  leading: _IconBadge(Icons.key_outlined, scheme.secondaryContainer),
                   title: const Text('Einladungscode einlösen'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.go('/invite'),
@@ -160,7 +167,7 @@ class SettingsScreen extends ConsumerWidget {
             _SectionTitle('Rückblicke'),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.movie_creation_outlined),
+                leading: _IconBadge(Icons.movie_creation_outlined, scheme.tertiaryContainer),
                 title: const Text('Rückblick erstellen'),
                 subtitle: const Text('Monat, Jahr oder Sekunden-Film. Monats- und Jahresvideos entstehen auch automatisch.'),
                 trailing: const Icon(Icons.chevron_right),
@@ -175,7 +182,7 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.archive_outlined),
+                    leading: _IconBadge(Icons.archive_outlined, scheme.primaryContainer),
                     title: const Text('Alle Fotos, Videos und Kommentare'),
                     subtitle: const Text('ZIP mit Originalen nach Jahr/Monat, Kommentare als Datei. Am besten am Computer.'),
                     trailing: const Icon(Icons.download_outlined),
@@ -183,7 +190,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.calendar_month_outlined),
+                    leading: _IconBadge(Icons.calendar_month_outlined, scheme.secondaryContainer),
                     title: const Text('Einzelnen Monat exportieren'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _exportMonth(context, ref, selected.id),
@@ -196,7 +203,7 @@ class SettingsScreen extends ConsumerWidget {
           _SectionTitle('Verbindung'),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.dns_outlined),
+              leading: _IconBadge(Icons.dns_outlined, scheme.surfaceContainerHigh),
               title: const Text('Server'),
               subtitle: Text(settings.baseUrl),
               trailing: const Icon(Icons.chevron_right),
@@ -425,5 +432,75 @@ class _VersionLabel extends StatelessWidget {
         return Text(label, style: style);
       },
     );
+  }
+}
+
+/// Farbige Icon-Kachel für Listeneinträge (Richtung «Kinderbuch»).
+class _IconBadge extends StatelessWidget {
+  const _IconBadge(this.icon, this.color);
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(14)),
+      child: Icon(icon, size: 20, color: scheme.onSurface),
+    );
+  }
+}
+
+/// Wer war zuletzt im Album – aus `lastSeenAt` der Mitglieder (wird beim Aufruf der API gesetzt).
+final _lastSeenProvider = FutureProvider.family<List<MemberItem>, String>((ref, familyId) => ref.watch(adminRepositoryProvider).members(familyId));
+
+class _LastSeenCard extends ConsumerWidget {
+  const _LastSeenCard({required this.familyId, required this.meId});
+  final String familyId;
+  final String? meId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final members = ref.watch(_lastSeenProvider(familyId));
+    return Card(
+      child: members.when(
+        loading: () => const Padding(padding: EdgeInsets.all(20), child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)))),
+        error: (e, _) => Padding(padding: const EdgeInsets.all(16), child: Text(errorMessage(e), style: TextStyle(color: scheme.error))),
+        data: (list) {
+          final sorted = [...list]..sort((a, b) => (b.lastSeenAt ?? DateTime(2000)).compareTo(a.lastSeenAt ?? DateTime(2000)));
+          return Column(
+            children: [
+              for (final m in sorted)
+                ListTile(
+                  leading: UserAvatar(name: m.displayName, avatarUrl: m.avatarUrl, size: 40, color: m.userId == meId ? scheme.primary : scheme.secondary, foregroundColor: m.userId == meId ? scheme.onPrimary : scheme.onSecondary),
+                  title: Text(m.userId == meId ? '${m.displayName} (du)' : m.displayName),
+                  subtitle: Text(_relative(m.lastSeenAt), style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                  trailing: _isOnline(m.lastSeenAt)
+                      ? Container(width: 10, height: 10, decoration: BoxDecoration(color: scheme.secondary, shape: BoxShape.circle))
+                      : null,
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  static bool _isOnline(DateTime? t) => t != null && DateTime.now().difference(t) < const Duration(minutes: 10);
+
+  static String _relative(DateTime? t) {
+    if (t == null) return 'Noch nie im Album gewesen';
+    final d = DateTime.now().difference(t);
+    if (d.inMinutes < 10) return 'Gerade jetzt';
+    if (d.inHours < 1) return 'Vor ${d.inMinutes} Minuten';
+    if (d.inHours < 24) return d.inHours == 1 ? 'Vor 1 Stunde' : 'Vor ${d.inHours} Stunden';
+    if (d.inDays == 1) return 'Gestern';
+    if (d.inDays < 7) return 'Vor ${d.inDays} Tagen';
+    if (d.inDays < 30) return d.inDays < 14 ? 'Vor 1 Woche' : 'Vor ${d.inDays ~/ 7} Wochen';
+    return 'Am ${t.toLocal().day}.${t.toLocal().month}.${t.toLocal().year}';
   }
 }

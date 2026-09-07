@@ -48,6 +48,10 @@ export const timelineQuerySchema = z.object({
     .string()
     .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
     .optional(),
+  /** Nur Fotos oder nur Videos */
+  type: z.enum(['PHOTO', 'VIDEO']).optional(),
+  /** Nur Medien mit mindestens einem Kommentar */
+  commented: z.coerce.boolean().optional(),
 });
 
 export const timelineResponseSchema = z

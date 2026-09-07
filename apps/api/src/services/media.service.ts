@@ -65,7 +65,7 @@ export class MediaService {
    * Timeline: neueste zuerst, cursor-paginiert (takenAt, id), nach Monat gruppiert.
    * FAILED-Medien sieht nur der Uploader (damit er es merkt), PROCESSING alle (Platzhalter).
    */
-  async timeline(familyId: string, ctx: MediaViewContext, opts: { cursor?: string; limit: number; month?: string }) {
+  async timeline(familyId: string, ctx: MediaViewContext, opts: { cursor?: string; limit: number; month?: string; type?: 'PHOTO' | 'VIDEO'; commented?: boolean }) {
     const cursor = opts.cursor ? decodeCursor(opts.cursor) : null;
     const monthRange = opts.month ? monthBounds(opts.month) : null;
 
@@ -74,6 +74,8 @@ export class MediaService {
       { OR: [{ status: { in: ['READY', 'PROCESSING'] } }, { status: 'FAILED', uploaderId: ctx.membership.userId }] },
     ];
     if (monthRange) conditions.push({ takenAt: { gte: monthRange.start, lt: monthRange.end } });
+    if (opts.type) conditions.push({ type: opts.type });
+    if (opts.commented) conditions.push({ comments: { some: {} } });
     if (cursor) conditions.push({ OR: [{ takenAt: { lt: cursor.takenAt } }, { takenAt: cursor.takenAt, id: { lt: cursor.id } }] });
 
     const rows = await this.prisma.media.findMany({

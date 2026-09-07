@@ -6,11 +6,11 @@ class TimelineRepository {
   TimelineRepository(this._api);
   final ApiClient _api;
 
-  Future<TimelinePage> fetch(String familyId, {String? cursor, int limit = 60}) async {
+  Future<TimelinePage> fetch(String familyId, {String? cursor, int limit = 60, String? type, bool commented = false}) async {
     final data = await _api.dio
         .get<Map<String, dynamic>>(
           '/families/$familyId/timeline',
-          queryParameters: {'limit': limit, 'cursor': ?cursor},
+          queryParameters: {'limit': limit, 'cursor': ?cursor, 'type': ?type, if (commented) 'commented': 'true'},
         )
         .unwrap();
     final items = <MediaItem>[];

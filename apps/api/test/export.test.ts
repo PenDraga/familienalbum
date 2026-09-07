@@ -16,7 +16,7 @@ async function setup() {
   const oma = await ctx.createUser({ displayName: 'Oma' });
   await ctx.addMember(family, oma, { canComment: true, canDownload: false });
   const a = await ctx.uploadAndProcess(admin, family, await makeJpeg(), { name: 'Strand.jpg', takenAt: '2026-08-15T10:00:00.000Z' });
-  const b = await ctx.uploadAndProcess(admin, family, await makePng(), { name: 'Kuchen.png', takenAt: '2026-09-03T19:50:12.000Z' });
+  const b = await ctx.uploadAndProcess(admin, family, await makePng(), { name: 'Kuchen.png', mimeType: 'image/png', takenAt: '2026-09-03T19:50:12.000Z' });
   const comment = (await (await ctx.as(oma)).post(`/media/${b.id}/comments`, { body: 'Mmh ♥️' })).json();
   return { family, admin, oma, a, b, comment };
 }

@@ -293,6 +293,7 @@ class _ImmersiveTimeline extends ConsumerWidget {
           ),
         ),
         SliverToBoxAdapter(child: CollectionsStrip(family: family)),
+        const SliverToBoxAdapter(child: _FilterChips()),
         if (state.items.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
@@ -926,6 +927,37 @@ class _BellButton extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Filter-Chips (Alle · Fotos · Videos · Mit Kommentar) – der Wechsel lädt die Timeline neu.
+class _FilterChips extends ConsumerWidget {
+  const _FilterChips();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final current = ref.watch(timelineFilterProvider);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Row(
+        children: [
+          for (final f in TimelineFilter.values) ...[
+            ChoiceChip(
+              label: Text(f.label),
+              selected: f == current,
+              showCheckmark: false,
+              selectedColor: scheme.primary,
+              backgroundColor: scheme.surfaceContainerLowest,
+              labelStyle: TextStyle(color: f == current ? scheme.onPrimary : scheme.onSurface, fontWeight: FontWeight.w700),
+              onSelected: (_) => ref.read(timelineFilterProvider.notifier).set(f),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ],
+      ),
     );
   }
 }

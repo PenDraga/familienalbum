@@ -41,6 +41,27 @@ class TimelineState {
 
 final timelineRepositoryProvider = Provider<TimelineRepository>((ref) => TimelineRepository(ref.watch(apiClientProvider)));
 
+/// Filter über der Timeline: Alle · Fotos · Videos · Mit Kommentar.
+enum TimelineFilter {
+  all('Alle', null, false),
+  photos('Fotos', 'PHOTO', false),
+  videos('Videos', 'VIDEO', false),
+  withComments('Mit Kommentar', null, true);
+
+  const TimelineFilter(this.label, this.type, this.onlyCommented);
+  final String label;
+  final String? type;
+  final bool onlyCommented;
+}
+
+final timelineFilterProvider = NotifierProvider<TimelineFilterController, TimelineFilter>(TimelineFilterController.new);
+
+class TimelineFilterController extends Notifier<TimelineFilter> {
+  @override
+  TimelineFilter build() => TimelineFilter.all;
+  void set(TimelineFilter f) => state = f;
+}
+
 /// Timeline der aktuell gewählten Familie, seitenweise nachladbar.
 class TimelineController extends AsyncNotifier<TimelineState> {
   static const _pageSize = 60;
@@ -51,7 +72,8 @@ class TimelineController extends AsyncNotifier<TimelineState> {
   Future<TimelineState> build() async {
     final family = ref.watch(selectedFamilyProvider);
     if (family == null) return const TimelineState(items: [], nextCursor: null);
-    final page = await ref.watch(timelineRepositoryProvider).fetch(family.id, limit: _pageSize);
+    final filter = ref.watch(timelineFilterProvider);
+    final page = await ref.watch(timelineRepositoryProvider).fetch(family.id, limit: _pageSize, type: filter.type, commented: filter.onlyCommented);
     return TimelineState(items: page.items, nextCursor: page.nextCursor);
   }
 
@@ -61,7 +83,7 @@ class TimelineController extends AsyncNotifier<TimelineState> {
     if (current == null || !current.hasMore || current.loadingMore || familyId == null) return;
     state = AsyncData(current.copyWith(loadingMore: true));
     try {
-      final page = await ref.read(timelineRepositoryProvider).fetch(familyId, cursor: current.nextCursor, limit: _pageSize);
+      final page = await ref.read(timelineRepositoryProvider).fetch(familyId, cursor: current.nextCursor, limit: _pageSize, type: ref.read(timelineFilterProvider).type, commented: ref.read(timelineFilterProvider).onlyCommented);
       final known = current.items.map((m) => m.id).toSet();
       state = AsyncData(
         TimelineState(
@@ -80,7 +102,7 @@ class TimelineController extends AsyncNotifier<TimelineState> {
     if (familyId == null) return;
     final current = state.whenOrNull(data: (s) => s);
     try {
-      final page = await ref.read(timelineRepositoryProvider).fetch(familyId, limit: _pageSize);
+      final page = await ref.read(timelineRepositoryProvider).fetch(familyId, limit: _pageSize, type: ref.read(timelineFilterProvider).type, commented: ref.read(timelineFilterProvider).onlyCommented);
       if (current == null) {
         state = AsyncData(TimelineState(items: page.items, nextCursor: page.nextCursor));
         return;
