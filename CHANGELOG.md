@@ -3,6 +3,33 @@
 Alle nennenswerten Änderungen. Versionen folgen [SemVer](https://semver.org/lang/de/); bis 1.0 sind Änderungen an
 der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die Releases.
 
+## [Unreleased]
+
+Seit der ersten Beta, Stand 2026-09-07.
+
+### Server
+- Rückblick-Videos (Monat, Jahr, Sekunden-Film) per ffmpeg im Worker, automatisch am Monatsersten / 2. Januar
+  und per Knopf; «An diesem Tag»; Musik von Kevin MacLeod (CC BY 4.0) mit Nachweis im Abspann
+- Export als ZIP (gesamt oder pro Monat) mit Originalen, `index.json` und Kommentaren; signierter Link
+- Profilbilder (`PUT /me/avatar`, 512×512 WebP), `avatarUrl` in allen Benutzer-DTOs
+- Kommentare bearbeiten; Familien- und globale Admins moderieren alle Kommentare (ADR-0003);
+  Kommentar-Push an alle Mitglieder
+- Timeline-Filter `type` und `commented`
+- Robustes Löschen auf FUSE-Dateisystemen (Unraid), fehlgeschlagene Medien werden beim Start neu eingereiht,
+  Bildformat wird an den Bytes erkannt; Image auf Debian Trixie (libheif 1.19, ffmpeg 7.1) für iOS-17/18-HEIC
+- Unbrauchbarer Firebase-Schlüssel legt die API nicht mehr lahm; `SECRETS_PATH` für Stack-Manager
+
+### App
+- Redesign «Kinderbuch»: neues Logo und App-Icon, Vanille/Koralle/Lagune/Sonne, Baloo 2 und Nunito gebündelt
+- Push auf iOS (APNs-Registrierung, Token-Typ aus dem Profil) und Android
+- Sammlungen-Leiste: «An diesem Tag», Rückblicke, «Rückblick erstellen»; Rückblick-Player mit Teilen
+- Export in den Einstellungen (auf dem Handy in der App geladen, dann Teilen-Blatt)
+- Profilbild wählen; Avatare bei Kommentaren, Aktivität, Mitgliedern; «Zuletzt im Album»
+- Kommentare bearbeiten/löschen, Sprechblasen, Text-Emoji (♥️ ✈️ ⚠️ …) farbig, Sheet weicht der Tastatur aus
+- Start hängt nicht mehr bei unerreichbarem Server; Server wechseln in den Einstellungen
+- Einladungs-Screen erklärt das neue Konto; Version in den Einstellungen; Filter-Chips; Einstellungen im
+  neuen Design; Android-Build mit Release-Signierung
+
 ## [0.1.0-beta.1] – 2026-09-05
 
 Erste Beta für den Familientest: Server im Dauerbetrieb, Web-App und iOS-App im Einsatz.

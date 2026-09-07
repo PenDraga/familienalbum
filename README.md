@@ -2,10 +2,12 @@
 
 Privates, selbst gehostetes Familienalbum (nach dem Vorbild von FamilyAlbum/Mitene). Fotos und Videos werden von
 Familienmitgliedern hochgeladen, chronologisch nach Aufnahmedatum angezeigt, kommentiert und bei Bedarf als Original
-gesichert. Läuft als Docker-Compose-Stack zu Hause, von aussen per Cloudflare Tunnel erreichbar.
+gesichert. Läuft als Docker-Compose-Stack zu Hause, von aussen über einen Reverse-Proxy (Traefik, Caddy) oder
+Cloudflare Tunnel erreichbar.
 Clients: iOS, Android, Web (ein Flutter-Codebase). Projekt-Brief und Konventionen: [CLAUDE.md](./CLAUDE.md).
 
-**Status: Beta.** Der Server läuft im Dauerbetrieb, die Web-App und die iOS-App werden im Familienkreis getestet.
+**Status: Beta.** Der Server läuft im Dauerbetrieb; iOS-App (TestFlight), Android-App (APK) und Web-App werden im
+Familienkreis genutzt.
 Änderungen siehe [CHANGELOG.md](./CHANGELOG.md).
 
 ## Funktionen
@@ -21,8 +23,17 @@ Clients: iOS, Android, Web (ein Flutter-Codebase). Projekt-Brief und Konventione
 - **Kommentare und Aktivität:** Kommentare pro Medium, Glocke mit Ungelesen-Zähler, Verlauf nach Tagen
   (wer hat wann hochgeladen oder kommentiert, mit Sprung zum Foto).
 - **Originale:** direkt in der App in die Fotos-Mediathek sichern oder teilen, im Browser herunterladen.
-- **Push** (optional, Firebase Cloud Messaging): Sammelmeldung bei neuen Uploads, sofort bei Kommentaren;
-  ohne Firebase fragen die Clients regelmässig nach.
+- **Rückblicke:** Monats- und Jahres-Video sowie Sekunden-Film, vom Server mit ffmpeg gebaut (Kamerafahrt,
+  Überblendungen, Titelkarte, lizenzfreie Musik mit Nachweis), automatisch am Monatsersten und per Knopf;
+  «An diesem Tag» zeigt Fotos vom selben Kalendertag früherer Monate und Jahre.
+- **Export:** alle Fotos, Videos und Kommentare als ZIP, gesamt oder pro Monat, mit `index.json` und Kommentaren
+  als Datei – die Datenhoheit, die kommerzielle Dienste verweigern.
+- **Profil:** Profilbild pro Benutzer, sichtbar bei Kommentaren, Aktivität und Mitgliedern; Kommentare bearbeitbar
+  (Autor, Familien-Admin oder globaler Admin); «Zuletzt im Album» zeigt, wer wann zuletzt da war.
+- **Timeline-Filter:** Alle · Fotos · Videos · Mit Kommentar.
+- **Push** (Firebase Cloud Messaging): Sammelmeldung bei neuen Uploads, sofort bei Kommentaren, Meldung bei
+  fertigen Rückblicken; ohne Firebase fragen die Clients regelmässig nach.
+- **Design «Kinderbuch»:** warme Vanille, Koralle, Lagune, Sonne; Baloo 2 und Nunito, gebündelt.
 
 ## Aufbau
 
@@ -40,7 +51,7 @@ docs        API-Übersicht, ADRs, iOS-Build, generierte OpenAPI-Spezifikation
 | Medien | Dateisystem-Bind-Mount, Thumbnails als WebP (400/1600), Video-Preview als H.264 MP4 |
 | Auth | E-Mail + Argon2id, JWT-Access-Token (15 min) + Refresh-Token mit Rotation (30 Tage) |
 | Clients | Flutter (Riverpod, go_router, Dio) |
-| Auslieferung | Caddy serviert Web-App und proxied `/api`; Cloudflare Tunnel für den Zugriff von aussen |
+| Auslieferung | Caddy serviert Web-App und proxied `/api`; davor Traefik/Reverse-Proxy oder Cloudflare Tunnel |
 
 ## Betrieb (Docker Compose)
 
@@ -158,7 +169,7 @@ starten (`docker run -d --name familienalbum-redis -p 6379:6379 redis:7-alpine`)
 
 | Skript (in `apps/api`) | Zweck |
 |---|---|
-| `npm test` | Vitest + Testcontainers (PostgreSQL 16), 180 Integrationstests |
+| `npm test` | Vitest + Testcontainers (PostgreSQL 16), 207 Integrationstests; `npm run test:unit` ohne Docker |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run openapi` | schreibt `docs/openapi.json` |
 | `npm run prisma:migrate` | Migration aus Schema-Änderungen erzeugen und anwenden |
@@ -212,10 +223,12 @@ rückwirkend wählbar) werden in die gewählte Familie hochgeladen, standardmäs
 - [x] **M3** Flutter Basis: Login, Einladung einlösen, Timeline, Detailansicht, manueller Upload
 - [x] **M3b** Design: immersive Timeline, Mosaik, Glas-Leisten, Wischen zum Schliessen, Hell/Dunkel, Branding
 - [x] **M4** Kommentare + Push (FCM-Digest) + Aktivitäts-Verlauf mit Glocke
-- [x] **M5** Auto-Upload im Hintergrund (Code fertig, Gerätetest auf iOS läuft, Android offen)
+- [x] **M5** Auto-Upload im Hintergrund (iOS auf dem Gerät geprüft, Android noch ungetestet)
+- [x] **M6** iOS über TestFlight, Android als signiertes APK (Play Console in Vorbereitung). Windows zurückgestellt,
+  die Web-App deckt den PC ab.
 - [x] **M7** Verwaltung in der App: Benutzer anlegen/sperren, Familien, Mitglieder-Rechte, Einladungen
-- [x] **Zusätzlich:** Aufnahme-Metadaten und Datumskorrektur, Original sichern/teilen, Deploy über GHCR-Images
-- [ ] **M6** iOS: Build auf dem Mac läuft auf dem Gerät, TestFlight-Verteilung offen. Android-Build offen.
-  Windows zurückgestellt, die Web-App deckt den PC ab.
-- [ ] **Push scharf schalten:** Firebase-Projekt, APNs-Schlüssel, Dienstkonto (siehe oben)
-- [ ] Später: Monats-Rückblick, Export-Zip, Besucher-Anzeige, Import aus FamilyAlbum
+- [x] **M8** Export-Zip: alle Fotos, Videos und Kommentare, gesamt oder pro Monat
+- [x] **M9** Rückblicke: Monats-/Jahres-Video, Sekunden-Film, «An diesem Tag»; automatisch und per Knopf
+- [x] **Zusätzlich:** Push mit Firebase (iOS und Android), Profilbilder, Kommentare bearbeiten, Timeline-Filter,
+  Besucher-Anzeige, Redesign «Kinderbuch», Aufnahme-Metadaten und Datumskorrektur, Deploy über GHCR-Images
+- [ ] **Offen:** Play-Console-Verteilung, Import aus FamilyAlbum (Import-Skript), Auto-Upload-Test auf Android
