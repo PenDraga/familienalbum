@@ -19,15 +19,15 @@ const args = new Set(process.argv.slice(2));
 const listing = {
   language: LANG,
   title: 'Familienalbum',
-  shortDescription: 'Das private Familienalbum: Fotos, Videos und Kommentare auf eurem eigenen Server.',
+  shortDescription: 'Privates Familienalbum: Fotos, Videos und Kommentare auf eurem eigenen Server.',
   fullDescription: [
-    'Familienalbum ist das private Fotoalbum für die Familie – selbst gehostet, ohne Werbung, ohne Fremdzugriff.',
+    'Familienalbum ist ein privates Fotoalbum für die eigene Familie. Die App verbindet sich mit einem Server, den die Familie selbst betreibt. Ohne Werbung, ohne Tracking, ohne Fremdzugriff.',
     '',
     '• Fotos und Videos hochladen, chronologisch nach Aufnahmedatum',
     '• Kommentare und Mitteilungen bei neuen Bildern',
     '• Rückblick-Videos pro Monat und Jahr, Sekunden-Film, «An diesem Tag»',
     '• Automatischer Upload neuer Aufnahmen im Hintergrund',
-    '• Export aller Fotos und Kommentare als ZIP – eure Daten gehören euch',
+    '• Export aller Fotos und Kommentare als ZIP. Eure Daten gehören euch.',
     '• Familien mit eigenen Rechten: Hochladen, Herunterladen, Kommentieren',
     '',
     'Der Zugang erfolgt ausschliesslich per Einladung durch die Familie. Die App verbindet sich mit dem eigenen Familienalbum-Server.',
