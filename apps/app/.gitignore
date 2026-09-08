@@ -52,3 +52,6 @@ app.*.map.json
 
 # Firebase-Werte für Push-Builds (lokal, siehe firebase.env.example)
 firebase.env
+
+# App-Store-Connect-API-Schlüssel für TestFlight-Uploads (lokal, siehe ios/asc.env.example)
+ios/asc.env

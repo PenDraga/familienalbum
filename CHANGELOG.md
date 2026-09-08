@@ -41,6 +41,8 @@ Seit der ersten Beta, Stand 2026-09-07.
   per `tool/set_domain.sh <domain>` und `web/.well-known/`; «Einladen» in der Hauptmaske nutzt denselben Teilen-Dialog; Build 23
 - Automatischer Upload nur mit Recht «Hochladen»: Schalter sonst gesperrt, Album-Auswahl zeigt nur erlaubte Alben,
   bei Entzug des Rechts schaltet sich der Auto-Upload ab (auch im Hintergrund-Lauf, der das Recht vor jedem Upload prüft); Build 24
+- `tool/testflight_upload.mjs`: IPA per App-Store-Connect-API hochladen, auf Verarbeitung warten, Testhinweise setzen,
+  Build an die TestFlight-Gruppe hängen (kein Xcode-Organizer mehr nötig)
 
 ## [0.1.0-beta.1] – 2026-09-05
 

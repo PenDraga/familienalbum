@@ -150,7 +150,13 @@ Optional. Ohne Konfiguration pollen die Clients jede Minute.
    Einrichtung → API-Zugriff einen Service-Account mit der Rolle «Releases verwalten» anlegen, dessen JSON-Schlüssel
    als `apps/app/android/play-service-account.json` ablegen (nicht im Git) und mit `node apps/app/tool/play_upload.mjs`
    hochladen (`--track=internal|alpha|beta|production`, `--notes="…"`).
-6. **Android-APK:** Release-Schlüssel einmalig anlegen (siehe `apps/app/android/key.properties.example`), dann
+6. **TestFlight ohne Xcode-Organizer:** In App Store Connect unter Benutzer und Zugriff → Integrationen →
+   App Store Connect API einen Team-Schlüssel (Rolle «App-Manager») anlegen, die `.p8`-Datei nach
+   `~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8` legen und Schlüssel- und Issuer-ID in `apps/app/ios/asc.env`
+   eintragen (Vorlage `asc.env.example`, nicht im Git). Danach: `apps/app/tool/build.sh ipa && node apps/app/tool/testflight_upload.mjs --notes="…"`
+   lädt hoch, wartet auf Apples Verarbeitung, setzt die Testhinweise und hängt den Build an die Gruppe «Familie»
+   (`--group=…`). `ITSAppUsesNonExemptEncryption=false` in der Info.plist erspart die Verschlüsselungsfrage.
+7. **Android-APK:** Release-Schlüssel einmalig anlegen (siehe `apps/app/android/key.properties.example`), dann
    `apps/app/tool/build.sh apk` → `build/app/outputs/flutter-apk/app-release.apk` zum direkten Verteilen. Der Schlüssel
    muss für alle künftigen Versionen derselbe bleiben (Backup!). Hinweis SDK 2026: `flutter_secure_storage` verlangt
    API 37, das SDK liefert die Plattform aber nur als `android-37.0`; AGP 9.1 sucht `android-37` – Ordner kopieren und in
