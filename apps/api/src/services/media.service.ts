@@ -121,7 +121,7 @@ export class MediaService {
 
   private assertCanEdit(m: Media, ctx: MediaViewContext) {
     if (m.uploaderId !== ctx.membership.userId && !ctx.membership.isFamilyAdmin) {
-      throw Errors.forbidden('Nur der Uploader oder ein Familien-Admin darf das.', 'NOT_OWNER');
+      throw Errors.forbidden('Nur der Uploader oder ein Album-Admin darf das.', 'NOT_OWNER');
     }
   }
 

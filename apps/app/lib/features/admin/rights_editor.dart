@@ -19,7 +19,7 @@ class RightsEditor extends StatelessWidget {
         _row(Icons.download_outlined, 'Darf Originale herunterladen', value.canDownload, (v) => onChanged(_copy(canDownload: v))),
         _row(Icons.chat_bubble_outline, 'Darf kommentieren', value.canComment, (v) => onChanged(_copy(canComment: v))),
         if (allowAdminToggle)
-          _row(Icons.admin_panel_settings_outlined, 'Familien-Admin', value.isFamilyAdmin, (v) => onChanged(_copy(isFamilyAdmin: v)),
+          _row(Icons.admin_panel_settings_outlined, 'Album-Admin', value.isFamilyAdmin, (v) => onChanged(_copy(isFamilyAdmin: v)),
               subtitle: 'Verwaltet Mitglieder und Einladungen'),
       ],
     );
@@ -51,7 +51,7 @@ Map<String, dynamic> flagsToJson(MembershipFlags f) => {
 
 String describeRights(MembershipFlags m) {
   final parts = <String>[
-    if (m.isFamilyAdmin) 'Familien-Admin',
+    if (m.isFamilyAdmin) 'Album-Admin',
     if (m.canUpload) 'Hochladen',
     if (m.canDownload) 'Herunterladen',
     if (m.canComment) 'Kommentieren',

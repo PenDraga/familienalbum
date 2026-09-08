@@ -32,6 +32,9 @@ class AdminRepository {
         .unwrap(),
   );
 
+  /// Album umbenennen (Album-Admin).
+  Future<void> renameFamily(String familyId, String name) => _api.dio.patch<void>('/families/$familyId', data: {'name': name}).unwrap();
+
   Future<String> createInviteCode(String familyId, Map<String, dynamic> flags) async {
     final data = await _api.dio.post<Map<String, dynamic>>('/families/$familyId/invites', data: flags).unwrap();
     return data['code'] as String;

@@ -99,7 +99,7 @@ export class InviteService {
         const existing = await tx.familyMember.findUnique({
           where: { userId_familyId: { userId, familyId: invite.familyId } },
         });
-        if (existing) throw Errors.conflict('Du bist bereits Mitglied dieser Familie.', 'ALREADY_MEMBER');
+        if (existing) throw Errors.conflict('Du bist bereits Mitglied dieses Albums.', 'ALREADY_MEMBER');
       } else {
         const taken = await tx.user.findUnique({ where: { email: actor.registration.email }, select: { id: true } });
         if (taken) {

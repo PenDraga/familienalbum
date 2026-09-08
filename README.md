@@ -95,7 +95,16 @@ docker compose up -d
 docker compose exec api node dist/seed.js
 ```
 
-5. Im LAN unter `http://<server>:<HTTP_PORT>` anmelden, Familie anlegen, Einladungslink verschicken.
+5. Im LAN unter `http://<server>:<HTTP_PORT>` anmelden, Album anlegen, Einladung verschicken.
+
+### Einladungen
+
+Ein Album-Admin erzeugt unter Mitglieder → «Einladungscode erzeugen» einen Code (7 Tage, eine Nutzung) und teilt ihn
+als Link `https://<domain>/invite?code=…&server=…`. Der Link öffnet die Web-App mit vorbelegtem Server und Code, prüft
+die Einladung sofort und bietet «In der App öffnen» (URL-Schema `familienalbum://`). Damit der Link auf dem Handy
+direkt die App öffnet (Universal Links / App Links), einmalig `apps/app/tool/set_domain.sh <domain>` ausführen und die
+Apps neu bauen; der Web-Container liefert die nötigen Dateien unter `/.well-known/` aus. Für Play-Builds den
+Fingerabdruck des App-Signaturschlüssels (Play Console → App-Integrität) in `web/.well-known/assetlinks.json` ergänzen.
 
 ### Zugriff von aussen
 

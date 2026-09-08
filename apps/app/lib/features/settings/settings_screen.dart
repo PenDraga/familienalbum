@@ -106,8 +106,8 @@ class SettingsScreen extends ConsumerWidget {
                       onTap: () => context.push('/settings/users'),
                     ),
                     ListTile(
-                      leading: _IconBadge(Icons.family_restroom, scheme.tertiaryContainer),
-                      title: const Text('Familien'),
+                      leading: _IconBadge(Icons.photo_album_outlined, scheme.tertiaryContainer),
+                      title: const Text('Alben'),
                       subtitle: const Text('Anlegen, löschen, Mitglied werden'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => context.push('/settings/families'),
@@ -142,7 +142,7 @@ class SettingsScreen extends ConsumerWidget {
             StorageCard(familyId: selected.id),
           ],
           const SizedBox(height: 24),
-          _SectionTitle('Familien'),
+          _SectionTitle('Alben'),
           Card(
             child: Column(
               children: [
@@ -243,7 +243,7 @@ class SettingsScreen extends ConsumerWidget {
 
   static String _rights(MembershipFlags m) {
     final parts = <String>[
-      if (m.isFamilyAdmin) 'Familien-Admin',
+      if (m.isFamilyAdmin) 'Album-Admin',
       if (m.canUpload) 'Hochladen',
       if (m.canDownload) 'Herunterladen',
       if (m.canComment) 'Kommentieren',

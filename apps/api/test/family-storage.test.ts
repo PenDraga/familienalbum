@@ -38,4 +38,16 @@ describe('GET /families/:id/storage', () => {
     expectProblem(await (await ctx.as(stranger)).get(`/families/${family.id}/storage`), 403);
     expectProblem(await (await ctx.as(null)).get(`/families/${family.id}/storage`), 401);
   });
+
+  it('GET /admin/families liefert Fotos/Videos und Bytes pro Album', async () => {
+    const { family, admin } = await ctx.createFamilyWithAdmin();
+    const globalAdmin = await ctx.createAdmin();
+    const empty = await ctx.createFamily('Leer');
+    const a = await ctx.uploadAndProcess(admin, family, await makeJpeg(), { name: 'a.jpg' });
+    const res = await (await ctx.as(globalAdmin)).get('/admin/families');
+    expect(res.statusCode).toBe(200);
+    const list = res.json() as Array<Record<string, unknown>>;
+    expect(list.find((f) => f.id === family.id)).toMatchObject({ photoCount: 1, videoCount: 0, totalBytes: a.sizeBytes, mediaCount: 1 });
+    expect(list.find((f) => f.id === empty.id)).toMatchObject({ photoCount: 0, videoCount: 0, totalBytes: 0, mediaCount: 0 });
+  });
 });

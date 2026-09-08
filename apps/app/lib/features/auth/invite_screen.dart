@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
@@ -12,9 +14,19 @@ import 'auth_models.dart';
 import 'auth_repository.dart';
 
 /// Einladung einlösen: Code → Vorschau → (angemeldet: beitreten | neu: registrieren).
+/// Einladungslink: öffnet die Web-App (oder per Universal Link die App) mit Server und Code vorbelegt.
+String inviteLink(String baseUrl, String code) =>
+    Uri.parse(baseUrl).replace(path: '/invite', queryParameters: {'code': code, 'server': baseUrl}).toString();
+
+/// Link mit eigenem Schema für «In der App öffnen» aus dem Browser.
+String inviteAppLink(String baseUrl, String code) =>
+    Uri(scheme: 'familienalbum', host: '', path: '/invite', queryParameters: {'code': code, 'server': baseUrl}).toString();
+
 class InviteScreen extends ConsumerStatefulWidget {
-  const InviteScreen({super.key, this.initialCode});
+  const InviteScreen({super.key, this.initialCode, this.initialServer});
   final String? initialCode;
+  /// Aus dem Link (`?server=`); im Browser sonst die eigene Adresse.
+  final String? initialServer;
 
   @override
   ConsumerState<InviteScreen> createState() => _InviteScreenState();
@@ -35,8 +47,27 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
   @override
   void initState() {
     super.initState();
-    _server.text = ref.read(settingsProvider).baseUrl;
+    final fromLink = widget.initialServer?.trim() ?? '';
+    final stored = ref.read(settingsProvider).baseUrl;
+    _server.text = fromLink.isNotEmpty
+        ? fromLink
+        : stored.isNotEmpty
+        ? stored
+        : kIsWeb
+        ? Uri.base.origin
+        : '';
     _code.text = widget.initialCode ?? '';
+    // Link mit Code und Server: Einladung direkt prüfen, ohne dass jemand tippen muss.
+    if (_code.text.isNotEmpty && _server.text.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _lookup());
+    }
+  }
+
+  /// Aus dem Browser in die installierte App wechseln (Schema familienalbum://).
+  Future<void> _openInApp() async {
+    final uri = Uri.parse(inviteAppLink(_server.text.trim(), _code.text.trim()));
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication, webOnlyWindowName: '_self');
+    if (!ok && mounted) setState(() => _error = 'Die App scheint nicht installiert zu sein. Du kannst die Einladung auch hier im Browser annehmen.');
   }
 
   @override
@@ -96,7 +127,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       subtitle: preview == null
           ? 'Gib den Code ein, den du bekommen hast.'
           : loggedIn
-          ? 'Du wurdest eingeladen. Tritt der Familie bei.'
+          ? 'Du wurdest eingeladen. Tritt dem Album bei.'
           : 'Du wurdest eingeladen. Lege dein eigenes Konto an, um beizutreten.',
       onBack: () => context.go(loggedIn ? '/' : '/login'),
       child: Form(
@@ -125,6 +156,14 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
               const SizedBox(height: 20),
               FilledButton(onPressed: _busy ? null : _lookup, child: const Text('Einladung prüfen')),
             ] else ...[
+              if (kIsWeb && !loggedIn) ...[
+                OutlinedButton.icon(
+                  onPressed: _busy ? null : _openInApp,
+                  icon: const Icon(Icons.phone_iphone),
+                  label: const Text('In der App öffnen'),
+                ),
+                const SizedBox(height: 12),
+              ],
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -136,7 +175,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.family_restroom, color: scheme.primary),
+                        Icon(Icons.photo_album_outlined, color: scheme.primary),
                         const SizedBox(width: 10),
                         Expanded(child: Text(preview.familyName, style: text.titleLarge)),
                       ],
@@ -176,7 +215,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _name,
-                  decoration: const InputDecoration(labelText: 'Dein Name (wird der Familie angezeigt)', prefixIcon: Icon(Icons.person_outline)),
+                  decoration: const InputDecoration(labelText: 'Dein Name (wird den anderen angezeigt)', prefixIcon: Icon(Icons.person_outline)),
                   textInputAction: TextInputAction.next,
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Bitte Namen angeben' : null,
                 ),
@@ -200,7 +239,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
               ],
               FilledButton(
                 onPressed: _busy || !preview.isValid ? null : _accept,
-                child: Text(loggedIn ? 'Familie beitreten' : 'Konto anlegen und beitreten'),
+                child: Text(loggedIn ? 'Album beitreten' : 'Konto anlegen und beitreten'),
               ),
               const SizedBox(height: 8),
               TextButton(

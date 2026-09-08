@@ -63,7 +63,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(
         path: '/invite',
-        builder: (_, state) => InviteScreen(initialCode: state.uri.queryParameters['code']),
+        builder: (_, state) => InviteScreen(initialCode: state.uri.queryParameters['code'], initialServer: state.uri.queryParameters['server']),
       ),
       GoRoute(
         path: '/',

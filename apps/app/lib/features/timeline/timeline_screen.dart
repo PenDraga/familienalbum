@@ -104,9 +104,9 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
       return Scaffold(
         appBar: AppBar(title: const Text('Familienalbum'), actions: actions),
         body: const EmptyHint(
-          icon: Icons.family_restroom,
-          title: 'Noch keine Familie',
-          text: 'Du bist noch in keiner Familie. Löse einen Einladungscode ein oder bitte einen Admin, dich hinzuzufügen.',
+          icon: Icons.photo_album_outlined,
+          title: 'Noch kein Album',
+          text: 'Du bist noch in keinem Album. Löse eine Einladung ein oder bitte einen Admin, dich hinzuzufügen.',
         ),
       );
     }
@@ -302,7 +302,7 @@ class _ImmersiveTimeline extends ConsumerWidget {
               title: 'Noch keine Fotos',
               text: family.membership.canUpload
                   ? 'Lade das erste Foto oder Video hoch – es erscheint hier nach Aufnahmedatum sortiert.'
-                  : 'Sobald jemand aus der Familie etwas hochlädt, erscheint es hier.',
+                  : 'Sobald jemand etwas hochlädt, erscheint es hier.',
             ),
           ),
         for (final (month, items) in state.groups)
@@ -350,7 +350,7 @@ class _CollapsedTitle extends ConsumerWidget {
     final child = me.families.length == 1
         ? Text(family.name)
         : PopupMenuButton<String>(
-            tooltip: 'Familie wechseln',
+            tooltip: 'Album wechseln',
             onSelected: (id) => ref.read(settingsProvider.notifier).selectFamily(id),
             itemBuilder: (_) => [
               for (final f in me.families)

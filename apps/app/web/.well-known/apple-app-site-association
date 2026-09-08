@@ -1,0 +1,20 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "K4GN98FN45.ch.familienalbum.familienalbum"
+        ],
+        "components": [
+          {
+            "/": "/invite",
+            "comment": "Einladungslink öffnet die App"
+          },
+          {
+            "/": "/invite/*"
+          }
+        ]
+      }
+    ]
+  }
+}

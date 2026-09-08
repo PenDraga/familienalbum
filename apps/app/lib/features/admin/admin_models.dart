@@ -88,13 +88,16 @@ class AdminUserDetail extends AdminUser {
 }
 
 class AdminFamily {
-  const AdminFamily({required this.id, required this.name, required this.createdAt, required this.memberCount, required this.mediaCount});
+  const AdminFamily({required this.id, required this.name, required this.createdAt, required this.memberCount, required this.mediaCount, required this.photoCount, required this.videoCount, required this.totalBytes});
 
   final String id;
   final String name;
   final DateTime createdAt;
   final int memberCount;
   final int mediaCount;
+  final int photoCount;
+  final int videoCount;
+  final int totalBytes;
 
   factory AdminFamily.fromJson(Map<String, dynamic> j) => AdminFamily(
     id: j['id'] as String,
@@ -102,6 +105,9 @@ class AdminFamily {
     createdAt: DateTime.parse(j['createdAt'] as String),
     memberCount: j['memberCount'] as int,
     mediaCount: j['mediaCount'] as int,
+    photoCount: (j['photoCount'] as int?) ?? 0,
+    videoCount: (j['videoCount'] as int?) ?? 0,
+    totalBytes: ((j['totalBytes'] as num?) ?? 0).toInt(),
   );
 }
 

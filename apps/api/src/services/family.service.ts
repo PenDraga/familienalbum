@@ -31,7 +31,7 @@ export class FamilyService {
       where: { userId_familyId: { userId, familyId } },
       include: { family: { include: { _count: { select: { members: true } } } } },
     });
-    if (!m) throw Errors.notFound('Familie nicht gefunden.', 'FAMILY_NOT_FOUND');
+    if (!m) throw Errors.notFound('Album nicht gefunden.', 'FAMILY_NOT_FOUND');
     return {
       ...toFamilyDto(m.family),
       membership: { ...toMembershipFlags(m), joinedAt: iso(m.joinedAt), lastSeenAt: isoOrNull(m.lastSeenAt) },
@@ -70,7 +70,7 @@ export class FamilyService {
 
   async delete(familyId: string) {
     const exists = await this.prisma.family.findUnique({ where: { id: familyId }, select: { id: true } });
-    if (!exists) throw Errors.notFound('Familie nicht gefunden.', 'FAMILY_NOT_FOUND');
+    if (!exists) throw Errors.notFound('Album nicht gefunden.', 'FAMILY_NOT_FOUND');
     // Cascade löscht Mitgliedschaften, Einladungen, Medien-Datensätze. Dateien räumt der Worker (M2) auf.
     await this.prisma.family.delete({ where: { id: familyId } });
   }
@@ -121,7 +121,26 @@ export class FamilyService {
       include: { _count: { select: { members: true, media: { where: { deletedAt: null } } } } },
       orderBy: { name: 'asc' },
     });
-    return families.map((f) => ({ ...toFamilyDto(f), memberCount: f._count.members, mediaCount: f._count.media }));
+    const usage = await this.prisma.media.groupBy({
+      by: ['familyId', 'type'],
+      where: { deletedAt: null },
+      _sum: { sizeBytes: true },
+      _count: { _all: true },
+    });
+    const byFamily = new Map<string, { photoCount: number; videoCount: number; totalBytes: number }>();
+    for (const row of usage) {
+      const u = byFamily.get(row.familyId) ?? { photoCount: 0, videoCount: 0, totalBytes: 0 };
+      if (row.type === 'PHOTO') u.photoCount += row._count._all;
+      else u.videoCount += row._count._all;
+      u.totalBytes += row._sum.sizeBytes ?? 0;
+      byFamily.set(row.familyId, u);
+    }
+    return families.map((f) => ({
+      ...toFamilyDto(f),
+      memberCount: f._count.members,
+      mediaCount: f._count.media,
+      ...(byFamily.get(f.id) ?? { photoCount: 0, videoCount: 0, totalBytes: 0 }),
+    }));
   }
 
   async addMember(familyId: string, userId: string, flags: Required<MembershipFlagsInput>) {
@@ -130,9 +149,9 @@ export class FamilyService {
       this.prisma.user.findUnique({ where: { id: userId }, select: { id: true } }),
       this.prisma.familyMember.findUnique({ where: { userId_familyId: { userId, familyId } } }),
     ]);
-    if (!family) throw Errors.notFound('Familie nicht gefunden.', 'FAMILY_NOT_FOUND');
+    if (!family) throw Errors.notFound('Album nicht gefunden.', 'FAMILY_NOT_FOUND');
     if (!user) throw Errors.notFound('Benutzer nicht gefunden.', 'USER_NOT_FOUND');
-    if (existing) throw Errors.conflict('Benutzer ist bereits Mitglied dieser Familie.', 'ALREADY_MEMBER');
+    if (existing) throw Errors.conflict('Benutzer ist bereits Mitglied dieses Albums.', 'ALREADY_MEMBER');
 
     const member = await this.prisma.familyMember.create({
       data: { familyId, userId, ...flags },
@@ -169,7 +188,7 @@ export class FamilyService {
       where: { familyId, isFamilyAdmin: true, NOT: { userId } },
     });
     if (otherAdmins === 0) {
-      throw Errors.conflict('Die Familie braucht mindestens einen Familien-Administrator.', 'LAST_FAMILY_ADMIN');
+      throw Errors.conflict('Das Album braucht mindestens einen Album-Admin.', 'LAST_FAMILY_ADMIN');
     }
   }
 

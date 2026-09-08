@@ -64,7 +64,22 @@
 		</dict>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
-		<key>UIBackgroundModes</key>
+		<key>FlutterDeepLinkingEnabled</key>
+	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>ch.familienalbum.familienalbum</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>familienalbum</string>
+			</array>
+		</dict>
+	</array>
+	<key>UIBackgroundModes</key>
 		<array>
 			<string>fetch</string>
 			<string>processing</string>

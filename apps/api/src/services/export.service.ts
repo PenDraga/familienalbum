@@ -40,7 +40,7 @@ export class ExportService {
   async build(familyId: string, scope: string): Promise<ExportResult> {
     const { month, start, end } = parseExportScope(scope);
     const family = await this.prisma.family.findUnique({ where: { id: familyId }, select: { name: true } });
-    if (!family) throw Errors.notFound('Familie nicht gefunden.', 'FAMILY_NOT_FOUND');
+    if (!family) throw Errors.notFound('Album nicht gefunden.', 'FAMILY_NOT_FOUND');
 
     const media = await this.prisma.media.findMany({
       where: {
@@ -115,7 +115,7 @@ export class ExportService {
     archive.append(commentLines.join('\n'), { name: 'kommentare.md' });
     archive.append(readme(family.name), { name: 'LIESMICH.txt' });
 
-    const safeFamily = family.name.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '') || 'Familie';
+    const safeFamily = family.name.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '') || 'Album';
     return { filename: `Familienalbum-${safeFamily}-${month ?? EXPORT_SCOPE_ALL}.zip`, archive, count: media.length };
   }
 }

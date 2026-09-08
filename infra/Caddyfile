@@ -13,6 +13,13 @@
 		}
 	}
 
+	# Universal Links (iOS): die Datei hat keine Endung, Apple verlangt JSON als Content-Type
+	handle /.well-known/apple-app-site-association {
+		root * /srv/web
+		header Content-Type application/json
+		file_server
+	}
+
 	# Flutter-Web-Build
 	handle {
 		root * /srv/web

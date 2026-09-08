@@ -183,7 +183,7 @@ export class RecapService {
       const result = await buildRecapVideo({
         sources,
         title: recap.title,
-        subtitle: family ? `Familie ${family.name}` : 'Familienalbum',
+        subtitle: family ? family.name : 'Familienalbum',
         credit: music ? `Musik: ${music.title} – Kevin MacLeod (incompetech.com), CC BY 4.0` : '',
         photoSeconds: plan.photoSeconds,
         clipSeconds: plan.clipSeconds,

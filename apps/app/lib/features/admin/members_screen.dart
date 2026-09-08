@@ -12,6 +12,10 @@ import '../auth/auth_models.dart';
 import 'admin_models.dart';
 import 'admin_repository.dart';
 import 'rights_editor.dart';
+import 'rename_dialog.dart';
+import 'package:share_plus/share_plus.dart';
+import '../../core/providers.dart';
+import '../auth/invite_screen.dart' show inviteLink;
 
 /// Mitglieder einer Familie verwalten (Familien-Admin): Rechte, Entfernen, Hinzufügen per Konto oder Einladung.
 class MembersScreen extends ConsumerStatefulWidget {
@@ -49,7 +53,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('${m.displayName} entfernen?'),
-        content: const Text('Die Person verliert den Zugriff auf diese Familie. Ihre hochgeladenen Fotos bleiben erhalten.'),
+        content: const Text('Die Person verliert den Zugriff auf dieses Album. Ihre hochgeladenen Fotos bleiben erhalten.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
           FilledButton(
@@ -124,28 +128,45 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     try {
       final code = await ref.read(adminRepositoryProvider).createInviteCode(widget.familyId, flagsToJson(flags));
       if (!mounted) return;
+      final baseUrl = ref.read(settingsProvider).baseUrl;
+      final familyName = ref.read(meProvider)?.families.where((f) => f.id == widget.familyId).firstOrNull?.name ?? 'Familienalbum';
+      final link = inviteLink(baseUrl, code);
+      final message = 'Du bist ins Album «$familyName» eingeladen.\n$link\n\nFalls der Link nicht geht: Server $baseUrl, Code $code. Gültig 7 Tage.';
       await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Einladungscode'),
+          title: const Text('Einladung'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SelectableText(code, style: Theme.of(ctx).textTheme.headlineMedium?.copyWith(letterSpacing: 4)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               const Text('7 Tage gültig, eine Nutzung.'),
+              const SizedBox(height: 12),
+              SelectableText(link, style: Theme.of(ctx).textTheme.bodySmall),
+              const SizedBox(height: 4),
+              Text('Der Link öffnet die Einladung mit Server und Code, im Browser oder in der App.', style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
             ],
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Schliessen')),
-            FilledButton.icon(
+            TextButton.icon(
               onPressed: () {
-                Clipboard.setData(ClipboardData(text: code));
+                Clipboard.setData(ClipboardData(text: message));
                 Navigator.pop(ctx);
-                _snack('Code kopiert');
+                _snack('Einladung kopiert');
               },
               icon: const Icon(Icons.copy),
               label: const Text('Kopieren'),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.pop(ctx);
+                SharePlus.instance.share(ShareParams(text: message, subject: 'Einladung ins Album «$familyName»'));
+              },
+              icon: const Icon(Icons.ios_share),
+              label: const Text('Teilen'),
             ),
           ],
         ),
@@ -167,6 +188,14 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       appBar: AppBar(
         title: Text(family == null ? 'Mitglieder' : 'Mitglieder · ${family.name}'),
         leading: BackButton(onPressed: () => context.canPop() ? context.pop() : context.go('/settings')),
+        actions: [
+          if (family != null)
+            IconButton(
+              tooltip: 'Album umbenennen',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => showRenameFamilyDialog(context, ref, familyId: family.id, currentName: family.name),
+            ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(onPressed: _addMenu, icon: const Icon(Icons.add), label: const Text('Hinzufügen')),
       body: FutureBuilder<List<MemberItem>>(
@@ -219,7 +248,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                       onSelected: (v) => v == 'rights' ? _editRights(m) : _remove(m),
                       itemBuilder: (_) => [
                         const PopupMenuItem(value: 'rights', child: Text('Rechte bearbeiten')),
-                        if (!isMe) const PopupMenuItem(value: 'remove', child: Text('Aus Familie entfernen')),
+                        if (!isMe) const PopupMenuItem(value: 'remove', child: Text('Aus dem Album entfernen')),
                       ],
                     ),
                   ),

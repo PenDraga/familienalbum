@@ -6,6 +6,8 @@ import '../../core/api_exception.dart';
 import '../auth/auth_controller.dart';
 import 'admin_models.dart';
 import 'admin_repository.dart';
+import '../settings/storage_card.dart' show formatBytes;
+import 'rename_dialog.dart';
 
 /// Globaler Admin: Familien anlegen, ansehen, löschen, sich selbst hinzufügen.
 class FamiliesScreen extends ConsumerStatefulWidget {
@@ -21,6 +23,11 @@ class _FamiliesScreenState extends ConsumerState<FamiliesScreen> {
   void _refresh() => setState(() => _future = ref.read(adminRepositoryProvider).families());
   void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
+  Future<void> _rename(AdminFamily f) async {
+    final ok = await showRenameFamilyDialog(context, ref, familyId: f.id, currentName: f.name);
+    if (ok) _refresh();
+  }
+
   Future<void> _create() async {
     final name = TextEditingController();
     var joinAsAdmin = true;
@@ -28,16 +35,16 @@ class _FamiliesScreenState extends ConsumerState<FamiliesScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          title: const Text('Neue Familie'),
+          title: const Text('Neues Album'),
           content: SizedBox(
             width: 380,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: name, autofocus: true, decoration: const InputDecoration(labelText: 'Name', prefixIcon: Icon(Icons.family_restroom))),
+                TextField(controller: name, autofocus: true, decoration: const InputDecoration(labelText: 'Name', prefixIcon: Icon(Icons.photo_album_outlined))),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Mich als Familien-Admin eintragen'),
+                  title: const Text('Mich als Album-Admin eintragen'),
                   value: joinAsAdmin,
                   onChanged: (v) => setState(() => joinAsAdmin = v),
                 ),
@@ -107,17 +114,17 @@ class _FamiliesScreenState extends ConsumerState<FamiliesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Familien'),
+        title: const Text('Alben'),
         leading: BackButton(onPressed: () => context.canPop() ? context.pop() : context.go('/settings')),
       ),
-      floatingActionButton: FloatingActionButton.extended(onPressed: _create, icon: const Icon(Icons.add), label: const Text('Neue Familie')),
+      floatingActionButton: FloatingActionButton.extended(onPressed: _create, icon: const Icon(Icons.add), label: const Text('Neues Album')),
       body: FutureBuilder<List<AdminFamily>>(
         future: _future,
         builder: (context, snap) {
           if (snap.hasError) return Center(child: Text(errorMessage(snap.error!)));
           if (!snap.hasData) return const Center(child: CircularProgressIndicator());
           final families = snap.data!;
-          if (families.isEmpty) return Center(child: Text('Noch keine Familien', style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)));
+          if (families.isEmpty) return Center(child: Text('Noch keine Alben', style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)));
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
             itemCount: families.length,
@@ -127,23 +134,26 @@ class _FamiliesScreenState extends ConsumerState<FamiliesScreen> {
               final mine = me?.families.where((x) => x.id == f.id).firstOrNull;
               return Card(
                 child: ListTile(
-                  leading: CircleAvatar(backgroundColor: scheme.primaryContainer, foregroundColor: scheme.onPrimaryContainer, child: const Icon(Icons.family_restroom)),
+                  leading: CircleAvatar(backgroundColor: scheme.primaryContainer, foregroundColor: scheme.onPrimaryContainer, child: const Icon(Icons.photo_album_outlined)),
                   title: Text(f.name, style: text.titleMedium),
                   subtitle: Text(
-                    '${f.memberCount} Mitglieder · ${f.mediaCount} Medien'
-                    '${mine == null ? ' · du bist kein Mitglied' : (mine.membership.isFamilyAdmin ? ' · du bist Familien-Admin' : ' · du bist Mitglied')}',
+                    '${f.memberCount} ${f.memberCount == 1 ? 'Mitglied' : 'Mitglieder'} · ${f.photoCount} ${f.photoCount == 1 ? 'Foto' : 'Fotos'} · ${f.videoCount} ${f.videoCount == 1 ? 'Video' : 'Videos'} · ${formatBytes(f.totalBytes)}'
+                    '${mine == null ? '\nDu bist kein Mitglied' : (mine.membership.isFamilyAdmin ? '\nDu bist Album-Admin' : '\nDu bist Mitglied')}',
                   ),
+                  isThreeLine: true,
                   onTap: mine != null && mine.membership.isFamilyAdmin ? () => context.push('/settings/members/${f.id}') : null,
                   trailing: PopupMenuButton<String>(
                     onSelected: (v) {
                       if (v == 'members') context.push('/settings/members/${f.id}');
+                      if (v == 'rename') _rename(f);
                       if (v == 'join') _joinSelf(f);
                       if (v == 'delete') _delete(f);
                     },
                     itemBuilder: (_) => [
                       if (mine != null && mine.membership.isFamilyAdmin) const PopupMenuItem(value: 'members', child: Text('Mitglieder verwalten')),
-                      if (mine == null) const PopupMenuItem(value: 'join', child: Text('Mich als Familien-Admin hinzufügen')),
-                      const PopupMenuItem(value: 'delete', child: Text('Familie löschen')),
+                      if (mine != null && mine.membership.isFamilyAdmin) const PopupMenuItem(value: 'rename', child: Text('Umbenennen')),
+                      if (mine == null) const PopupMenuItem(value: 'join', child: Text('Mich als Album-Admin hinzufügen')),
+                      const PopupMenuItem(value: 'delete', child: Text('Album löschen')),
                     ],
                   ),
                 ),

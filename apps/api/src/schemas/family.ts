@@ -71,7 +71,14 @@ export const createMemberAccountBodySchema = z.object({
 });
 
 export const familyAdminSchema = familySchema
-  .extend({ memberCount: z.number().int(), mediaCount: z.number().int() })
+  .extend({
+    memberCount: z.number().int(),
+    mediaCount: z.number().int(),
+    photoCount: z.number().int(),
+    videoCount: z.number().int(),
+    /** Summe der Originale in Bytes (ohne Thumbnails/Vorschauen) */
+    totalBytes: z.number(),
+  })
   .meta({ id: 'FamilyAdmin' });
 
 /** Admin fügt einen bestehenden Benutzer direkt einer Familie hinzu. */

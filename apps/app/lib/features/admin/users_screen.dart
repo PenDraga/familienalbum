@@ -227,7 +227,7 @@ class _UserDialogState extends ConsumerState<_UserDialog> {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Globaler Admin'),
-                  subtitle: const Text('Darf Benutzer und Familien verwalten'),
+                  subtitle: const Text('Darf Benutzer und Alben verwalten'),
                   value: _isAdmin,
                   onChanged: (v) => setState(() => _isAdmin = v),
                 ),
@@ -285,7 +285,7 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
     final available = families.where((f) => !u.families.any((x) => x.id == f.id)).toList();
     if (!mounted) return;
     if (available.isEmpty) {
-      _snack('Ist bereits in allen Familien.');
+      _snack('Ist bereits in allen Alben.');
       return;
     }
     final picked = await showModalBottomSheet<AdminFamily>(
@@ -294,9 +294,9 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
         child: ListView(
           shrinkWrap: true,
           children: [
-            Padding(padding: const EdgeInsets.all(16), child: Text('Zu Familie hinzufügen', style: Theme.of(ctx).textTheme.titleLarge)),
+            Padding(padding: const EdgeInsets.all(16), child: Text('Zu Album hinzufügen', style: Theme.of(ctx).textTheme.titleLarge)),
             for (final f in available)
-              ListTile(leading: const Icon(Icons.family_restroom), title: Text(f.name), subtitle: Text('${f.memberCount} Mitglieder'), onTap: () => Navigator.pop(ctx, f)),
+              ListTile(leading: const Icon(Icons.photo_album_outlined), title: Text(f.name), subtitle: Text('${f.memberCount} Mitglieder'), onTap: () => Navigator.pop(ctx, f)),
           ],
         ),
       ),
@@ -372,7 +372,7 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
                 SwitchListTile(
                   secondary: const Icon(Icons.admin_panel_settings_outlined),
                   title: const Text('Globaler Admin'),
-                  subtitle: Text(isMe ? 'Dir selbst kannst du das nicht entziehen' : 'Verwaltet Benutzer und Familien'),
+                  subtitle: Text(isMe ? 'Dir selbst kannst du das nicht entziehen' : 'Verwaltet Benutzer und Alben'),
                   value: u.isAdmin,
                   onChanged: isMe ? null : (v) => _toggle(u, isAdmin: v),
                 ),
@@ -386,18 +386,18 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Text('Familien', style: text.titleMedium),
+                    Text('Alben', style: text.titleMedium),
                     const Spacer(),
                     TextButton.icon(onPressed: () => _addToFamily(u), icon: const Icon(Icons.add), label: const Text('Hinzufügen')),
                   ],
                 ),
                 if (u.families.isEmpty)
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text('In keiner Familie', style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant))),
+                  Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text('In keinem Album', style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant))),
                 for (final f in u.families)
                   Card(
                     margin: const EdgeInsets.only(bottom: 6),
                     child: ListTile(
-                      leading: const Icon(Icons.family_restroom),
+                      leading: const Icon(Icons.photo_album_outlined),
                       title: Text(f.name),
                       subtitle: Text(describeRights(f.membership)),
                       trailing: const Icon(Icons.chevron_right),

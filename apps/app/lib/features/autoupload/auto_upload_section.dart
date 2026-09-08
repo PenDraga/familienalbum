@@ -37,8 +37,8 @@ class AutoUploadSection extends ConsumerWidget {
           if (s.enabled) ...[
             if (me != null && me.families.length > 1)
               ListTile(
-                leading: const Icon(Icons.family_restroom),
-                title: const Text('In diese Familie'),
+                leading: const Icon(Icons.photo_album_outlined),
+                title: const Text('In dieses Album'),
                 trailing: DropdownButton<String>(
                   value: me.families.any((f) => f.id == s.familyId) ? s.familyId : me.families.first.id,
                   underline: const SizedBox.shrink(),

@@ -189,7 +189,7 @@ export const familyRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request, reply) => {
       const isSelf = request.params.userId === request.user!.id;
       if (!isSelf && !request.membership!.isFamilyAdmin) {
-        throw Errors.forbidden('Nur Familien-Administratoren dürfen andere Mitglieder entfernen.', 'PERMISSION_ISFAMILYADMIN');
+        throw Errors.forbidden('Nur Album-Admins dürfen andere Mitglieder entfernen.', 'PERMISSION_ISFAMILYADMIN');
       }
       await families.removeMember(request.params.id, request.params.userId);
       return reply.code(204).send(null);

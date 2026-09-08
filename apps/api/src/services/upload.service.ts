@@ -72,7 +72,7 @@ export class UploadService {
     const existing = await this.prisma.media.findUnique({ where: { familyId_sha256: { familyId, sha256: input.sha256 } } });
     if (existing) {
       if (!existing.deletedAt) {
-        throw new AppError(409, 'Conflict', 'Diese Datei ist in der Familie bereits vorhanden.', 'DUPLICATE_MEDIA', { mediaId: existing.id });
+        throw new AppError(409, 'Conflict', 'Diese Datei ist im Album bereits vorhanden.', 'DUPLICATE_MEDIA', { mediaId: existing.id });
       }
       // Soft-gelöschtes Duplikat: endgültig entfernen, damit der neue Upload durchgeht.
       // Der neue Upload bekommt eine eigene mediaId – ein Rest-Verzeichnis darf ihn nicht blockieren.
@@ -181,7 +181,7 @@ export class UploadService {
       await this.storage.remove(dir);
       if ((err as { code?: string }).code === 'P2002') {
         await this.abort(session.id, uploaderId);
-        throw Errors.conflict('Diese Datei ist in der Familie bereits vorhanden.', 'DUPLICATE_MEDIA');
+        throw Errors.conflict('Diese Datei ist im Album bereits vorhanden.', 'DUPLICATE_MEDIA');
       }
       throw err;
     }

@@ -30,7 +30,7 @@ export function requireFamilyPermission(
     const user = request.user!;
 
     const familyId = await resolveFamilyId(request);
-    if (!familyId) throw Errors.badRequest('Familien-ID fehlt.', 'FAMILY_ID_MISSING');
+    if (!familyId) throw Errors.badRequest('Album-ID fehlt.', 'FAMILY_ID_MISSING');
 
     if (!request.membership || request.membership.familyId !== familyId) {
       const membership = await app.prisma.familyMember.findUnique({
@@ -38,8 +38,8 @@ export function requireFamilyPermission(
       });
       if (!membership) {
         const exists = await app.prisma.family.findUnique({ where: { id: familyId }, select: { id: true } });
-        if (!exists) throw Errors.notFound('Familie nicht gefunden.', 'FAMILY_NOT_FOUND');
-        throw Errors.forbidden('Du bist kein Mitglied dieser Familie.', 'NOT_A_MEMBER');
+        if (!exists) throw Errors.notFound('Album nicht gefunden.', 'FAMILY_NOT_FOUND');
+        throw Errors.forbidden('Du bist kein Mitglied dieses Albums.', 'NOT_A_MEMBER');
       }
       request.membership = membership;
 
@@ -58,8 +58,8 @@ export function requireFamilyPermission(
 }
 
 const PERMISSION_MESSAGES: Record<Exclude<FamilyPermission, 'member'>, string> = {
-  isFamilyAdmin: 'Nur Familien-Administratoren dürfen das.',
-  canUpload: 'Du darfst in dieser Familie nichts hochladen.',
-  canDownload: 'Du darfst in dieser Familie keine Originale herunterladen.',
-  canComment: 'Du darfst in dieser Familie nicht kommentieren.',
+  isFamilyAdmin: 'Nur Album-Admins dürfen das.',
+  canUpload: 'Du darfst in diesem Album nichts hochladen.',
+  canDownload: 'Du darfst in diesem Album keine Originale herunterladen.',
+  canComment: 'Du darfst in diesem Album nicht kommentieren.',
 };

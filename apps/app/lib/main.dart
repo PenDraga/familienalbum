@@ -13,7 +13,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Saubere URLs im Web (/media/:id statt /#/media/:id); Caddy liefert dafür index.html per try_files.
   usePathUrlStrategy();
-  if (kIsWeb) initialDeepLink = Uri.base.path;
+  // Pfad samt Query, damit z.B. /invite?code=… beim Start erhalten bleibt.
+  if (kIsWeb) initialDeepLink = Uri.base.hasQuery ? '${Uri.base.path}?${Uri.base.query}' : Uri.base.path;
   await initializeDateFormatting('de_CH');
   final prefs = await SharedPreferences.getInstance();
   await AutoUploadBackground.initialize();

@@ -168,6 +168,7 @@ POST   /uploads/:id/complete             → Media mit status PROCESSING, Job en
 GET/POST /media/:id/comments
 POST   /devices                          FCM-Token registrieren
 GET    /admin/users | POST /admin/users | PATCH /admin/users/:id   (isAdmin)
+GET    /admin/families                   alle Alben mit memberCount, mediaCount, photoCount, videoCount, totalBytes (isAdmin)
 GET    /admin/stats
 ```
 
@@ -209,5 +210,6 @@ Services: `api`, `worker` (gleiches Image, anderer Entrypoint), `postgres`, `red
 - Keine Business-Logik in Routen – Services unter `src/services/`.
 - Migrations nur via `prisma migrate`, nie manuell.
 - Fehler als RFC 7807 Problem-JSON.
-- Deutsch in UI-Texten, Englisch im Code.
+- Deutsch in UI-Texten, Englisch im Code. In der Oberfläche und in Fehlermeldungen heisst eine `Family` «Album»
+  («Album-Admin», «Alben»); im Code, in der API und in der Datenbank bleibt es `family`.
 - Bevor grössere Entscheidungen abweichen: ADR unter `/docs/adr/` anlegen und Rücksprache.

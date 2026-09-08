@@ -16,6 +16,8 @@ Seit der ersten Beta, Stand 2026-09-07.
   Kommentar-Push an alle Mitglieder
 - Timeline-Filter `type` und `commented`
 - `GET /families/:id/storage`: belegter Speicher pro Familie (Fotos/Videos), freier Platz unter `MEDIA_ROOT` für Admins
+- `GET /admin/families` liefert Fotos, Videos und Bytes pro Album; Fehlermeldungen sprechen von «Album»
+- Caddy liefert `/.well-known/apple-app-site-association` als JSON (Universal Links)
 - Robustes Löschen auf FUSE-Dateisystemen (Unraid), fehlgeschlagene Medien werden beim Start neu eingereiht,
   Bildformat wird an den Bytes erkannt; Image auf Debian Trixie (libheif 1.19, ffmpeg 7.1) für iOS-17/18-HEIC
 - Unbrauchbarer Firebase-Schlüssel legt die API nicht mehr lahm; `SECRETS_PATH` für Stack-Manager
@@ -32,6 +34,11 @@ Seit der ersten Beta, Stand 2026-09-07.
   neuen Design; Android-Build mit Release-Signierung
 - Einstellungen → «Speicherplatz»: Verbrauch des Albums nach Fotos/Videos, für Admins zusätzlich freier Platz auf dem Server
 - Play-Store-Eintrag mit Screenshots; Android-Name «Familienalbum»; Build 21 auf beiden Plattformen
+- Begriff «Album» statt «Familie» in allen Texten; Album umbenennen (Album-Admin) in Mitglieder und Verwaltung → Alben
+- Verwaltung → Alben zeigt Fotos, Videos und belegten Speicher pro Album
+- Einladung als Link teilen (`https://<server>/invite?code=…&server=…`): öffnet die Web-App mit vorbelegtem Server
+  und Code, prüft die Einladung sofort und bietet «In der App öffnen» (Schema `familienalbum://`); Universal/App Links
+  per `tool/set_domain.sh <domain>` und `web/.well-known/`; Build 22
 
 ## [0.1.0-beta.1] – 2026-09-05
 
