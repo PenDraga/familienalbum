@@ -12,7 +12,7 @@
 //   ASC_GROUP=Familie            TestFlight-Gruppe (Standard: Familie)
 // Optionen: --notes="…" (Testhinweise), --group=Name, --no-wait (nur hochladen), --skip-upload (nur Gruppe/Notizen)
 import { createRequire } from 'node:module';
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
@@ -67,11 +67,20 @@ if (!args.has('--skip-upload')) {
   }
   console.log(`Lade ${ipa} (${(statSync(ipa).size / 1e6).toFixed(1)} MB), Version ${version} (${buildNumber}) …`);
   // altool sucht den Schlüssel in ~/.appstoreconnect/private_keys, ./private_keys, ~/private_keys
-  execFileSync('xcrun', ['altool', '--upload-app', '-f', ipa, '-t', 'ios', '--apiKey', keyId, '--apiIssuer', issuerId], {
-    stdio: 'inherit',
+  const up = spawnSync('xcrun', ['altool', '--upload-app', '-f', ipa, '-t', 'ios', '--apiKey', keyId, '--apiIssuer', issuerId], {
+    encoding: 'utf8',
     env: { ...process.env, API_PRIVATE_KEYS_DIR: dirname(keyPath) },
+    maxBuffer: 64 * 1024 * 1024,
   });
-  console.log('Upload angenommen. Apple verarbeitet den Build jetzt (meist 5–15 Minuten).');
+  const out = `${up.stdout ?? ''}${up.stderr ?? ''}`;
+  if (up.status === 0) {
+    console.log('Upload angenommen. Apple verarbeitet den Build jetzt (meist 5–15 Minuten).');
+  } else if (out.includes('DUPLICATE')) {
+    console.log(`Build ${buildNumber} liegt schon bei App Store Connect – Upload übersprungen, weiter mit Testhinweisen und Gruppe.`);
+  } else {
+    console.error(out.split('\n').filter((l) => /ERROR|error|message/i.test(l)).slice(-8).join('\n') || out.slice(-1500));
+    process.exit(up.status ?? 1);
+  }
 }
 if (args.has('--no-wait')) process.exit(0);
 
@@ -124,8 +133,8 @@ if (build.attributes.usesNonExemptEncryption === null) {
 if (notes) {
   const loc = await api('GET', `/v1/builds/${build.id}/betaBuildLocalizations`);
   const existing = loc.data.find((l) => l.attributes.locale === 'de-DE');
-  if (existing) await api('PATCH', `/v1/betaBuildLocalizations/${existing.id}`, { data: { type: 'betaBuildLocalizations', id: existing.id, attributes: { whatToTest: String(notes) } } });
-  else await api('POST', '/v1/betaBuildLocalizations', { data: { type: 'betaBuildLocalizations', attributes: { locale: 'de-DE', whatToTest: String(notes) }, relationships: { build: { data: { type: 'builds', id: build.id } } } } });
+  if (existing) await api('PATCH', `/v1/betaBuildLocalizations/${existing.id}`, { data: { type: 'betaBuildLocalizations', id: existing.id, attributes: { whatsNew: String(notes) } } });
+  else await api('POST', '/v1/betaBuildLocalizations', { data: { type: 'betaBuildLocalizations', attributes: { locale: 'de-DE', whatsNew: String(notes) }, relationships: { build: { data: { type: 'builds', id: build.id } } } } });
   console.log('Testhinweise gesetzt.');
 }
 
