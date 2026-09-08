@@ -39,6 +39,8 @@ Seit der ersten Beta, Stand 2026-09-07.
 - Einladung als Link teilen (`https://<server>/invite?code=…&server=…`): öffnet die Web-App mit vorbelegtem Server
   und Code, prüft die Einladung sofort und bietet «In der App öffnen» (Schema `familienalbum://`); Universal/App Links
   per `tool/set_domain.sh <domain>` und `web/.well-known/`; «Einladen» in der Hauptmaske nutzt denselben Teilen-Dialog; Build 23
+- Automatischer Upload nur mit Recht «Hochladen»: Schalter sonst gesperrt, Album-Auswahl zeigt nur erlaubte Alben,
+  bei Entzug des Rechts schaltet sich der Auto-Upload ab (auch im Hintergrund-Lauf, der das Recht vor jedem Upload prüft); Build 24
 
 ## [0.1.0-beta.1] – 2026-09-05
 

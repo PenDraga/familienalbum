@@ -20,6 +20,8 @@ class AutoUploadSection extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final fmt = DateFormat.yMd('de_CH').add_Hm();
+    final allowed = AutoUploadController.uploadableFamilies(me);
+    final mayUpload = allowed.isNotEmpty;
 
     return Card(
       child: Column(
@@ -27,22 +29,26 @@ class AutoUploadSection extends ConsumerWidget {
           SwitchListTile(
             title: const Text('Neue Fotos automatisch hochladen'),
             subtitle: Text(
-              s.enabled
+              !mayUpload
+                  ? 'Dafür brauchst du das Recht «Hochladen» in einem Album. Frag einen Album-Admin.'
+                  : s.enabled
                   ? 'Aufnahmen ab ${s.since == null ? 'jetzt' : DateFormat.yMd('de_CH').format(s.since!)} werden im Hintergrund hochgeladen.'
                   : 'Lädt neue Aufnahmen aus der Galerie hoch, ohne dass du daran denken musst.',
             ),
-            value: s.enabled,
-            onChanged: me == null ? null : (v) => ctrl.setEnabled(v),
+            value: s.enabled && mayUpload,
+            onChanged: me == null || !mayUpload ? null : (v) => ctrl.setEnabled(v),
           ),
-          if (s.enabled) ...[
-            if (me != null && me.families.length > 1)
+          if (!mayUpload && s.lastRunSummary != null && s.lastRunSummary!.startsWith('Ausgeschaltet'))
+            ListTile(leading: Icon(Icons.info_outline, color: scheme.onSurfaceVariant), title: Text(s.lastRunSummary!, style: text.bodySmall)),
+          if (s.enabled && mayUpload) ...[
+            if (allowed.length > 1)
               ListTile(
                 leading: const Icon(Icons.photo_album_outlined),
                 title: const Text('In dieses Album'),
                 trailing: DropdownButton<String>(
-                  value: me.families.any((f) => f.id == s.familyId) ? s.familyId : me.families.first.id,
+                  value: allowed.any((f) => f.id == s.familyId) ? s.familyId : allowed.first.id,
                   underline: const SizedBox.shrink(),
-                  items: [for (final f in me.families) DropdownMenuItem(value: f.id, child: Text(f.name))],
+                  items: [for (final f in allowed) DropdownMenuItem(value: f.id, child: Text(f.name))],
                   onChanged: (id) => id == null ? null : ctrl.setFamily(id),
                 ),
               ),

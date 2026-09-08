@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
 import '../auth/auth_controller.dart';
+import '../auth/auth_models.dart';
 import '../timeline/timeline_controller.dart';
 import 'auto_upload_background.dart';
 import 'auto_upload_service.dart';
@@ -32,8 +33,24 @@ class AutoUploadController extends Notifier<AutoUploadState> with WidgetsBinding
     WidgetsBinding.instance.addObserver(this);
     ref.onDispose(() => WidgetsBinding.instance.removeObserver(this));
     final settings = _store.read();
+    // Recht entzogen oder Album verlassen: Auto-Upload aus, sobald /me das meldet
+    ref.listen(meProvider, (_, me) => _enforceUploadRight(me));
     if (settings.enabled) Future.microtask(() => runNow(silent: true));
     return AutoUploadState(settings: settings);
+  }
+
+  /// Familien, in denen der Benutzer hochladen darf – nur die kommen für den Auto-Upload in Frage.
+  static List<Family> uploadableFamilies(Me? me) => me?.families.where((f) => f.membership.canUpload).toList() ?? const [];
+
+  Future<void> _enforceUploadRight(Me? me) async {
+    final s = state.settings;
+    if (!s.enabled || me == null) return;
+    final family = me.families.where((f) => f.id == s.familyId).firstOrNull;
+    if (family != null && family.membership.canUpload) return;
+    final reason = family == null ? 'Ausgeschaltet: du bist nicht mehr Mitglied dieses Albums' : 'Ausgeschaltet: du darfst in «${family.name}» nicht hochladen';
+    await _store.write(s.copyWith(enabled: false, lastRunAt: DateTime.now(), lastRunSummary: reason));
+    await AutoUploadBackground.cancel();
+    state = state.copyWith(settings: _store.read(), lastError: reason);
   }
 
   @override
@@ -48,8 +65,12 @@ class AutoUploadController extends Notifier<AutoUploadState> with WidgetsBinding
   Future<void> setEnabled(bool enabled) async {
     var s = state.settings.copyWith(enabled: enabled);
     if (enabled) {
+      final allowed = uploadableFamilies(ref.read(meProvider));
+      if (allowed.isEmpty) return;
+      final selected = ref.read(selectedFamilyProvider)?.id;
+      final keep = allowed.any((f) => f.id == s.familyId) ? s.familyId : null;
       s = s.copyWith(
-        familyId: s.familyId ?? ref.read(selectedFamilyProvider)?.id,
+        familyId: keep ?? (allowed.any((f) => f.id == selected) ? selected : allowed.first.id),
         // Nur Aufnahmen ab jetzt – die bestehende Galerie wird nicht rückwirkend hochgeladen
         since: s.since ?? DateTime.now(),
       );

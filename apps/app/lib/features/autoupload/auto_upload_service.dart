@@ -7,11 +7,14 @@ import 'package:mime/mime.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../auth/auth_models.dart';
+
 import '../../core/api_client.dart';
 import '../../core/api_exception.dart';
 import '../../core/token_store.dart';
 import '../upload/chunk_source.dart';
 import '../upload/upload_service.dart';
+import 'auto_upload_background.dart';
 import 'auto_upload_settings.dart';
 
 class SyncResult {
@@ -64,6 +67,15 @@ class AutoUploadService {
 
     final permission = await PhotoManager.requestPermissionExtend();
     if (!permission.hasAccess) return const SyncResult(uploaded: 0, duplicates: 0, failed: 0, skippedReason: 'Kein Zugriff auf die Fotomediathek');
+
+    // Upload-Recht kann jederzeit entzogen werden: vor jedem Lauf prüfen, sonst Auto-Upload abschalten.
+    final rights = await _checkUploadRight(tokens, settings.familyId!);
+    if (rights != null) {
+      await store.write(settings.copyWith(enabled: false, lastRunAt: DateTime.now(), lastRunSummary: rights));
+      await AutoUploadBackground.cancel();
+      _log('Auto-Upload abgeschaltet: $rights');
+      return SyncResult(uploaded: 0, duplicates: 0, failed: 0, skippedReason: rights);
+    }
 
     final since = settings.since ?? DateTime.now();
     final assets = await _newAssets(since: since, includeVideos: settings.includeVideos, done: store.doneAssetIds());
@@ -125,6 +137,25 @@ class AutoUploadService {
     final result = SyncResult(uploaded: uploaded, duplicates: duplicates, failed: failed, skippedReason: null);
     await _finish(store, settings, result);
     return result;
+  }
+
+  /// null = darf hochladen; sonst der Grund, warum der Auto-Upload abgeschaltet wird.
+  /// Netzfehler zählen nicht als Entzug (dann wird einfach dieser Lauf übersprungen).
+  Future<String?> _checkUploadRight(TokenStore tokens, String familyId) async {
+    final api = ApiClient(baseUrl: baseUrl, tokens: tokens, onSessionExpired: () {});
+    try {
+      final data = await api.dio.get<List<dynamic>>('/families').unwrap();
+      final families = data.map((e) => Family.fromJson(e as Map<String, dynamic>)).toList();
+      final family = families.where((f) => f.id == familyId).firstOrNull;
+      if (family == null) return 'Ausgeschaltet: du bist nicht mehr Mitglied dieses Albums';
+      if (!family.membership.canUpload) return 'Ausgeschaltet: du darfst in «${family.name}» nicht hochladen';
+      return null;
+    } on ApiException catch (e) {
+      // Recht lässt sich nicht prüfen (Server nicht erreichbar, Session abgelaufen): diesen Lauf auslassen
+      throw StateError('Upload-Recht nicht prüfbar: ${e.detail}');
+    } finally {
+      api.dispose();
+    }
   }
 
   Future<void> _finish(AutoUploadStore store, AutoUploadSettings settings, SyncResult result) => store.write(
