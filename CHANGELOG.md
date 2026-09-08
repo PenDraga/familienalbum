@@ -38,7 +38,7 @@ Seit der ersten Beta, Stand 2026-09-07.
 - Verwaltung → Alben zeigt Fotos, Videos und belegten Speicher pro Album
 - Einladung als Link teilen (`https://<server>/invite?code=…&server=…`): öffnet die Web-App mit vorbelegtem Server
   und Code, prüft die Einladung sofort und bietet «In der App öffnen» (Schema `familienalbum://`); Universal/App Links
-  per `tool/set_domain.sh <domain>` und `web/.well-known/`; Build 22
+  per `tool/set_domain.sh <domain>` und `web/.well-known/`; «Einladen» in der Hauptmaske nutzt denselben Teilen-Dialog; Build 23
 
 ## [0.1.0-beta.1] – 2026-09-05
 

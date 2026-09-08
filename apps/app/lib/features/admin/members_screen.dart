@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../widgets/user_avatar.dart';
@@ -13,9 +12,7 @@ import 'admin_models.dart';
 import 'admin_repository.dart';
 import 'rights_editor.dart';
 import 'rename_dialog.dart';
-import 'package:share_plus/share_plus.dart';
-import '../../core/providers.dart';
-import '../auth/invite_screen.dart' show inviteLink;
+import 'invite_share_dialog.dart';
 
 /// Mitglieder einer Familie verwalten (Familien-Admin): Rechte, Entfernen, Hinzufügen per Konto oder Einladung.
 class MembersScreen extends ConsumerStatefulWidget {
@@ -128,49 +125,8 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     try {
       final code = await ref.read(adminRepositoryProvider).createInviteCode(widget.familyId, flagsToJson(flags));
       if (!mounted) return;
-      final baseUrl = ref.read(settingsProvider).baseUrl;
       final familyName = ref.read(meProvider)?.families.where((f) => f.id == widget.familyId).firstOrNull?.name ?? 'Familienalbum';
-      final link = inviteLink(baseUrl, code);
-      final message = 'Du bist ins Album «$familyName» eingeladen.\n$link\n\nFalls der Link nicht geht: Server $baseUrl, Code $code. Gültig 7 Tage.';
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Einladung'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SelectableText(code, style: Theme.of(ctx).textTheme.headlineMedium?.copyWith(letterSpacing: 4)),
-              const SizedBox(height: 4),
-              const Text('7 Tage gültig, eine Nutzung.'),
-              const SizedBox(height: 12),
-              SelectableText(link, style: Theme.of(ctx).textTheme.bodySmall),
-              const SizedBox(height: 4),
-              Text('Der Link öffnet die Einladung mit Server und Code, im Browser oder in der App.', style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Schliessen')),
-            TextButton.icon(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: message));
-                Navigator.pop(ctx);
-                _snack('Einladung kopiert');
-              },
-              icon: const Icon(Icons.copy),
-              label: const Text('Kopieren'),
-            ),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.pop(ctx);
-                SharePlus.instance.share(ShareParams(text: message, subject: 'Einladung ins Album «$familyName»'));
-              },
-              icon: const Icon(Icons.ios_share),
-              label: const Text('Teilen'),
-            ),
-          ],
-        ),
-      );
+      await showInviteShareDialog(context, ref, familyName: familyName, code: code);
     } catch (e) {
       _snack(errorMessage(e));
     }

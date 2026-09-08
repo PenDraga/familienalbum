@@ -2,14 +2,12 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
-import '../../theme/app_theme.dart';
 import '../../widgets/app_image.dart';
 import '../../widgets/glass.dart';
 import '../auth/auth_controller.dart';
@@ -20,6 +18,7 @@ import '../upload/upload_controller.dart';
 import '../upload/upload_sheet.dart';
 import 'justified_layout.dart';
 import '../recaps/collections_strip.dart';
+import '../admin/invite_share_dialog.dart';
 import 'media_model.dart';
 import 'selection_controller.dart';
 import 'timeline_controller.dart';
@@ -159,93 +158,38 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
   Future<void> _showInviteDialog(BuildContext context, Family family) async {
     var canUpload = true;
     var canDownload = false;
-    Map<String, dynamic>? invite;
-    String? error;
-
-    await showDialog<void>(
+    final go = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          title: Text(invite == null ? 'Einladung erstellen' : 'Einladungscode'),
+          title: const Text('Einladung erstellen'),
           content: SizedBox(
             width: 380,
-            child: invite == null
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Wer den Code einlöst, wird Mitglied von „${family.name}“.', style: Theme.of(ctx).textTheme.bodyMedium),
-                      const SizedBox(height: 12),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Darf hochladen'),
-                        value: canUpload,
-                        onChanged: (v) => setState(() => canUpload = v),
-                      ),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Darf Originale herunterladen'),
-                        value: canDownload,
-                        onChanged: (v) => setState(() => canDownload = v),
-                      ),
-                      if (error != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(error!, style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
-                        ),
-                    ],
-                  )
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        decoration: BoxDecoration(
-                          color: Theme.of(ctx).colorScheme.primaryContainer.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(AppTokens.radiusM),
-                        ),
-                        child: SelectableText(
-                          invite!['code'] as String,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(ctx).textTheme.headlineMedium?.copyWith(letterSpacing: 4),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '7 Tage gültig, eine Nutzung. Die Person gibt den Code in der App unter „Ich habe einen Einladungscode“ ein.',
-                        style: Theme.of(ctx).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Wer die Einladung annimmt, wird Mitglied von «${family.name}».', style: Theme.of(ctx).textTheme.bodyMedium),
+                const SizedBox(height: 12),
+                SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Darf hochladen'), value: canUpload, onChanged: (v) => setState(() => canUpload = v)),
+                SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Darf Originale herunterladen'), value: canDownload, onChanged: (v) => setState(() => canDownload = v)),
+              ],
+            ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Schliessen')),
-            if (invite == null)
-              FilledButton(
-                onPressed: () async {
-                  try {
-                    final res = await ref.read(timelineRepositoryProvider).createInvite(family.id, canUpload: canUpload, canDownload: canDownload);
-                    setState(() => invite = res);
-                  } catch (e) {
-                    setState(() => error = errorMessage(e));
-                  }
-                },
-                child: const Text('Erstellen'),
-              )
-            else
-              FilledButton.icon(
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: invite!['code'] as String));
-                  Navigator.of(ctx).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Code kopiert')));
-                },
-                icon: const Icon(Icons.copy),
-                label: const Text('Kopieren'),
-              ),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Erstellen')),
           ],
         ),
       ),
     );
+    if (go != true || !context.mounted) return;
+    try {
+      final res = await ref.read(timelineRepositoryProvider).createInvite(family.id, canUpload: canUpload, canDownload: canDownload);
+      if (!context.mounted) return;
+      await showInviteShareDialog(context, ref, familyName: family.name, code: res['code'] as String);
+    } catch (e) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage(e))));
+    }
   }
 }
 
