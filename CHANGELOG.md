@@ -43,6 +43,7 @@ Seit der ersten Beta, Stand 2026-09-07.
   bei Entzug des Rechts schaltet sich der Auto-Upload ab (auch im Hintergrund-Lauf, der das Recht vor jedem Upload prüft); Build 24
 - `tool/testflight_upload.mjs`: IPA per App-Store-Connect-API hochladen, auf Verarbeitung warten, Testhinweise setzen,
   Build an die TestFlight-Gruppe hängen (kein Xcode-Organizer mehr nötig); Build 25 als erster Durchlauf
+- Universal Links / App Links für `album.depaolis.digital`: Einladungslink öffnet die installierte App direkt; Build 26
 
 ## [0.1.0-beta.1] – 2026-09-05
 

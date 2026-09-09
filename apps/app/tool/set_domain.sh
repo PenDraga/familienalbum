@@ -20,6 +20,7 @@ if ! grep -q "applinks:$domain" "$ent"; then
   echo "iOS: applinks:$domain in $ent"
 fi
 
+# Android: pro Domain ein eigener Filter; der Marker bleibt stehen, damit weitere Domains ergänzt werden können
 man=android/app/src/main/AndroidManifest.xml
 if ! grep -q "android:host=\"$domain\"" "$man"; then
   filter="            <intent-filter android:autoVerify=\"true\">\\
@@ -27,7 +28,8 @@ if ! grep -q "android:host=\"$domain\"" "$man"; then
                 <category android:name=\"android.intent.category.DEFAULT\"/>\\
                 <category android:name=\"android.intent.category.BROWSABLE\"/>\\
                 <data android:scheme=\"https\" android:host=\"$domain\" android:pathPrefix=\"/invite\"/>\\
-            </intent-filter>"
+            </intent-filter>\\
+            <!-- APP-LINKS: weitere Domains mit tool/set_domain.sh ergänzen -->"
   sed -i '' "s|            <!-- APP-LINKS: .*-->|$filter|" "$man"
   echo "Android: https://$domain/invite in $man"
 fi
