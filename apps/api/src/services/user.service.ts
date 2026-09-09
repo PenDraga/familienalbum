@@ -1,5 +1,8 @@
 import type { PrismaClient } from '@prisma/client';
+import { randomBytes } from 'node:crypto';
+import { rm } from 'node:fs/promises';
 import { Errors } from '../lib/errors.js';
+import type { MediaStorage } from '../lib/storage.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { toFamilyDto, toMembershipFlags, toUserDto, iso, isoOrNull } from './dto.js';
 
@@ -27,7 +30,7 @@ export class UserService {
       where: { id: userId },
       include: { memberships: { include: { family: true }, orderBy: { joinedAt: 'asc' } }, _count: { select: { devices: true } } },
     });
-    if (!user) throw Errors.notFound('Benutzer nicht gefunden.', 'USER_NOT_FOUND');
+    if (!user || user.deletedAt) throw Errors.notFound('Benutzer nicht gefunden.', 'USER_NOT_FOUND');
     return {
       ...toUserDto(user),
       deviceCount: user._count.devices,
@@ -62,14 +65,17 @@ export class UserService {
   }
 
   async list(opts: { q?: string; limit: number; offset: number }) {
-    const where = opts.q
-      ? {
-          OR: [
-            { email: { contains: opts.q, mode: 'insensitive' as const } },
-            { displayName: { contains: opts.q, mode: 'insensitive' as const } },
-          ],
-        }
-      : {};
+    const where = {
+      deletedAt: null,
+      ...(opts.q
+        ? {
+            OR: [
+              { email: { contains: opts.q, mode: 'insensitive' as const } },
+              { displayName: { contains: opts.q, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
     const [items, total] = await Promise.all([
       this.prisma.user.findMany({ where, orderBy: { createdAt: 'asc' }, take: opts.limit, skip: opts.offset }),
       this.prisma.user.count({ where }),
@@ -123,6 +129,41 @@ export class UserService {
       });
     }
     return toUserDto(updated);
+  }
+
+  /**
+   * Konto löschen: anonymisieren statt physisch löschen, damit Fotos und Kommentare im Album bleiben
+   * («Gelöschtes Konto»). Entfernt Mitgliedschaften, Sitzungen, Push-Geräte, offene Uploads, eigene
+   * Einladungscodes und das Profilbild. Nicht sich selbst, nicht den letzten globalen Admin.
+   */
+  async remove(userId: string, actingUserId: string, storage?: MediaStorage) {
+    if (userId === actingUserId) throw Errors.conflict('Du kannst dein eigenes Konto nicht löschen.', 'SELF_DELETE');
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.deletedAt) throw Errors.notFound('Benutzer nicht gefunden.', 'USER_NOT_FOUND');
+    if (user.isAdmin) {
+      const otherAdmins = await this.prisma.user.count({ where: { isAdmin: true, isDisabled: false, deletedAt: null, id: { not: userId } } });
+      if (otherAdmins === 0) throw Errors.conflict('Der letzte globale Admin kann nicht gelöscht werden.', 'LAST_ADMIN');
+    }
+    await this.prisma.$transaction([
+      this.prisma.familyMember.deleteMany({ where: { userId } }),
+      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+      this.prisma.device.deleteMany({ where: { userId } }),
+      this.prisma.uploadSession.deleteMany({ where: { uploaderId: userId } }),
+      this.prisma.invite.deleteMany({ where: { createdById: userId } }),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          email: `geloescht-${userId}@konto.invalid`,
+          displayName: 'Gelöschtes Konto',
+          passwordHash: `deleted:${randomBytes(32).toString('hex')}`,
+          isAdmin: false,
+          isDisabled: true,
+          avatarUpdatedAt: null,
+          deletedAt: new Date(),
+        },
+      }),
+    ]);
+    if (storage) await rm(storage.avatarPath(userId), { force: true });
   }
 
   async stats() {

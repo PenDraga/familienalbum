@@ -264,6 +264,53 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
 
   void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
+  /// Konto löschen: Sicherheitsabfrage mit dem Namen, dann anonymisiert der Server das Konto.
+  Future<void> _delete(AdminUserDetail u) async {
+    final controller = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: Text('${u.displayName} löschen?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Das Konto wird endgültig gelöscht: E-Mail, Name, Passwort, Profilbild, Geräte und Mitgliedschaften. '
+                'Fotos, Videos und Kommentare bleiben im Album und tragen danach «Gelöschtes Konto» als Urheber.',
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: InputDecoration(labelText: 'Zur Bestätigung «${u.displayName}» eingeben'),
+                onChanged: (_) => setState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
+              onPressed: controller.text.trim() == u.displayName.trim() ? () => Navigator.pop(ctx, true) : null,
+              child: const Text('Endgültig löschen'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await ref.read(adminRepositoryProvider).deleteUser(u.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Konto von ${u.displayName} gelöscht')));
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage(e))));
+    }
+  }
+
   Future<void> _toggle(AdminUserDetail u, {bool? isAdmin, bool? isDisabled}) async {
     try {
       await ref.read(adminRepositoryProvider).updateUser(u.id, isAdmin: isAdmin, isDisabled: isDisabled);
@@ -404,6 +451,13 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
                       onTap: () => context.push('/settings/members/${f.id}'),
                     ),
                   ),
+                const SizedBox(height: 24),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(foregroundColor: scheme.error, side: BorderSide(color: scheme.error.withValues(alpha: 0.5))),
+                  onPressed: isMe ? null : () => _delete(u),
+                  icon: const Icon(Icons.person_off_outlined),
+                  label: Text(isMe ? 'Dein eigenes Konto kannst du nicht löschen' : 'Konto löschen'),
+                ),
               ],
             );
           },

@@ -56,6 +56,7 @@ model User {
   isAdmin       Boolean        @default(false) // globaler Admin
   isDisabled    Boolean        @default(false)
   avatarUpdatedAt DateTime?                    // gesetzt, wenn ein Profilbild unter _avatars/<id>.webp liegt
+  deletedAt     DateTime?                      // Konto gelöscht: anonymisiert, Fotos/Kommentare bleiben («Gelöschtes Konto»)
   createdAt     DateTime       @default(now())
   memberships   FamilyMember[]
   refreshTokens RefreshToken[]

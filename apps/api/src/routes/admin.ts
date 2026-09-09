@@ -1,7 +1,7 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { listUsersQuerySchema, statsSchema } from '../schemas/admin.js';
-import { errorResponses, idParamsSchema } from '../schemas/common.js';
+import { emptyResponse, errorResponses, idParamsSchema } from '../schemas/common.js';
 import { addMemberBodySchema, familyAdminSchema, familySchema, memberSchema, membershipFlagsSchema } from '../schemas/family.js';
 import { createUserBodySchema, updateUserBodySchema, userPublicSchema } from '../schemas/user.js';
 import { FamilyService } from '../services/family.service.js';
@@ -97,6 +97,24 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request) => users.update(request.params.id, request.body, request.user!.id),
+  );
+
+  app.delete(
+    '/admin/users/:id',
+    {
+      schema: {
+        tags: ['admin'],
+        summary: 'Konto löschen (anonymisieren): Fotos und Kommentare bleiben als «Gelöschtes Konto»',
+        description: 'Entfernt Mitgliedschaften, Sitzungen, Geräte, Einladungen und Profilbild. Nicht sich selbst (409 SELF_DELETE), nicht den letzten globalen Admin (409 LAST_ADMIN).',
+        security: bearer,
+        params: idParamsSchema,
+        response: { 204: emptyResponse, ...errorResponses(401, 403, 404, 409) },
+      },
+    },
+    async (request, reply) => {
+      await users.remove(request.params.id, request.user!.id, app.storage);
+      return reply.code(204).send(null);
+    },
   );
 
   app.post(

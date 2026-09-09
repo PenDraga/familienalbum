@@ -77,7 +77,9 @@ Abgelaufen/aufgebraucht → 410 (`INVITE_EXPIRED` / `INVITE_USED_UP`), bereits M
 
 ## Admin (globaler Admin)
 
-- `GET /admin/users?q=&limit=&offset=` · `POST /admin/users` · `PATCH /admin/users/:id`
+- `GET /admin/users?q=&limit=&offset=` · `POST /admin/users` · `PATCH /admin/users/:id` · `DELETE /admin/users/:id`
+  (anonymisiert: E-Mail, Name, Passwort, Profilbild, Geräte, Sitzungen, Mitgliedschaften, eigene Einladungen weg;
+  Fotos und Kommentare bleiben als «Gelöschtes Konto»; 409 `SELF_DELETE`, 409 `LAST_ADMIN`)
   (`displayName`, `isAdmin`, `isDisabled`, `password`; Sperre/Passwortwechsel beendet alle Sitzungen;
   kein Selbst-Entzug/Selbst-Sperre)
 - `POST /admin/families/:id/members` `{ userId, flags… }`

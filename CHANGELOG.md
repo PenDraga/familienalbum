@@ -44,6 +44,8 @@ Seit der ersten Beta, Stand 2026-09-07.
 - `tool/testflight_upload.mjs`: IPA per App-Store-Connect-API hochladen, auf Verarbeitung warten, Testhinweise setzen,
   Build an die TestFlight-Gruppe hängen (kein Xcode-Organizer mehr nötig); Build 25 als erster Durchlauf
 - Universal Links / App Links für `album.depaolis.digital`: Einladungslink öffnet die installierte App direkt; Build 26
+- Konto löschen (globaler Admin): `DELETE /admin/users/:id` anonymisiert das Konto, Fotos und Kommentare bleiben als
+  «Gelöschtes Konto»; in der App unter Benutzer mit Sicherheitsabfrage; Migration `m12_user_deleted`; Build 27
 
 ## [0.1.0-beta.1] – 2026-09-05
 

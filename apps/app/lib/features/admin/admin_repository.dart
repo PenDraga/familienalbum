@@ -66,6 +66,9 @@ class AdminRepository {
             .unwrap(),
       );
 
+  /// Konto löschen (globaler Admin): anonymisiert, Fotos und Kommentare bleiben.
+  Future<void> deleteUser(String id) => _api.dio.delete<void>('/admin/users/$id').unwrap();
+
   Future<AdminUser> updateUser(String id, {String? displayName, bool? isAdmin, bool? isDisabled, String? password}) async => AdminUser.fromJson(
     await _api.dio
         .patch<Map<String, dynamic>>('/admin/users/$id', data: {

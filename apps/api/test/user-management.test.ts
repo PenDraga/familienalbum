@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_PASSWORD, TestContext, expectProblem } from './helpers/app.js';
+import { makeJpeg } from './helpers/fixtures.js';
 
 let ctx: TestContext;
 
@@ -134,5 +135,51 @@ describe('Admin: Benutzer-Detail und Familienliste', () => {
       ['Zählfamilie', 2, 1],
     ]);
     expectProblem(await (await ctx.as(familyAdmin)).get('/admin/families'), 403, 'ADMIN_REQUIRED');
+  });
+});
+
+describe('DELETE /admin/users/:id – Konto löschen', () => {
+  it('anonymisiert das Konto, Fotos und Kommentare bleiben, Anmeldung geht nicht mehr', async () => {
+    const admin = await ctx.createAdmin();
+    const { family, admin: papa } = await ctx.createFamilyWithAdmin('Muster');
+    const oma = await ctx.createUser({ displayName: 'Oma', email: 'oma@test.local', password: 'Geheim-1234' });
+    await ctx.addMember(family, oma, { canUpload: true, canComment: true });
+    const photo = await ctx.uploadAndProcess(oma, family, await makeJpeg(), { name: 'oma.jpg' });
+    await (await ctx.as(oma)).post(`/media/${photo.id}/comments`, { body: 'Mein Foto' });
+    await (await ctx.as(oma)).post('/devices', { fcmToken: 'y'.repeat(40), platform: 'ios' });
+
+    const res = await (await ctx.as(admin)).delete(`/admin/users/${oma.id}`);
+    expect(res.statusCode, res.body).toBe(204);
+
+    // Foto und Kommentar bleiben, Urheber heisst «Gelöschtes Konto»
+    const media = (await (await ctx.as(papa)).get(`/media/${photo.id}`)).json();
+    expect(media.uploader.displayName).toBe('Gelöschtes Konto');
+    const comments = (await (await ctx.as(papa)).get(`/media/${photo.id}/comments`)).json();
+    const first = Array.isArray(comments) ? comments[0] : comments.items[0];
+    expect(first.author.displayName).toBe('Gelöschtes Konto');
+
+    // Mitgliedschaft, Geräte, Sitzungen weg; Anmeldung unmöglich; nicht mehr in der Liste
+    expect((await (await ctx.as(papa)).get(`/families/${family.id}/members`)).json().map((m: { userId: string }) => m.userId)).not.toContain(oma.id);
+    expect((await ctx.login('oma@test.local', 'Geheim-1234')).statusCode).toBe(401);
+    expect(await ctx.prisma.device.count({ where: { userId: oma.id } })).toBe(0);
+    expect(await ctx.prisma.refreshToken.count({ where: { userId: oma.id } })).toBe(0);
+    const list = (await (await ctx.as(admin)).get('/admin/users')).json();
+    expect(list.items.map((u: { id: string }) => u.id)).not.toContain(oma.id);
+    expectProblem(await (await ctx.as(admin)).get(`/admin/users/${oma.id}`), 404, 'USER_NOT_FOUND');
+    expectProblem(await (await ctx.as(admin)).delete(`/admin/users/${oma.id}`), 404, 'USER_NOT_FOUND');
+  });
+
+  it('nicht sich selbst, nur globale Admins; ein anderer Admin darf gelöscht werden', async () => {
+    const admin = await ctx.createAdmin();
+    const { admin: familyAdmin } = await ctx.createFamilyWithAdmin();
+    expectProblem(await (await ctx.as(admin)).delete(`/admin/users/${admin.id}`), 409, 'SELF_DELETE');
+    expectProblem(await (await ctx.as(familyAdmin)).delete(`/admin/users/${admin.id}`), 403, 'ADMIN_REQUIRED');
+    expectProblem(await (await ctx.as(admin)).delete('/admin/users/00000000-0000-4000-8000-000000000000'), 404, 'USER_NOT_FOUND');
+
+    const second = await ctx.createAdmin();
+    expect((await (await ctx.as(second)).delete(`/admin/users/${admin.id}`)).statusCode).toBe(204);
+    const gone = await ctx.prisma.user.findUnique({ where: { id: admin.id } });
+    expect(gone).toMatchObject({ isAdmin: false, isDisabled: true, displayName: 'Gelöschtes Konto' });
+    expect(gone!.deletedAt).not.toBeNull();
   });
 });

@@ -131,7 +131,7 @@ Dateien liegen unter `/data/media/<familyId>/<mediaId>/{original.ext, thumb_400.
 | Kommentieren | `canComment` |
 | Kommentar bearbeiten / löschen | Autor, `isFamilyAdmin` oder `isAdmin` (als Mitglied; ADR-0003) |
 | Mitglieder-Flags ändern, Einladungen erzeugen, Mitglied entfernen | `isFamilyAdmin` |
-| User anlegen/sperren, Familien anlegen/löschen, Storage-Statistik | `isAdmin` (global) |
+| User anlegen/sperren/löschen (anonymisieren), Familien anlegen/löschen, Storage-Statistik | `isAdmin` (global) |
 
 Ein Fastify-Hook `requireFamilyPermission('canUpload')` lädt die Membership einmal pro Request
 und legt sie auf `request.membership`. Globale Admins umgehen Familienrechte **nicht**
@@ -167,7 +167,7 @@ PUT    /uploads/:id/chunks/:index        Chunk ≤ 50 MB (Cloudflare-Limit 100 M
 POST   /uploads/:id/complete             → Media mit status PROCESSING, Job enqueuen
 GET/POST /media/:id/comments
 POST   /devices                          FCM-Token registrieren
-GET    /admin/users | POST /admin/users | PATCH /admin/users/:id   (isAdmin)
+GET    /admin/users | POST /admin/users | PATCH /admin/users/:id | DELETE /admin/users/:id   (isAdmin; DELETE anonymisiert, Fotos/Kommentare bleiben)
 GET    /admin/families                   alle Alben mit memberCount, mediaCount, photoCount, videoCount, totalBytes (isAdmin)
 GET    /admin/stats
 ```
