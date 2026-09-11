@@ -105,7 +105,7 @@ die Einladung sofort und bietet «In der App öffnen» (URL-Schema `familienalbu
 direkt die App öffnet (Universal Links / App Links), einmalig `apps/app/tool/set_domain.sh <domain>` ausführen und die
 Apps neu bauen; der Web-Container liefert die nötigen Dateien unter `/.well-known/` aus. Für Play-Builds den
 Fingerabdruck des App-Signaturschlüssels (Play Console → App-Integrität) in `web/.well-known/assetlinks.json` ergänzen.
-Aktuell eingetragen: `album.depaolis.digital`. Wechselt die Domain, `set_domain.sh <neue-domain>` erneut ausführen (die alte
+Aktuell eingetragen: `album.depaolis.digital`, mit Upload- und Play-Signaturschlüssel. Wechselt die Domain, `set_domain.sh <neue-domain>` erneut ausführen (die alte
 bleibt zusätzlich eingetragen, alte Links funktionieren weiter) und beide Apps neu verteilen; bis dahin landet ein Link
 auf der neuen Domain in der Web-App mit «In der App öffnen».
 

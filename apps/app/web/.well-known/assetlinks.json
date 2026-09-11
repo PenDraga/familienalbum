@@ -7,7 +7,8 @@
       "namespace": "android_app",
       "package_name": "ch.familienalbum.familienalbum",
       "sha256_cert_fingerprints": [
-        "AA:98:9C:ED:68:E2:2D:C8:A7:92:38:B8:5D:FE:71:96:B6:96:95:30:8E:4F:90:2A:15:33:E8:0D:41:5A:B8:45"
+        "AA:98:9C:ED:68:E2:2D:C8:A7:92:38:B8:5D:FE:71:96:B6:96:95:30:8E:4F:90:2A:15:33:E8:0D:41:5A:B8:45",
+        "7B:CA:BC:D7:98:51:37:07:E3:4C:D3:03:80:AD:E2:73:7E:AF:61:DE:76:7B:BB:19:40:7C:94:7F:28:CA:33:FC"
       ]
     }
   }
