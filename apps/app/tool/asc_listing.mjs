@@ -108,9 +108,12 @@ console.log(`Version ${version.attributes.versionString}: Beschreibung, Keywords
 const builds = await api('GET', `/v1/builds?filter[app]=${appId}&sort=-uploadedDate&limit=5&fields[builds]=version,processingState,expired`);
 const latest = builds.data.find((b) => b.attributes.processingState === 'VALID' && !b.attributes.expired);
 const current = (await api('GET', `/v1/appStoreVersions/${version.id}/relationships/build`)).data?.id;
-if (latest && latest.id !== current) {
+const editable = ['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'METADATA_REJECTED', 'INVALID_BINARY'].includes(version.attributes.appStoreState);
+if (latest && latest.id !== current && editable) {
   await api('PATCH', `/v1/appStoreVersions/${version.id}/relationships/build`, { data: { type: 'builds', id: latest.id } });
   console.log(`Version ${version.attributes.versionString}: Build ${latest.attributes.version} angehängt`);
+} else if (latest && latest.id !== current) {
+  console.log(`Version ${version.attributes.versionString} ist ${version.attributes.appStoreState}: Build bleibt, neuster wäre ${latest.attributes.version}`);
 }
 
 // ---------- TestFlight: Beschreibung, Feedback, Review-Notizen ----------
