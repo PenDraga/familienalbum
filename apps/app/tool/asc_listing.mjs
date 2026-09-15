@@ -92,7 +92,7 @@ else vloc = (await api('POST', '/v1/appStoreVersionLocalizations', { data: { typ
 console.log(`Version ${version.attributes.versionString}: Beschreibung, Keywords, Support-URL gesetzt`);
 
 // ---------- Neuster verarbeiteter Build an die App-Store-Version hängen ----------
-const builds = await api('GET', `/v1/apps/${appId}/builds?sort=-uploadedDate&limit=5&fields[builds]=version,processingState,expired`);
+const builds = await api('GET', `/v1/builds?filter[app]=${appId}&sort=-uploadedDate&limit=5&fields[builds]=version,processingState,expired`);
 const latest = builds.data.find((b) => b.attributes.processingState === 'VALID' && !b.attributes.expired);
 const current = (await api('GET', `/v1/appStoreVersions/${version.id}/relationships/build`)).data?.id;
 if (latest && latest.id !== current) {
