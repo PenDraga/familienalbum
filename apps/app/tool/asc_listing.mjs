@@ -116,6 +116,13 @@ if (latest && latest.id !== current && editable) {
   console.log(`Version ${version.attributes.versionString} ist ${version.attributes.appStoreState}: Build bleibt, neuster wäre ${latest.attributes.version}`);
 }
 
+// ---------- App-Review-Informationen (Kontakt, Demo-Konto-Name, Notizen; Passwort bleibt, wie in ASC hinterlegt) ----------
+const reviewAttrs = { contactFirstName: 'Philippe', contactLastName: 'Ingold', contactEmail: listing.beta.feedbackEmail, demoAccountRequired: true, demoAccountName: 'google-review@depaolis.digital', notes: listing.betaReviewNotes };
+const detail = await api('GET', `/v1/appStoreVersions/${version.id}/appStoreReviewDetail`).catch(() => null);
+if (detail?.data) await patch('appStoreReviewDetails', detail.data.id, reviewAttrs);
+else await api('POST', '/v1/appStoreReviewDetails', { data: { type: 'appStoreReviewDetails', attributes: reviewAttrs, relationships: { appStoreVersion: { data: { type: 'appStoreVersions', id: version.id } } } } });
+console.log('App-Review-Informationen gesetzt (Demo-Passwort nur in App Store Connect)');
+
 // ---------- TestFlight: Beschreibung, Feedback, Review-Notizen ----------
 const beta = await api('GET', `/v1/apps/${appId}/betaAppLocalizations`);
 const bloc = beta.data.find((b) => b.attributes.locale === LOCALE);
