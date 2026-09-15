@@ -46,6 +46,7 @@ Seit der ersten Beta, Stand 2026-09-07.
 - Universal Links / App Links für `album.depaolis.digital`: Einladungslink öffnet die installierte App direkt; Build 26
 - App Store Connect per Skript gepflegt (`tool/asc_listing.mjs`): Untertitel, Kategorie Foto & Video, Datenschutz-URL,
   Beschreibung, Keywords, TestFlight-Beschreibung, zehn Screenshots (6,7" und 6,5"); App nur noch für iPhone (kein iPad)
+- App Store: Copyright, Inhaltsrechte, Preis kostenlos (Basisregion CH), Build 28 ohne iPad an Version 1.0
 - Konto löschen (globaler Admin): `DELETE /admin/users/:id` anonymisiert das Konto, Fotos und Kommentare bleiben als
   «Gelöschtes Konto»; in der App unter Benutzer mit Sicherheitsabfrage; Migration `m12_user_deleted`; Build 27
 

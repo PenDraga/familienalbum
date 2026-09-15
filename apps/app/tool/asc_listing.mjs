@@ -1,4 +1,5 @@
-// App-Store-Connect-Eintrag pflegen (Texte, Kategorie, TestFlight-Infos, Screenshots) – ohne Klicken in App Store Connect.
+// App-Store-Connect-Eintrag pflegen (Texte, Kategorie, Copyright, Inhaltsrechte, TestFlight-Infos, Screenshots, neuster Build).
+// Preis (kostenlos, Basisregion CHE) wurde einmalig per API gesetzt; Datenschutz-Angaben und Altersfreigabe nur in der Console.
 //   node tool/asc_listing.mjs                → Texte, Kategorie, Datenschutz-URL, TestFlight-Beschreibung setzen
 //   node tool/asc_listing.mjs --screenshots  → zusätzlich store/ios/<DISPLAY_TYPE>/*.png hochladen (ersetzt vorhandene)
 // Braucht ios/asc.env (siehe ios/asc.env.example). Texte stehen unten in `listing`.
@@ -38,6 +39,9 @@ const listing = {
     'Der Zugang erfolgt ausschliesslich per Einladung durch die Familie. Beim ersten Start wird die Adresse des eigenen Familienalbum-Servers eingetragen.',
   ].join('\n'),
   whatsNew: 'Erste Version für den Familientest.',
+  copyright: '2026 Philippe Ingold',
+  // Rückblick-Musik von Kevin MacLeod (CC BY 4.0) ist Drittinhalt mit Nutzungsrecht
+  contentRightsDeclaration: 'USES_THIRD_PARTY_CONTENT',
   beta: {
     description: 'Privates, selbst gehostetes Familienalbum: Fotos, Videos, Kommentare und Rückblick-Videos. Zum Anmelden braucht ihr die Server-Adresse und einen Einladungslink vom Album-Admin.',
     feedbackEmail: 'philippe@ingolds.ch',
@@ -89,7 +93,9 @@ async function patchVersionLoc(id, attrs) {
 }
 if (vloc) await patchVersionLoc(vloc.id, vattrs);
 else vloc = (await api('POST', '/v1/appStoreVersionLocalizations', { data: { type: 'appStoreVersionLocalizations', attributes: { locale: LOCALE, ...vattrs }, relationships: { appStoreVersion: { data: { type: 'appStoreVersions', id: version.id } } } } })).data;
-console.log(`Version ${version.attributes.versionString}: Beschreibung, Keywords, Support-URL gesetzt`);
+await patch('appStoreVersions', version.id, { copyright: listing.copyright });
+await patch('apps', appId, { contentRightsDeclaration: listing.contentRightsDeclaration });
+console.log(`Version ${version.attributes.versionString}: Beschreibung, Keywords, Support-URL, Copyright, Inhaltsrechte gesetzt`);
 
 // ---------- Neuster verarbeiteter Build an die App-Store-Version hängen ----------
 const builds = await api('GET', `/v1/builds?filter[app]=${appId}&sort=-uploadedDate&limit=5&fields[builds]=version,processingState,expired`);
