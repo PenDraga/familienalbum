@@ -5,7 +5,9 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 
 ## [Unreleased]
 
-Seit der ersten Beta, Stand 2026-09-07.
+## [1.0.0] – 2026-09-15
+
+Erste Version für App Store und Google Play (offener Test). Seit der ersten Beta:
 
 ### Server
 - Rückblick-Videos (Monat, Jahr, Sekunden-Film) per ffmpeg im Worker, automatisch am Monatsersten / 2. Januar
@@ -47,6 +49,7 @@ Seit der ersten Beta, Stand 2026-09-07.
 - App Store Connect per Skript gepflegt (`tool/asc_listing.mjs`): Untertitel, Kategorie Foto & Video, Datenschutz-URL,
   Beschreibung, Keywords, TestFlight-Beschreibung, zehn Screenshots (6,7" und 6,5"); App nur noch für iPhone (kein iPad)
 - App Store: Copyright, Inhaltsrechte, Preis kostenlos (Basisregion CH), Build 28 ohne iPad an Version 1.0
+- Version 1.0.0 (Build 29) auf allen Plattformen; App-Store-Version heisst ebenfalls 1.0.0
 - Konto löschen (globaler Admin): `DELETE /admin/users/:id` anonymisiert das Konto, Fotos und Kommentare bleiben als
   «Gelöschtes Konto»; in der App unter Benutzer mit Sicherheitsabfrage; Migration `m12_user_deleted`; Build 27
 

@@ -79,6 +79,13 @@ console.log('App-Info: Untertitel, Datenschutz-URL, Kategorie gesetzt');
 // ---------- Version: Beschreibung, Keywords, Support ----------
 const versions = await api('GET', `/v1/apps/${appId}/appStoreVersions?filter[platform]=IOS&include=appStoreVersionLocalizations&limit=3`);
 const version = versions.data.find((v) => !['READY_FOR_SALE', 'REPLACED_WITH_NEW_VERSION', 'REMOVED_FROM_SALE'].includes(v.attributes.appStoreState)) ?? versions.data[0];
+// Versionsnummer in App Store Connect an die pubspec angleichen (Build muss dieselbe Nummer tragen)
+const pubspecVersion = /^version:\s*([\d.]+)\+/m.exec(readFileSync(resolve(app, 'pubspec.yaml'), 'utf8'))?.[1];
+if (pubspecVersion && version.attributes.versionString !== pubspecVersion && version.attributes.appStoreState === 'PREPARE_FOR_SUBMISSION') {
+  await patch('appStoreVersions', version.id, { versionString: pubspecVersion });
+  version.attributes.versionString = pubspecVersion;
+  console.log(`App-Store-Version heisst jetzt ${pubspecVersion}`);
+}
 let vloc = (versions.included ?? []).find((l) => l.type === 'appStoreVersionLocalizations' && l.attributes.locale === LOCALE);
 const vattrs = { description: listing.description, keywords: listing.keywords, promotionalText: listing.promotionalText, supportUrl: listing.supportUrl, whatsNew: listing.whatsNew };
 // «Neue Funktionen» gibt es erst ab der zweiten Version; bei 1.0 lehnt Apple das Feld ab

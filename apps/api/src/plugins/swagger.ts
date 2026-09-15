@@ -11,7 +11,7 @@ async function swaggerPlugin(app: FastifyInstance) {
       info: {
         title: 'Familienalbum API',
         description: 'Privates, selbst gehostetes Familienalbum – REST-API.',
-        version: '0.1.0',
+        version: '1.0.0',
       },
       servers: [{ url: '/api/v1' }],
       components: {
