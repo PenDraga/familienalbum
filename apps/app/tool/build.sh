@@ -28,6 +28,11 @@ if [ -f firebase.env ]; then
 else
   echo "keine firebase.env – baue ohne Push (Clients pollen)"
 fi
+# Vorbelegte Server-Adresse (Login-Screen zeigt sie an, bleibt änderbar) – für Store-Builds und Prüfer
+if [ -n "${API_BASE_URL:-}" ]; then
+  defines="$defines --dart-define=API_BASE_URL=$API_BASE_URL"
+  echo "Server vorbelegt: $API_BASE_URL"
+fi
 
 # shellcheck disable=SC2086
 exec flutter build "$target" --release $defines "$@"

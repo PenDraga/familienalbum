@@ -5,6 +5,10 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 
 ## [Unreleased]
 
+### App
+- Login-Screen belegt die Server-Adresse aus dem Build vor (`API_BASE_URL` in `firebase.env`); Einladungs-Screen erklärt
+  falsche Codes und verlinkt zur Anmeldung (Rückmeldung von App Review); Build 30
+
 ## [1.0.0] – 2026-09-15
 
 Erste Version für App Store und Google Play (offener Test). Seit der ersten Beta:

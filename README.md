@@ -144,6 +144,8 @@ Optional. Ohne Konfiguration pollen die Clients jede Minute.
 3. **App:** Werte aus den Firebase-Projekteinstellungen in `apps/app/firebase.env` eintragen (Vorlage
    `firebase.env.example`, je ein API-Key und eine App-ID für iOS und Android) und mit `apps/app/tool/build.sh ipa|apk`
    bauen – das Skript setzt die `--dart-define`s. Ohne `firebase.env` startet die App ohne Firebase und pollt.
+   `API_BASE_URL` in derselben Datei belegt die Server-Adresse im Login-Screen vor (bleibt änderbar), damit Familie und
+   Store-Prüfer sie nicht eintippen müssen.
    Die Push-Berechtigung (`aps-environment`) liegt in `ios/Runner/Runner.entitlements`; Xcode aktiviert die Capability
    über das automatische Signing selbst.
 4. **Rückblick-Musik:** Beim Image-Build werden zehn lizenzfreie Stücke von Kevin MacLeod (incompetech.com, CC BY 4.0)

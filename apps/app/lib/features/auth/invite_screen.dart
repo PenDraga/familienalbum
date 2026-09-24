@@ -95,8 +95,20 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
   Future<void> _lookup() => _run(() async {
     await ref.read(settingsProvider.notifier).setBaseUrl(_server.text);
     final repo = AuthRepository(ref.read(apiClientProvider));
-    final p = await repo.previewInvite(_code.text);
-    setState(() => _preview = p);
+    try {
+      final p = await repo.previewInvite(_code.text);
+      setState(() => _preview = p);
+    } on ApiException catch (e) {
+      // Kein oder falscher Code: erklären, statt «ungültige Daten» zu melden – Prüfer und Grosseltern tippen hier gern ein Passwort ein
+      if (e.status == 400 || e.status == 404) {
+        throw ApiException(
+          status: e.status,
+          code: 'INVITE_INVALID',
+          detail: 'Das ist kein gültiger Einladungscode. Codes haben 10 Zeichen, zum Beispiel AJYP8NH2HG, und kommen vom Album-Admin. Wenn du schon ein Konto hast, melde dich stattdessen an.',
+        );
+      }
+      rethrow;
+    }
   });
 
   Future<void> _accept() => _run(() async {
@@ -155,6 +167,13 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
               ),
               const SizedBox(height: 20),
               FilledButton(onPressed: _busy ? null : _lookup, child: const Text('Einladung prüfen')),
+              if (!loggedIn) ...[
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: _busy ? null : () => context.go('/login'),
+                  child: const Text('Ich habe schon ein Konto – anmelden'),
+                ),
+              ],
             ] else ...[
               if (kIsWeb && !loggedIn) ...[
                 OutlinedButton.icon(

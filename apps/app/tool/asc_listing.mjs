@@ -46,7 +46,14 @@ const listing = {
     description: 'Privates, selbst gehostetes Familienalbum: Fotos, Videos, Kommentare und Rückblick-Videos. Zum Anmelden braucht ihr die Server-Adresse und einen Einladungslink vom Album-Admin.',
     feedbackEmail: 'philippe@ingolds.ch',
   },
-  betaReviewNotes: `Self-hosted app: on the first screen enter the server address ${SERVER}, then sign in with the demo account. The account is a view-only member of the album "Demo".`,
+  betaReviewNotes: [
+    'HOW TO SIGN IN (please do not use the "Einladung" / invitation screen):',
+    `1. Open the app. The login screen shows the server "${SERVER.replace('https://', '')}" pre-filled at the bottom. Leave it as is.`,
+    '2. Enter the demo account e-mail and password from this form, then tap "Anmelden".',
+    '3. You land in the album "Demo" with sample photos, comments and settings.',
+    'The invitation code screen ("Ich habe einen Einladungscode") is only for new users invited by a family admin; it is not needed for review.',
+    'The app is a client for a self-hosted family photo server; only invited family members can join.',
+  ].join('\n'),
 };
 
 // ---------- API ----------
