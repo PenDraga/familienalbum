@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { countUnread } from './activity.service.js';
 import type { PushMessage, PushSender } from './push.js';
 
 export interface NotifyOutcome {
@@ -102,16 +103,43 @@ export class NotificationService {
       this.log.info({ recipients: userIds.length, title: message.title }, 'push disabled – clients poll');
       return { recipients: userIds.length, sent: 0 };
     }
-    const devices = await this.prisma.device.findMany({ where: { userId: { in: userIds } }, select: { fcmToken: true } });
+    const devices = await this.prisma.device.findMany({ where: { userId: { in: userIds } }, select: { fcmToken: true, userId: true } });
     if (devices.length === 0) return { recipients: userIds.length, sent: 0 };
 
-    const result = await this.sender.send(devices.map((d) => d.fcmToken), message);
-    if (result.invalidTokens.length > 0) {
-      await this.prisma.device.deleteMany({ where: { fcmToken: { in: result.invalidTokens } } });
-      this.log.warn({ removed: result.invalidTokens.length }, 'removed invalid push tokens');
+    // Badge = ungelesene Einträge des Empfängers über alle seine Alben; gleiche Zahl → ein Multicast
+    const badges = await this.unreadTotals([...new Set(devices.map((d) => d.userId))]);
+    const groups = new Map<number, string[]>();
+    for (const d of devices) {
+      const badge = badges.get(d.userId) ?? 0;
+      groups.set(badge, [...(groups.get(badge) ?? []), d.fcmToken]);
     }
-    this.log.info({ recipients: userIds.length, devices: devices.length, sent: result.sent, title: message.title }, 'push sent');
-    return { recipients: userIds.length, sent: result.sent };
+    let sent = 0;
+    const invalid: string[] = [];
+    for (const [badge, tokens] of groups) {
+      const result = await this.sender.send(tokens, { ...message, badge });
+      sent += result.sent;
+      invalid.push(...result.invalidTokens);
+    }
+    if (invalid.length > 0) {
+      await this.prisma.device.deleteMany({ where: { fcmToken: { in: invalid } } });
+      this.log.warn({ removed: invalid.length }, 'removed invalid push tokens');
+    }
+    this.log.info({ recipients: userIds.length, devices: devices.length, sent, title: message.title }, 'push sent');
+    return { recipients: userIds.length, sent };
+  }
+
+  /** Ungelesene Medien und Kommentare pro Person, summiert über alle Mitgliedschaften. */
+  private async unreadTotals(userIds: string[]) {
+    const memberships = await this.prisma.familyMember.findMany({
+      where: { userId: { in: userIds } },
+      select: { userId: true, familyId: true, activitySeenAt: true, joinedAt: true },
+    });
+    const totals = new Map<string, number>();
+    for (const m of memberships) {
+      const { media, comments } = await countUnread(this.prisma, m.familyId, m.userId, m.activitySeenAt ?? m.joinedAt);
+      totals.set(m.userId, (totals.get(m.userId) ?? 0) + media + comments);
+    }
+    return totals;
   }
 }
 

@@ -16,6 +16,22 @@ import FirebaseMessaging
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // Zahl auf dem App-Symbol: die App setzt sie auf die ungelesenen Einträge bzw. auf 0 nach dem Öffnen des Verlaufs
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ch.familienalbum.badge") {
+      let channel = FlutterMethodChannel(name: "ch.familienalbum/badge", binaryMessenger: registrar.messenger())
+      channel.setMethodCallHandler { call, result in
+        guard call.method == "set", let count = call.arguments as? Int else {
+          result(FlutterMethodNotImplemented)
+          return
+        }
+        if #available(iOS 16.0, *) {
+          UNUserNotificationCenter.current().setBadgeCount(count) { _ in }
+        } else {
+          UIApplication.shared.applicationIconBadgeNumber = count
+        }
+        result(nil)
+      }
+    }
   }
 
   // APNs-Registrierung sichtbar machen (Push-Diagnose); super reicht den Token an die Flutter-Plugins weiter

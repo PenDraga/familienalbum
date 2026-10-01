@@ -7,6 +7,8 @@ export interface PushMessage {
   body: string;
   /** Nur Strings (FCM-Vorgabe) */
   data: Record<string, string>;
+  /** Zahl auf dem App-Symbol (iOS): ungelesene Einträge des Empfängers; weggelassen = Badge unverändert */
+  badge?: number;
 }
 
 export interface PushResult {
@@ -72,7 +74,7 @@ export class FcmPushSender implements PushSender {
         notification: { title: message.title, body: message.body },
         data: message.data,
         android: { priority: 'high', notification: { channelId: 'familienalbum', sound: 'default' } },
-        apns: { payload: { aps: { sound: 'default', badge: 1 } } },
+        apns: { payload: { aps: { sound: 'default', ...(message.badge === undefined ? {} : { badge: message.badge }) } } },
       });
       result.sent += res.successCount;
       res.responses.forEach((r, idx) => {

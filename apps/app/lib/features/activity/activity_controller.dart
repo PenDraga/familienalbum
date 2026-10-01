@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_exception.dart';
+import '../../core/app_badge.dart';
 import '../auth/auth_controller.dart';
 import 'activity_models.dart';
 import 'activity_repository.dart';
@@ -18,21 +19,28 @@ class UnreadController extends AsyncNotifier<UnreadCounts> {
     if (family == null) return UnreadCounts.zero;
     _timer = Timer.periodic(const Duration(seconds: 60), (_) => refresh());
     ref.onDispose(() => _timer?.cancel());
-    return ref.read(activityRepositoryProvider).unread(family.id);
+    final counts = await ref.read(activityRepositoryProvider).unread(family.id);
+    unawaited(AppBadge.set(counts.total));
+    return counts;
   }
 
   Future<void> refresh() async {
     final family = ref.read(selectedFamilyProvider);
     if (family == null) return;
     try {
-      state = AsyncData(await ref.read(activityRepositoryProvider).unread(family.id));
+      final counts = await ref.read(activityRepositoryProvider).unread(family.id);
+      state = AsyncData(counts);
+      unawaited(AppBadge.set(counts.total));
     } catch (_) {
       // Netzwerkfehler beim Polling still ignorieren, alter Wert bleibt
     }
   }
 
-  /// Nach „gesehen“: sofort auf null, ohne Roundtrip.
-  void clear() => state = const AsyncData(UnreadCounts.zero);
+  /// Nach „gesehen“: sofort auf null, ohne Roundtrip – auch die Zahl auf dem App-Symbol.
+  void clear() {
+    state = const AsyncData(UnreadCounts.zero);
+    unawaited(AppBadge.set(0));
+  }
 }
 
 final unreadProvider = AsyncNotifierProvider<UnreadController, UnreadCounts>(UnreadController.new);

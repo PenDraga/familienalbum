@@ -5,6 +5,23 @@ import { makeJpeg } from './helpers/fixtures.js';
 
 let ctx: TestContext;
 
+/** Wartet, bis `cond` wahr ist (asynchroner Push der Route), höchstens ~3 s. */
+async function waitFor(cond: () => boolean, timeoutMs = 3000) {
+  const start = Date.now();
+  while (!cond() && Date.now() - start < timeoutMs) await new Promise((r) => setTimeout(r, 25));
+}
+/** Wartet, bis sich ein Zähler 300 ms lang nicht mehr ändert. */
+async function settled(read: () => number) {
+  let last = read();
+  for (;;) {
+    await new Promise((r) => setTimeout(r, 300));
+    const now = read();
+    if (now === last) return;
+    last = now;
+  }
+}
+
+
 beforeAll(async () => {
   ctx = await TestContext.create();
 });
@@ -63,6 +80,8 @@ describe('Push: neue Medien (Digest)', () => {
     expect(msg!.message.title).toBe(family.name);
     expect(msg!.message.body).toContain('2 neue Fotos');
     expect(msg!.message.data).toMatchObject({ type: 'media', familyId: family.id, count: '2' });
+    // Badge = ungelesene Einträge der Empfängerin (zwei neue Fotos, nichts gesehen)
+    expect(msg!.message.badge).toBe(2);
 
     // Zweiter Lauf: nichts Neues → keine zweite Nachricht
     expect(await ctx.app.notifications.notifyNewMedia(family.id, admin.id)).toEqual({ recipients: 0, sent: 0, count: 0 });
@@ -113,23 +132,42 @@ describe('Push: Kommentare', () => {
     }
     const media = await ctx.uploadAndProcess(admin, family, await makeJpeg());
 
+    // Empfänger mit unterschiedlicher Badge-Zahl bekommen getrennte Multicasts – alle Sendungen seit `from` zusammenfassen
+    const sentSince = (from: number) => ctx.push.sent.slice(from);
+    // Die Route schickt den Push zusätzlich asynchron – Tokens deshalb deduplizieren
+    const tokensSince = (from: number) => [...new Set(sentSince(from).flatMap((s) => s.tokens))].sort();
+
     // Oma kommentiert → alle ausser Oma
+    // Vor jeder Markierung den asynchronen Push der Route abwarten, sonst zählt er zur nächsten Runde
+    await settled(() => ctx.push.sent.length);
+    let mark = ctx.push.sent.length;
     const c1 = (await (await ctx.as(oma)).post(`/media/${media.id}/comments`, { body: 'Herzig!' })).json();
     await ctx.app.notifications.notifyNewComment(c1.id);
-    expect(ctx.push.sent.at(-1)!.tokens.sort()).toEqual([token(admin.id), token(opa.id), token(tante.id)].sort());
-    expect(ctx.push.sent.at(-1)!.message).toMatchObject({ title: `Oma · ${family.name}`, body: 'Herzig!', data: { type: 'comment', mediaId: media.id } });
+    expect(tokensSince(mark)).toEqual([token(admin.id), token(opa.id), token(tante.id)].sort());
+    expect(sentSince(mark)[0]!.message).toMatchObject({ title: `Oma · ${family.name}`, body: 'Herzig!', data: { type: 'comment', mediaId: media.id } });
+    // Badge: Uploader hat nur den Kommentar ungelesen (1), Opa und Tante Foto + Kommentar (2)
+    const badgeOf = (t: string) => sentSince(mark).find((s) => s.tokens.includes(t))!.message.badge;
+    expect(badgeOf(token(admin.id))).toBe(1);
+    expect(badgeOf(token(opa.id))).toBe(2);
+    expect(badgeOf(token(tante.id))).toBe(2);
 
     // Opa kommentiert → alle ausser Opa
+    await settled(() => ctx.push.sent.length);
+    mark = ctx.push.sent.length;
     const c2 = (await (await ctx.as(opa)).post(`/media/${media.id}/comments`, { body: 'x'.repeat(150) })).json();
     const outcome = await ctx.app.notifications.notifyNewComment(c2.id);
     expect(outcome.recipients).toBe(3);
-    expect(ctx.push.sent.at(-1)!.tokens.sort()).toEqual([token(admin.id), token(oma.id), token(tante.id)].sort());
-    expect(ctx.push.sent.at(-1)!.message.body).toMatch(/^x{97}…$/);
+    expect(tokensSince(mark)).toEqual([token(admin.id), token(oma.id), token(tante.id)].sort());
+    expect(sentSince(mark)[0]!.message.body).toMatch(/^x{97}…$/);
 
     // Der Uploader kommentiert selbst → alle ausser ihm
+    await settled(() => ctx.push.sent.length);
+    mark = ctx.push.sent.length;
     const c3 = (await (await ctx.as(admin)).post(`/media/${media.id}/comments`, { body: 'Danke' })).json();
     await ctx.app.notifications.notifyNewComment(c3.id);
-    expect(ctx.push.sent.at(-1)!.tokens.sort()).toEqual([token(oma.id), token(opa.id), token(tante.id)].sort());
+    expect(tokensSince(mark)).toEqual([token(oma.id), token(opa.id), token(tante.id)].sort());
+    // Den asynchronen Push der Route abwarten, damit er nicht in den nächsten Test hineinläuft
+    await settled(() => ctx.push.sent.length);
   });
 
   it('die Route stösst den Push an (asynchron)', async () => {
@@ -140,9 +178,10 @@ describe('Push: Kommentare', () => {
     const media = await ctx.uploadAndProcess(admin, family, await makeJpeg());
 
     await (await ctx.as(oma)).post(`/media/${media.id}/comments`, { body: 'hallo' });
-    await new Promise((r) => setTimeout(r, 300));
+    await waitFor(() => ctx.push.sent.length >= 1);
     expect(ctx.push.sent).toHaveLength(1);
     expect(ctx.push.sent[0]!.tokens).toEqual([token('admin')]);
+    expect(ctx.push.sent[0]!.message.badge).toBe(1);
   });
 });
 

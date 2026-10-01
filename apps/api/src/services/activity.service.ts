@@ -145,16 +145,8 @@ export class ActivityService {
   }
 
   /** Ungelesenes zählen: fertige Medien und Kommentare anderer seit `since`. */
-  async unread(familyId: string, userId: string, since: Date) {
-    const [media, comments] = await Promise.all([
-      this.prisma.media.count({
-        where: { familyId, status: 'READY', deletedAt: null, uploadedAt: { gt: since }, NOT: { uploaderId: userId } },
-      }),
-      this.prisma.comment.count({
-        where: { createdAt: { gt: since }, NOT: { authorId: userId }, media: { familyId, deletedAt: null } },
-      }),
-    ]);
-    return { media, comments };
+  unread(familyId: string, userId: string, since: Date) {
+    return countUnread(this.prisma, familyId, userId, since);
   }
 
   /** Alles bis jetzt als gesehen markieren. */
@@ -182,4 +174,17 @@ export function decodeCursor(cursor: string): Date {
   const d = new Date(Buffer.from(cursor, 'base64url').toString('utf8'));
   if (Number.isNaN(d.getTime())) throw new Error('Ungültiger Cursor');
   return d;
+}
+
+/** Ungelesene Einträge einer Person in einer Familie – auch für die Badge-Zahl im Push. */
+export async function countUnread(prisma: PrismaClient, familyId: string, userId: string, since: Date) {
+  const [media, comments] = await Promise.all([
+    prisma.media.count({
+      where: { familyId, status: 'READY', deletedAt: null, uploadedAt: { gt: since }, NOT: { uploaderId: userId } },
+    }),
+    prisma.comment.count({
+      where: { createdAt: { gt: since }, NOT: { authorId: userId }, media: { familyId, deletedAt: null } },
+    }),
+  ]);
+  return { media, comments };
 }
