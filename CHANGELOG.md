@@ -7,6 +7,13 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 
 ### Server
 - Push trägt als Badge die Anzahl ungelesener Einträge des Empfängers (vorher immer 1)
+- `GET /meta` (öffentlich): Version und Betreiber aus `OPERATOR_NAME`/`OPERATOR_EMAIL`; die Datenschutzseite holt sich
+  die verantwortliche Stelle von dort statt sie fest einzubauen
+
+### Repo
+- Vorbereitung für die Veröffentlichung: MIT-Lizenz, englische README mit Screenshots, keine persönlichen Daten
+  mehr im Repo (Domain kommt aus `API_BASE_URL` in `firebase.env` in Entitlements und Manifest, Kontaktdaten des
+  Store-Eintrags in `ios/asc.env`); `set_domain.sh` entfällt
 
 ### App
 - Zahl auf dem App-Symbol (iOS) folgt dem Ungelesen-Zähler und verschwindet nach dem Öffnen des Verlaufs; Build 31
@@ -53,7 +60,7 @@ Erste Version für App Store und Google Play (offener Test). Seit der ersten Bet
   bei Entzug des Rechts schaltet sich der Auto-Upload ab (auch im Hintergrund-Lauf, der das Recht vor jedem Upload prüft); Build 24
 - `tool/testflight_upload.mjs`: IPA per App-Store-Connect-API hochladen, auf Verarbeitung warten, Testhinweise setzen,
   Build an die TestFlight-Gruppe hängen (kein Xcode-Organizer mehr nötig); Build 25 als erster Durchlauf
-- Universal Links / App Links für `album.depaolis.digital`: Einladungslink öffnet die installierte App direkt; Build 26
+- Universal Links / App Links für die eigene Domain: Einladungslink öffnet die installierte App direkt; Build 26
 - App Store Connect per Skript gepflegt (`tool/asc_listing.mjs`): Untertitel, Kategorie Foto & Video, Datenschutz-URL,
   Beschreibung, Keywords, TestFlight-Beschreibung, zehn Screenshots (6,7" und 6,5"); App nur noch für iPhone (kein iPad)
 - App Store: Copyright, Inhaltsrechte, Preis kostenlos (Basisregion CH), Build 28 ohne iPad an Version 1.0

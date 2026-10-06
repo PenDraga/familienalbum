@@ -83,7 +83,7 @@ flutter build ipa --release --build-name=1.0.0 --build-number=2
    die Werte beim Bauen.
 2. Apple Developer → Certificates, Identifiers & Profiles → **Keys** → «+» → Apple Push Notifications service (APNs)
    → .p8 herunterladen (nur einmal möglich). In Firebase: Projekteinstellungen → Cloud Messaging → Apple-App →
-   APNs-Authentifizierungsschlüssel hochladen (Key-ID und Team-ID K4GN98FN45 dazu).
+   APNs-Authentifizierungsschlüssel hochladen (Key-ID und deine Team-ID dazu).
 3. Firebase → Projekteinstellungen → Allgemein: pro App «API-Schlüssel», «App-ID», dazu «Projekt-ID» und
    «Absender-ID» (Cloud Messaging) in `apps/app/firebase.env` eintragen (Vorlage `firebase.env.example`).
 4. Bauen mit Push:

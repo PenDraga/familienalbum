@@ -25,6 +25,7 @@ const app = await buildApp({
     signedUrlTtlSeconds: 86400,
     notifyDigestSeconds: 90,
     rateLimit: false,
+    version: "test",
   },
   mediaQueue: new RecordingMediaQueue(),
   logger: false,

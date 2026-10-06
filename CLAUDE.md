@@ -170,6 +170,7 @@ POST   /devices                          FCM-Token registrieren
 GET    /admin/users | POST /admin/users | PATCH /admin/users/:id | DELETE /admin/users/:id   (isAdmin; DELETE anonymisiert, Fotos/Kommentare bleiben)
 GET    /admin/families                   alle Alben mit memberCount, mediaCount, photoCount, videoCount, totalBytes (isAdmin)
 GET    /admin/stats
+GET    /meta                             öffentlich: Version und Betreiber (OPERATOR_NAME/EMAIL) für die Datenschutzseite
 ```
 
 Fastify generiert OpenAPI; daraus wird der Flutter-Client (`openapi-generator`, dart-dio) erzeugt.

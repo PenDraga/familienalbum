@@ -44,9 +44,8 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https" android:host="album.depaolis.digital" android:pathPrefix="/invite"/>
+                <data android:scheme="https" android:host="${appLinkHost}" android:pathPrefix="/invite"/>
             </intent-filter>
-            <!-- APP-LINKS: weitere Domains mit tool/set_domain.sh ergänzen -->
             <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>
         </activity>
         <!-- Don't delete the meta-data below.

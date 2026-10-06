@@ -55,3 +55,9 @@ firebase.env
 
 # App-Store-Connect-API-Schlüssel für TestFlight-Uploads (lokal, siehe ios/asc.env.example)
 ios/asc.env
+
+# Aus API_BASE_URL erzeugt (tool/build.sh): Push-Umgebung + Universal-Link-Domain für Release-Builds
+ios/Runner/Runner.release.entitlements
+
+# Gradle-Ausgabe bei direktem Aufruf im android-Ordner
+android/build/

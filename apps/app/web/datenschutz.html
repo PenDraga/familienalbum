@@ -18,7 +18,7 @@
 <body>
 <main>
   <h1>Datenschutzerklärung</h1>
-  <p class="meta">Familienalbum – privates, selbst gehostetes Familienalbum · Stand: 7. September 2026</p>
+  <p class="meta">Familienalbum – privates, selbst gehostetes Familienalbum · Stand: 6. Oktober 2026</p>
 
   <div class="box">
     <p><strong>Kurz gesagt:</strong> Familienalbum ist keine öffentliche Plattform. Die App verbindet sich mit einem Server, den
@@ -29,7 +29,22 @@
   <h2>1. Verantwortliche Stelle</h2>
   <p>Verantwortlich für die Datenbearbeitung ist die Person, die den Familienalbum-Server betreibt und die Familie
   einlädt. Für diese Installation:</p>
-  <p>Philippe Ingold<br>Schweiz<br>E-Mail: <a href="mailto:pendraga@gmail.com">pendraga@gmail.com</a></p>
+  <p id="operator">Betreiber dieses Servers (siehe App → Einstellungen → Server).</p>
+  <script>
+    // Betreiber-Angaben kommen vom Server (OPERATOR_NAME, OPERATOR_EMAIL), damit die Seite selbst keine
+    // persönlichen Daten enthält und für jede Installation stimmt.
+    fetch('/api/v1/meta').then((r) => r.ok ? r.json() : null).then((m) => {
+      if (!m || (!m.operator.name && !m.operator.email)) return;
+      const el = document.getElementById('operator');
+      el.textContent = '';
+      if (m.operator.name) el.append(m.operator.name);
+      if (m.operator.email) {
+        if (m.operator.name) el.append(document.createElement('br'));
+        const a = document.createElement('a'); a.href = 'mailto:' + m.operator.email; a.textContent = m.operator.email;
+        el.append('E-Mail: ', a);
+      }
+    }).catch(() => {});
+  </script>
 
   <h2>2. Welche Daten bearbeitet werden</h2>
   <ul>
@@ -45,7 +60,7 @@
   </ul>
 
   <h2>3. Wo die Daten liegen</h2>
-  <p>Alle Daten werden auf dem Server der verantwortlichen Stelle gespeichert (Standort Schweiz). Die Übertragung
+  <p>Alle Daten werden auf dem Server der verantwortlichen Stelle gespeichert. Die Übertragung
   zwischen App und Server ist verschlüsselt (HTTPS). Es werden keine Daten an Cloud-Speicher, Analysedienste oder
   Werbenetzwerke übermittelt.</p>
 

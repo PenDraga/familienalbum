@@ -28,6 +28,7 @@ export const testConfig: AppConfig = {
   signedUrlTtlSeconds: 3600,
   notifyDigestSeconds: 0,
   rateLimit: false,
+  version: "test",
 };
 
 export const DEFAULT_PASSWORD = 'Passw0rd!geheim';

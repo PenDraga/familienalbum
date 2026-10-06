@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 
 // .env laden, falls vorhanden (Node >= 20.12). In Docker kommen die Werte aus der Umgebung.
@@ -28,6 +29,9 @@ const envSchema = z.object({
   /** Pfad zur Firebase-Service-Account-JSON; ohne Wert wird kein Push verschickt (Clients pollen). */
   FIREBASE_SERVICE_ACCOUNT: z.string().optional(),
   /** Wartezeit, bis mehrere Uploads eines Mitglieds zu einer Push-Nachricht gebündelt werden. */
+  /** Betreiber-Angaben für die Datenschutzseite und GET /meta (optional) */
+  OPERATOR_NAME: z.string().optional(),
+  OPERATOR_EMAIL: z.string().optional(),
   NOTIFY_DIGEST_SECONDS: z.coerce.number().int().min(0).default(90),
 });
 
@@ -52,6 +56,10 @@ export interface AppConfig {
   notifyDigestSeconds: number;
   /** Rate-Limits für Auth-Routen aktiv (in Tests aus). */
   rateLimit: boolean;
+  /** Version aus package.json, für GET /meta und die Swagger-Beschreibung */
+  version: string;
+  operatorName?: string;
+  operatorEmail?: string;
 }
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
@@ -61,6 +69,16 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(`Ungültige Umgebungsvariablen:\n${issues}`);
   }
   return parsed.data;
+}
+
+/** Version aus apps/api/package.json (im Image liegt sie neben dist/). */
+function packageVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as { version?: string };
+    return pkg.version ?? '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
 }
 
 export function configFromEnv(env: Env): AppConfig {
@@ -79,5 +97,8 @@ export function configFromEnv(env: Env): AppConfig {
     ffprobePath: env.FFPROBE_PATH,
     notifyDigestSeconds: env.NOTIFY_DIGEST_SECONDS,
     rateLimit: env.NODE_ENV !== 'test',
+    version: packageVersion(),
+    operatorName: env.OPERATOR_NAME,
+    operatorEmail: env.OPERATOR_EMAIL,
   };
 }

@@ -17,7 +17,15 @@ const app = resolve(here, '..');
 const args = new Set(process.argv.slice(2));
 const LOCALE = 'de-DE';
 const BUNDLE_ID = 'ch.familienalbum.familienalbum';
-const SERVER = 'https://album.depaolis.digital';
+
+// ---------- Konfiguration (persönliche Werte in ios/asc.env, nicht im Git) ----------
+const env = Object.fromEntries(
+  readFileSync(resolve(app, 'ios/asc.env'), 'utf8').split('\n').filter((l) => l.trim() && !l.trim().startsWith('#')).map((l) => l.split(/=(.*)/s).slice(0, 2).map((s) => s.trim())),
+);
+for (const k of ['ASC_SERVER_URL', 'ASC_CONTACT_FIRST', 'ASC_CONTACT_LAST', 'ASC_CONTACT_EMAIL', 'ASC_COPYRIGHT', 'ASC_DEMO_ACCOUNT']) {
+  if (!env[k]) { console.error(`${k} in ios/asc.env setzen (siehe asc.env.example)`); process.exit(1); }
+}
+const SERVER = env.ASC_SERVER_URL.replace(/\/+$/, '');
 
 const listing = {
   subtitle: 'Fotos nur für eure Familie',
@@ -39,12 +47,12 @@ const listing = {
     'Der Zugang erfolgt ausschliesslich per Einladung durch die Familie. Beim ersten Start wird die Adresse des eigenen Familienalbum-Servers eingetragen.',
   ].join('\n'),
   whatsNew: 'Erste Version für den Familientest.',
-  copyright: '2026 Philippe Ingold',
+  copyright: env.ASC_COPYRIGHT,
   // Rückblick-Musik von Kevin MacLeod (CC BY 4.0) ist Drittinhalt mit Nutzungsrecht
   contentRightsDeclaration: 'USES_THIRD_PARTY_CONTENT',
   beta: {
     description: 'Privates, selbst gehostetes Familienalbum: Fotos, Videos, Kommentare und Rückblick-Videos. Zum Anmelden braucht ihr die Server-Adresse und einen Einladungslink vom Album-Admin.',
-    feedbackEmail: 'philippe@ingolds.ch',
+    feedbackEmail: env.ASC_CONTACT_EMAIL,
   },
   betaReviewNotes: [
     'HOW TO SIGN IN (please do not use the "Einladung" / invitation screen):',
@@ -56,10 +64,7 @@ const listing = {
   ].join('\n'),
 };
 
-// ---------- API ----------
-const env = Object.fromEntries(
-  readFileSync(resolve(app, 'ios/asc.env'), 'utf8').split('\n').filter((l) => l.trim() && !l.trim().startsWith('#')).map((l) => l.split(/=(.*)/s).slice(0, 2).map((s) => s.trim())),
-);
+
 const keyPath = (env.ASC_KEY_PATH || `~/.appstoreconnect/private_keys/AuthKey_${env.ASC_KEY_ID}.p8`).replace(/^~/, homedir());
 const privateKey = await importPKCS8(readFileSync(keyPath, 'utf8'), 'ES256');
 async function api(method, path, body) {
@@ -124,7 +129,7 @@ if (latest && latest.id !== current && editable) {
 }
 
 // ---------- App-Review-Informationen (Kontakt, Demo-Konto-Name, Notizen; Passwort bleibt, wie in ASC hinterlegt) ----------
-const reviewAttrs = { contactFirstName: 'Philippe', contactLastName: 'Ingold', contactEmail: listing.beta.feedbackEmail, demoAccountRequired: true, demoAccountName: 'google-review@depaolis.digital', notes: listing.betaReviewNotes };
+const reviewAttrs = { contactFirstName: env.ASC_CONTACT_FIRST, contactLastName: env.ASC_CONTACT_LAST, contactEmail: env.ASC_CONTACT_EMAIL, demoAccountRequired: true, demoAccountName: env.ASC_DEMO_ACCOUNT, notes: listing.betaReviewNotes };
 const detail = await api('GET', `/v1/appStoreVersions/${version.id}/appStoreReviewDetail`).catch(() => null);
 if (detail?.data) await patch('appStoreReviewDetails', detail.data.id, reviewAttrs);
 else await api('POST', '/v1/appStoreReviewDetails', { data: { type: 'appStoreReviewDetails', attributes: reviewAttrs, relationships: { appStoreVersion: { data: { type: 'appStoreVersions', id: version.id } } } } });

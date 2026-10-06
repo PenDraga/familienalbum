@@ -1,14 +1,21 @@
 # Familienalbum
 
+🇩🇪 Deutsch · [🇬🇧 English](./README.en.md)
+
 Privates, selbst gehostetes Familienalbum (nach dem Vorbild von FamilyAlbum/Mitene). Fotos und Videos werden von
 Familienmitgliedern hochgeladen, chronologisch nach Aufnahmedatum angezeigt, kommentiert und bei Bedarf als Original
 gesichert. Läuft als Docker-Compose-Stack zu Hause, von aussen über einen Reverse-Proxy (Traefik, Caddy) oder
 Cloudflare Tunnel erreichbar.
 Clients: iOS, Android, Web (ein Flutter-Codebase). Projekt-Brief und Konventionen: [CLAUDE.md](./CLAUDE.md).
 
-**Status: Beta.** Der Server läuft im Dauerbetrieb; iOS-App (TestFlight), Android-App (APK) und Web-App werden im
-Familienkreis genutzt.
-Änderungen siehe [CHANGELOG.md](./CHANGELOG.md).
+**Status: Version 1.0.** Server im Dauerbetrieb, iOS-App über TestFlight/App Store, Android-App über Google Play oder
+APK, Web-App im Browser. Änderungen siehe [CHANGELOG.md](./CHANGELOG.md). Lizenz: [MIT](./LICENSE).
+
+| Timeline | Foto | Kommentare | Rückblick | Einstellungen |
+|---|---|---|---|---|
+| ![Timeline](docs/screenshots/01-timeline.png) | ![Foto](docs/screenshots/02-foto.png) | ![Kommentare](docs/screenshots/03-kommentare.png) | ![Rückblick](docs/screenshots/04-rueckblick.png) | ![Einstellungen](docs/screenshots/05-einstellungen.png) |
+
+*Beispielfotos von picsum.photos, Demo-Familie.*
 
 ## Funktionen
 
@@ -67,10 +74,10 @@ in die Container gereicht, eine `.env` neben der Compose-Datei ist optional.
 
 ### Einrichten
 
-1. Registry-Zugang, solange die Pakete privat sind (GitHub-Token classic mit `read:packages`):
+1. Registry-Zugang nur nötig, falls die Pakete privat sind (GitHub-Token classic mit `read:packages`):
 
 ```bash
-docker login ghcr.io -u PenDraga
+docker login ghcr.io -u <github-benutzer>
 ```
 
 2. Variablen setzen (Stack-Manager) oder `.env` anlegen:
@@ -81,7 +88,8 @@ cd infra && cp .env.example .env
 
 Pflicht: `POSTGRES_PASSWORD`, `JWT_SECRET` (mindestens 32 Zeichen, `openssl rand -base64 48`), `ADMIN_EMAIL`,
 `ADMIN_PASSWORD`, die Pfade `MEDIA_PATH`, `POSTGRES_PATH`, `REDIS_PATH` sowie `HTTP_PORT` (Standard 8090, Port 80 ist
-auf Unraid/Synology meist belegt). `IMAGE_TAG` wählt die Version (`latest`, `v0.1.0-beta.1`, `sha-<commit>`).
+auf Unraid/Synology meist belegt). `IMAGE_TAG` wählt die Version (`latest`, `v1.0.0`, `sha-<commit>`).
+`OPERATOR_NAME` und `OPERATOR_EMAIL` erscheinen auf der Datenschutzseite `/datenschutz.html` als verantwortliche Stelle.
 
 3. Starten. Die API spielt beim Start die Migrationen ein und reiht hängengebliebene Medien erneut ein:
 
@@ -102,12 +110,11 @@ docker compose exec api node dist/seed.js
 Ein Album-Admin erzeugt unter Mitglieder → «Einladungscode erzeugen» einen Code (7 Tage, eine Nutzung) und teilt ihn
 als Link `https://<domain>/invite?code=…&server=…`. Der Link öffnet die Web-App mit vorbelegtem Server und Code, prüft
 die Einladung sofort und bietet «In der App öffnen» (URL-Schema `familienalbum://`). Damit der Link auf dem Handy
-direkt die App öffnet (Universal Links / App Links), einmalig `apps/app/tool/set_domain.sh <domain>` ausführen und die
-Apps neu bauen; der Web-Container liefert die nötigen Dateien unter `/.well-known/` aus. Für Play-Builds den
-Fingerabdruck des App-Signaturschlüssels (Play Console → App-Integrität) in `web/.well-known/assetlinks.json` ergänzen.
-Aktuell eingetragen: `album.depaolis.digital`, mit Upload- und Play-Signaturschlüssel. Wechselt die Domain, `set_domain.sh <neue-domain>` erneut ausführen (die alte
-bleibt zusätzlich eingetragen, alte Links funktionieren weiter) und beide Apps neu verteilen; bis dahin landet ein Link
-auf der neuen Domain in der Web-App mit «In der App öffnen».
+direkt die App öffnet (Universal Links / App Links), nimmt `tool/build.sh` die Domain aus `API_BASE_URL` in
+`apps/app/firebase.env`: iOS bekommt sie in die Release-Entitlements, Android in den Manifest-Platzhalter. Der
+Web-Container liefert die nötigen Dateien unter `/.well-known/` aus; dort die eigene Team-ID (iOS) und die
+Fingerabdrücke der Signaturschlüssel (Android, Upload- und Play-Schlüssel) eintragen. Wechselt die Domain, `API_BASE_URL`
+anpassen und beide Apps neu verteilen; bis dahin landet ein Link auf der neuen Domain in der Web-App mit «In der App öffnen».
 
 ### Zugriff von aussen
 
@@ -159,12 +166,13 @@ Optional. Ohne Konfiguration pollen die Clients jede Minute.
    App Store Connect API einen Team-Schlüssel (Rolle «App-Manager») anlegen, die `.p8`-Datei nach
    `~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8` legen und Schlüssel- und Issuer-ID in `apps/app/ios/asc.env`
    eintragen (Vorlage `asc.env.example`, nicht im Git). Danach: `apps/app/tool/build.sh ipa && node apps/app/tool/testflight_upload.mjs --notes="…"`
-   lädt hoch, wartet auf Apples Verarbeitung, setzt die Testhinweise und hängt den Build an die Gruppe «Familie»
-   (`--group=…`). `ITSAppUsesNonExemptEncryption=false` in der Info.plist erspart die Verschlüsselungsfrage.
+   lädt hoch, wartet auf Apples Verarbeitung, setzt die Testhinweise und hängt den Build an die TestFlight-Gruppe
+   (`ASC_GROUP` in `asc.env`, `--group=…`). `ITSAppUsesNonExemptEncryption=false` in der Info.plist erspart die Verschlüsselungsfrage.
 7. **App-Store-Eintrag per Skript:** `node apps/app/tool/asc_listing.mjs --screenshots` setzt Untertitel, Kategorie,
    Datenschutz-URL, Beschreibung, Keywords, Support-URL, die TestFlight-Beschreibung und lädt die Screenshots aus
    `apps/app/store/ios/<DISPLAY_TYPE>/` hoch (6,7" und 6,5" für iPhone; die App ist nur für iPhone freigegeben).
-   Texte stehen im Skript. Das Demo-Konto für Apples Prüfer wird in App Store Connect von Hand eingetragen.
+   Texte stehen im Skript, persönliche Angaben (Server, Kontakt, Copyright, Demo-Konto) in `ios/asc.env`. Das Passwort
+   des Demo-Kontos für Apples Prüfer wird in App Store Connect von Hand eingetragen.
 8. **Android-APK:** Release-Schlüssel einmalig anlegen (siehe `apps/app/android/key.properties.example`), dann
    `apps/app/tool/build.sh apk` → `build/app/outputs/flutter-apk/app-release.apk` zum direkten Verteilen. Der Schlüssel
    muss für alle künftigen Versionen derselbe bleiben (Backup!). Hinweis SDK 2026: `flutter_secure_storage` verlangt
@@ -198,7 +206,7 @@ starten (`docker run -d --name familienalbum-redis -p 6379:6379 redis:7-alpine`)
 
 | Skript (in `apps/api`) | Zweck |
 |---|---|
-| `npm test` | Vitest + Testcontainers (PostgreSQL 16), 207 Integrationstests; `npm run test:unit` ohne Docker |
+| `npm test` | Vitest + Testcontainers (PostgreSQL 16), rund 210 Integrationstests; `npm run test:unit` ohne Docker |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run openapi` | schreibt `docs/openapi.json` |
 | `npm run prisma:migrate` | Migration aus Schema-Änderungen erzeugen und anwenden |
@@ -260,4 +268,5 @@ rückwirkend wählbar) werden in die gewählte Familie hochgeladen, standardmäs
 - [x] **M9** Rückblicke: Monats-/Jahres-Video, Sekunden-Film, «An diesem Tag»; automatisch und per Knopf
 - [x] **Zusätzlich:** Push mit Firebase (iOS und Android), Profilbilder, Kommentare bearbeiten, Timeline-Filter,
   Besucher-Anzeige, Redesign «Kinderbuch», Aufnahme-Metadaten und Datumskorrektur, Deploy über GHCR-Images
-- [ ] **Offen:** Play-Console-Verteilung, Import aus FamilyAlbum (Import-Skript), Auto-Upload-Test auf Android
+- [x] **1.0:** App Store und Google Play (offener Test), Konto löschen, Speicherplatz, Einladungslinks mit Universal/App Links
+- [ ] **Offen:** Import aus FamilyAlbum (Import-Skript), Auto-Upload-Test auf Android, englische Oberfläche

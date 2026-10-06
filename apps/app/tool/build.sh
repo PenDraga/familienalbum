@@ -28,11 +28,24 @@ if [ -f firebase.env ]; then
 else
   echo "keine firebase.env – baue ohne Push (Clients pollen)"
 fi
-# Vorbelegte Server-Adresse (Login-Screen zeigt sie an, bleibt änderbar) – für Store-Builds und Prüfer
+# Vorbelegte Server-Adresse (Login-Screen zeigt sie an, bleibt änderbar) – für Store-Builds und Prüfer.
+# Aus derselben Adresse entstehen Universal Links (iOS, Release-Entitlements) und App Links (Android, Manifest-Platzhalter).
 if [ -n "${API_BASE_URL:-}" ]; then
   defines="$defines --dart-define=API_BASE_URL=$API_BASE_URL"
   echo "Server vorbelegt: $API_BASE_URL"
 fi
+domain="$(printf '%s' "${API_BASE_URL:-}" | sed -E 's#^[a-z]+://##; s#[:/].*$##')"
+ent=ios/Runner/Runner.release.entitlements
+{
+  printf '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n<dict>\n'
+  printf '\t<key>aps-environment</key>\n\t<string>production</string>\n'
+  if [ -n "$domain" ]; then
+    printf '\t<key>com.apple.developer.associated-domains</key>\n\t<array>\n\t\t<string>applinks:%s</string>\n\t</array>\n' "$domain"
+  fi
+  printf '</dict>\n</plist>\n'
+} > "$ent"
+[ -n "$domain" ] && echo "Universal/App Links für $domain"
+
 
 # shellcheck disable=SC2086
 exec flutter build "$target" --release $defines "$@"

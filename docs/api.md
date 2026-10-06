@@ -83,6 +83,7 @@ Abgelaufen/aufgebraucht → 410 (`INVITE_EXPIRED` / `INVITE_USED_UP`), bereits M
   (`displayName`, `isAdmin`, `isDisabled`, `password`; Sperre/Passwortwechsel beendet alle Sitzungen;
   kein Selbst-Entzug/Selbst-Sperre)
 - `POST /admin/families/:id/members` `{ userId, flags… }`
+- `GET /meta` → `{ name, version, operator: { name, email } }` (öffentlich; Betreiber aus `OPERATOR_NAME`/`OPERATOR_EMAIL`)
 - `GET /admin/stats` → Benutzer, Familien, Medien, Speicher
 
 ## Rechte-Hook
