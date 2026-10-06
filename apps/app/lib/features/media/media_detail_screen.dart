@@ -15,6 +15,7 @@ import '../timeline/media_model.dart';
 import '../timeline/timeline_controller.dart';
 import '../timeline/timeline_screen.dart' show formatDuration;
 import 'media_info_sheet.dart';
+import 'eager_vertical_drag.dart';
 import 'original/original_saver.dart';
 import 'taken_at_dialog.dart';
 
@@ -639,8 +640,8 @@ class _SwipeToDismissState extends State<_SwipeToDismiss> with SingleTickerProvi
     return RawGestureDetector(
       gestures: {
         // Eigener Recognizer, der sich nicht vom Zoom-Viewer aus der Arena drängen lässt
-        _EagerVerticalDrag: GestureRecognizerFactoryWithHandlers<_EagerVerticalDrag>(
-          _EagerVerticalDrag.new,
+        EagerVerticalDragRecognizer: GestureRecognizerFactoryWithHandlers<EagerVerticalDragRecognizer>(
+          EagerVerticalDragRecognizer.new,
           (r) => r
             ..onUpdate = _onUpdate
             ..onEnd = _onEnd
@@ -656,13 +657,6 @@ class _SwipeToDismissState extends State<_SwipeToDismiss> with SingleTickerProvi
       ),
     );
   }
-}
-
-/// VerticalDrag, der eine Ablehnung durch andere Recognizer (InteractiveViewer, PageView) ignoriert.
-/// Horizontale Wischer bleiben beim PageView, weil dieser Recognizer nur vertikale Bewegung zählt.
-class _EagerVerticalDrag extends VerticalDragGestureRecognizer {
-  @override
-  void rejectGesture(int pointer) => acceptGesture(pointer);
 }
 
 class _PhotoView extends StatefulWidget {

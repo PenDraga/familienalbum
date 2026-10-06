@@ -19,6 +19,8 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 - Zahl auf dem App-Symbol (iOS) folgt dem Ungelesen-Zähler und verschwindet nach dem Öffnen des Verlaufs; Build 31
 - Store-Builds belegen den Server im Login nicht mehr vor (`API_BASE_URL` nur noch optional für Familien-Builds);
   Universal/App Links kommen aus `APP_LINK_DOMAIN`; Build 32
+- Pinch-Zoom im Foto-Viewer funktioniert wieder: «Wischen nach unten schliesst» gibt bei zwei Fingern den Zoom frei
+  (iOS gemeldet, Android gleicher Code); Build 33
 - Login-Screen belegt die Server-Adresse aus dem Build vor (`API_BASE_URL` in `firebase.env`); Einladungs-Screen erklärt
   falsche Codes und verlinkt zur Anmeldung (Rückmeldung von App Review); Build 30
 
