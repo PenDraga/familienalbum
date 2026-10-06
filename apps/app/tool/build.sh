@@ -49,4 +49,7 @@ ent=ios/Runner/Runner.release.entitlements
 
 
 # shellcheck disable=SC2086
-exec flutter build "$target" --release $defines "$@"
+# IPA-Export mit eigenen Optionen: Build-Nummer aus der pubspec, kein Nachfragen bei Apple (braucht sonst ein Xcode-Konto)
+extra=""
+[ "$target" = "ipa" ] && extra="--export-options-plist=ios/ExportOptions.plist"
+exec flutter build "$target" --release $defines $extra "$@"
