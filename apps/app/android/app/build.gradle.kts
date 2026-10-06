@@ -16,8 +16,8 @@ val keystoreProperties = Properties().apply {
 }
 val hasReleaseKey = keystoreProperties.getProperty("storeFile") != null
 
-// App Links: Host aus dem dart-define API_BASE_URL (tool/build.sh setzt es aus firebase.env). Flutter reicht die
-// Defines base64-kodiert als Gradle-Property "dart-defines" durch. Ohne Adresse bleibt ein Platzhalter-Host.
+// App Links: Host aus dem dart-define APP_LINK_DOMAIN (tool/build.sh setzt es aus firebase.env), ersatzweise aus
+// API_BASE_URL. Flutter reicht die Defines base64-kodiert als Gradle-Property "dart-defines" durch.
 val dartDefines: Map<String, String> = (project.findProperty("dart-defines") as String?)
     ?.split(",")
     ?.mapNotNull { encoded ->
@@ -25,7 +25,9 @@ val dartDefines: Map<String, String> = (project.findProperty("dart-defines") as 
         if (kv.size == 2) kv[0] to kv[1] else null
     }
     ?.toMap() ?: emptyMap()
-val appLinkHost: String = dartDefines["API_BASE_URL"]?.let { url -> try { URI(url).host } catch (_: Exception) { null } } ?: "example.invalid"
+val appLinkHost: String = dartDefines["APP_LINK_DOMAIN"]?.takeIf { it.isNotBlank() }
+    ?: dartDefines["API_BASE_URL"]?.let { url -> try { URI(url).host } catch (_: Exception) { null } }
+    ?: "example.invalid"
 
 android {
     namespace = "ch.familienalbum.familienalbum"

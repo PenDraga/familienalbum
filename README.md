@@ -112,7 +112,7 @@ docker compose exec api node dist/seed.js
 Ein Album-Admin erzeugt unter Mitglieder → «Einladungscode erzeugen» einen Code (7 Tage, eine Nutzung) und teilt ihn
 als Link `https://<domain>/invite?code=…&server=…`. Der Link öffnet die Web-App mit vorbelegtem Server und Code, prüft
 die Einladung sofort und bietet «In der App öffnen» (URL-Schema `familienalbum://`). Damit der Link auf dem Handy
-direkt die App öffnet (Universal Links / App Links), nimmt `tool/build.sh` die Domain aus `API_BASE_URL` in
+direkt die App öffnet (Universal Links / App Links), nimmt `tool/build.sh` die Domain aus `APP_LINK_DOMAIN` in
 `apps/app/firebase.env`: iOS bekommt sie in die Release-Entitlements, Android in den Manifest-Platzhalter. Der
 Web-Container liefert die nötigen Dateien unter `/.well-known/` aus; dort die eigene Team-ID (iOS) und die
 Fingerabdrücke der Signaturschlüssel (Android, Upload- und Play-Schlüssel) eintragen. Wechselt die Domain, `API_BASE_URL`
@@ -153,8 +153,8 @@ Optional. Ohne Konfiguration pollen die Clients jede Minute.
 3. **App:** Werte aus den Firebase-Projekteinstellungen in `apps/app/firebase.env` eintragen (Vorlage
    `firebase.env.example`, je ein API-Key und eine App-ID für iOS und Android) und mit `apps/app/tool/build.sh ipa|apk`
    bauen – das Skript setzt die `--dart-define`s. Ohne `firebase.env` startet die App ohne Firebase und pollt.
-   `API_BASE_URL` in derselben Datei belegt die Server-Adresse im Login-Screen vor (bleibt änderbar), damit Familie und
-   Store-Prüfer sie nicht eintippen müssen.
+   `APP_LINK_DOMAIN` in derselben Datei ist die Domain für Universal/App Links. `API_BASE_URL` belegt optional die
+   Server-Adresse im Login vor, sinnvoll nur für Builds einer einzelnen Familie, nicht für Store-Builds.
    Die Push-Berechtigung (`aps-environment`) liegt in `ios/Runner/Runner.entitlements`; Xcode aktiviert die Capability
    über das automatische Signing selbst.
 4. **Rückblick-Musik:** Beim Image-Build werden zehn lizenzfreie Stücke von Kevin MacLeod (incompetech.com, CC BY 4.0)

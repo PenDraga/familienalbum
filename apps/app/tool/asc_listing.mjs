@@ -59,7 +59,7 @@ const listing = {
   },
   betaReviewNotes: [
     'HOW TO SIGN IN (please do not use the "Einladung" / invitation screen):',
-    `1. Open the app. The login screen shows the server "${SERVER.replace('https://', '')}" pre-filled at the bottom. Leave it as is.`,
+    `1. Open the app. On the login screen enter the server address ${SERVER} in the field "Server" (first field).`,
     '2. Enter the demo account e-mail and password from this form, then tap "Anmelden".',
     '3. You land in the album "Demo" with sample photos, comments and settings.',
     'The invitation code screen ("Ich habe einen Einladungscode") is only for new users invited by a family admin; it is not needed for review.',

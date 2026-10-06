@@ -114,7 +114,7 @@ docker compose exec api node dist/seed.js
 An album admin creates a code under Members → "Create invitation code" (7 days, single use) and shares it as a link
 `https://<domain>/invite?code=…&server=…`. The link opens the web app with server and code pre-filled, checks the
 invitation immediately and offers "Open in app" (URL scheme `familienalbum://`). To make the link open the installed app
-directly (Universal Links / App Links), `tool/build.sh` takes the domain from `API_BASE_URL` in `apps/app/firebase.env`:
+directly (Universal Links / App Links), `tool/build.sh` takes the domain from `APP_LINK_DOMAIN` in `apps/app/firebase.env`:
 iOS gets it in the release entitlements, Android in a manifest placeholder. The web container serves the required files
 under `/.well-known/`; put your own Apple team ID and the Android signing fingerprints (upload key and Play key) there.
 
@@ -150,8 +150,9 @@ Optional. Without it the clients poll once a minute.
    (`SECRETS_PATH`, default `./secrets` next to the compose file) and set `FIREBASE_SERVICE_ACCOUNT=/run/secrets/<file>.json`,
    then `docker compose up -d`. If the key is unusable the API still starts, without push, and logs the reason.
 3. **App:** enter the values from the Firebase project settings in `apps/app/firebase.env` (template `firebase.env.example`)
-   and build with `apps/app/tool/build.sh ipa|apk`; the script sets the `--dart-define`s. `API_BASE_URL` in the same file
-   pre-fills the server address on the login screen (still editable) and provides the domain for Universal/App Links.
+   and build with `apps/app/tool/build.sh ipa|apk`; the script sets the `--dart-define`s. `APP_LINK_DOMAIN` in the same
+   file is the domain for Universal/App Links; `API_BASE_URL` optionally pre-fills the server on the login screen, only
+   sensible for builds of a single family, not for store builds.
 4. **Recap music:** the image build downloads ten royalty-free tracks by Kevin MacLeod (incompetech.com, CC BY 4.0);
    attribution is shown in the end credits of every video. Your own MP3s in `MUSIC_PATH` (default `<media>/_music`) take precedence.
 5. **Google Play:** upload the first bundle by hand (`apps/app/tool/build.sh appbundle`). Afterwards automate with a

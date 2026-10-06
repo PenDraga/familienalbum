@@ -28,13 +28,14 @@ if [ -f firebase.env ]; then
 else
   echo "keine firebase.env – baue ohne Push (Clients pollen)"
 fi
-# Vorbelegte Server-Adresse (Login-Screen zeigt sie an, bleibt änderbar) – für Store-Builds und Prüfer.
-# Aus derselben Adresse entstehen Universal Links (iOS, Release-Entitlements) und App Links (Android, Manifest-Platzhalter).
+# APP_LINK_DOMAIN: Domain für Universal Links (iOS, Release-Entitlements) und App Links (Android, Manifest-Platzhalter).
+# API_BASE_URL: optional, belegt die Server-Adresse im Login vor – nur für Builds einer einzelnen Familie, nicht für den Store.
 if [ -n "${API_BASE_URL:-}" ]; then
   defines="$defines --dart-define=API_BASE_URL=$API_BASE_URL"
   echo "Server vorbelegt: $API_BASE_URL"
 fi
-domain="$(printf '%s' "${API_BASE_URL:-}" | sed -E 's#^[a-z]+://##; s#[:/].*$##')"
+domain="${APP_LINK_DOMAIN:-$(printf '%s' "${API_BASE_URL:-}" | sed -E 's#^[a-z]+://##; s#[:/].*$##')}"
+[ -n "$domain" ] && defines="$defines --dart-define=APP_LINK_DOMAIN=$domain"
 ent=ios/Runner/Runner.release.entitlements
 {
   printf '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n<dict>\n'
