@@ -2,6 +2,8 @@
 
 [🇩🇪 Deutsch](./README.md) · 🇬🇧 English
 
+![Familienalbum](docs/banner.png)
+
 A private, self-hosted family photo album, inspired by FamilyAlbum/Mitene. Family members upload photos and videos,
 browse them chronologically by capture date, comment on them and save originals when needed. It runs as a Docker
 Compose stack at home and is reachable from outside through a reverse proxy (Traefik, Caddy) or a Cloudflare Tunnel.

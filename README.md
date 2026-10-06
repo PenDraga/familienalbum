@@ -2,6 +2,8 @@
 
 🇩🇪 Deutsch · [🇬🇧 English](./README.en.md)
 
+![Familienalbum](docs/banner.png)
+
 Privates, selbst gehostetes Familienalbum (nach dem Vorbild von FamilyAlbum/Mitene). Fotos und Videos werden von
 Familienmitgliedern hochgeladen, chronologisch nach Aufnahmedatum angezeigt, kommentiert und bei Bedarf als Original
 gesichert. Läuft als Docker-Compose-Stack zu Hause, von aussen über einen Reverse-Proxy (Traefik, Caddy) oder
