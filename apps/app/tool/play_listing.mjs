@@ -30,7 +30,9 @@ const listing = {
     '• Export aller Fotos und Kommentare als ZIP. Eure Daten gehören euch.',
     '• Familien mit eigenen Rechten: Hochladen, Herunterladen, Kommentieren',
     '',
-    'Der Zugang erfolgt ausschliesslich per Einladung durch die Familie. Die App verbindet sich mit dem eigenen Familienalbum-Server.',
+    'Open Source: Familienalbum ist ein Client für den eigenen Server, vergleichbar mit Nextcloud oder Immich. Quellcode und Anleitung für den eigenen Server auf GitHub: https://github.com/PenDraga/familienalbum',
+    '',
+    'Wer einen Server betreibt, ist dessen Admin und lädt die Familie per Link ein. Es gibt bewusst keine öffentliche Registrierung. Beim ersten Start wird die Adresse des eigenen Servers eingetragen.',
   ].join('\n'),
 };
 
@@ -49,6 +51,9 @@ async function call(method, url, body, contentType = 'application/json') {
 
 const edit = await call('POST', `${base}/edits`, '{}');
 await call('PUT', `${base}/edits/${edit.id}/listings/${LANG}`, JSON.stringify(listing));
+// Store-Kontakt: Website auf das öffentliche Repo (Kontakt-E-Mail bleibt, wie in der Console hinterlegt)
+const details = await call('GET', `${base}/edits/${edit.id}/details`);
+await call('PATCH', `${base}/edits/${edit.id}/details`, JSON.stringify({ ...details, contactWebsite: 'https://github.com/PenDraga/familienalbum' }));
 console.log('Texte gesetzt');
 
 async function replaceImages(type, files) {

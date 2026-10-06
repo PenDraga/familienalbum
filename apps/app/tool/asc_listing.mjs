@@ -30,7 +30,8 @@ const SERVER = env.ASC_SERVER_URL.replace(/\/+$/, '');
 const listing = {
   subtitle: 'Fotos nur für eure Familie',
   privacyPolicyUrl: `${SERVER}/datenschutz.html`,
-  supportUrl: `${SERVER}/datenschutz.html`,
+  supportUrl: 'https://github.com/PenDraga/familienalbum/issues',
+  marketingUrl: 'https://github.com/PenDraga/familienalbum',
   primaryCategory: 'PHOTO_AND_VIDEO',
   keywords: 'Familie,Album,Fotos,Videos,privat,selbst gehostet,Kommentare,Rückblick,Kinder,Grosseltern',
   promotionalText: 'Privates Familienalbum auf eurem eigenen Server: Fotos, Videos, Kommentare und Rückblick-Videos. Zugang nur per Einladung.',
@@ -44,7 +45,9 @@ const listing = {
     '• Export aller Fotos und Kommentare als ZIP. Eure Daten gehören euch.',
     '• Alben mit eigenen Rechten: Hochladen, Herunterladen, Kommentieren',
     '',
-    'Der Zugang erfolgt ausschliesslich per Einladung durch die Familie. Beim ersten Start wird die Adresse des eigenen Familienalbum-Servers eingetragen.',
+    'Open Source: Familienalbum ist ein Client für den eigenen Server, vergleichbar mit Nextcloud oder Immich. Quellcode und Anleitung für den eigenen Server auf GitHub: https://github.com/PenDraga/familienalbum',
+    '',
+    'Wer einen Server betreibt, ist dessen Admin und lädt die Familie per Link ein. Es gibt bewusst keine öffentliche Registrierung. Beim ersten Start wird die Adresse des eigenen Servers eingetragen.',
   ].join('\n'),
   whatsNew: 'Erste Version für den Familientest.',
   copyright: env.ASC_COPYRIGHT,
@@ -60,7 +63,7 @@ const listing = {
     '2. Enter the demo account e-mail and password from this form, then tap "Anmelden".',
     '3. You land in the album "Demo" with sample photos, comments and settings.',
     'The invitation code screen ("Ich habe einen Einladungscode") is only for new users invited by a family admin; it is not needed for review.',
-    'The app is a client for a self-hosted family photo server; only invited family members can join.',
+    'The app is an open-source client for a self-hosted family photo server (source and setup guide: https://github.com/PenDraga/familienalbum); anyone can run a server and becomes its admin. Only invited family members can join an album.',
   ].join('\n'),
 };
 
@@ -99,7 +102,7 @@ if (pubspecVersion && version.attributes.versionString !== pubspecVersion && ver
   console.log(`App-Store-Version heisst jetzt ${pubspecVersion}`);
 }
 let vloc = (versions.included ?? []).find((l) => l.type === 'appStoreVersionLocalizations' && l.attributes.locale === LOCALE);
-const vattrs = { description: listing.description, keywords: listing.keywords, promotionalText: listing.promotionalText, supportUrl: listing.supportUrl, whatsNew: listing.whatsNew };
+const vattrs = { description: listing.description, keywords: listing.keywords, promotionalText: listing.promotionalText, supportUrl: listing.supportUrl, marketingUrl: listing.marketingUrl, whatsNew: listing.whatsNew };
 // «Neue Funktionen» gibt es erst ab der zweiten Version; bei 1.0 lehnt Apple das Feld ab
 async function patchVersionLoc(id, attrs) {
   try {
