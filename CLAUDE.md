@@ -190,21 +190,6 @@ Fastify generiert OpenAPI; daraus wird der Flutter-Client (`openapi-generator`, 
 Services: `api`, `worker` (gleiches Image, anderer Entrypoint), `postgres`, `redis`, `caddy`,
 `cloudflared`. Volumes: `/data/media`, `/data/postgres`. `.env` für Secrets. Backup-Script:
 `pg_dump` + rsync von `/data/media` täglich auf ein zweites Ziel.
-
-## Milestones (in dieser Reihenfolge, jeder Schritt lauffähig)
-
-1. **M1 Backend-Kern:** Auth, Familien, Mitglieder, Einladungen, Rechte-Hook, Tests für die Rechtematrix
-2. **M2 Medien:** Chunk-Upload, Worker, Thumbnails, Timeline-API
-3. **M3 Flutter Basis:** Login, Timeline-Grid nach Monat, Detailansicht, manueller Upload – zuerst Android + Web
-4. **M4 Kommentare + Push**
-5. **M5 Auto-Upload** im Hintergrund (iOS und Android getrennt testen)
-6. **M6 iOS + Windows Builds**, TestFlight-Verteilung
-7. **M7 Admin-Bereich** im Web (User, Familien, Storage)
-8. **M8 Export-Zip** (erledigt: alle Fotos, Videos und Kommentare, gesamt oder pro Monat)
-9. **M9 Rückblicke** (erledigt: Monats-/Jahres-Video und Sekunden-Film per ffmpeg im Worker, automatisch am 1. des Monats
-   bzw. 2. Januar und per Knopf; «An diesem Tag»; Musik: Kevin MacLeod CC BY 4.0 mit Nachweis im Abspann)
-10. **Besucher-Anzeige** (erledigt: Einstellungen → «Zuletzt im Album» aus `lastSeenAt`)
-
 ## Konventionen
 
 - Jede Route: Zod-Schema für Body/Query/Response, Rechte-Hook, Integrationstest (Vitest + Testcontainers).
