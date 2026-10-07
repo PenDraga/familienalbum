@@ -9,6 +9,9 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 
 Erstes Update nach der App-Store-Freigabe von 1.0.0.
 
+### App
+- App meldet Deutsch als Sprache (App Store zeigte «EN»); Build 35
+
 ### Server
 - Push trägt als Badge die Anzahl ungelesener Einträge des Empfängers (vorher immer 1)
 - `GET /meta` (öffentlich): Version und Betreiber aus `OPERATOR_NAME`/`OPERATOR_EMAIL`; die Datenschutzseite holt sich
