@@ -5,6 +5,10 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 
 ## [Unreleased]
 
+## [1.0.1] – 2026-10-07
+
+Erstes Update nach der App-Store-Freigabe von 1.0.0.
+
 ### Server
 - Push trägt als Badge die Anzahl ungelesener Einträge des Empfängers (vorher immer 1)
 - `GET /meta` (öffentlich): Version und Betreiber aus `OPERATOR_NAME`/`OPERATOR_EMAIL`; die Datenschutzseite holt sich

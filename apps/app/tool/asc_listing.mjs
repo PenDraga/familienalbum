@@ -49,7 +49,12 @@ const listing = {
     '',
     'Wer einen Server betreibt, ist dessen Admin und lädt die Familie per Link ein. Es gibt bewusst keine öffentliche Registrierung. Beim ersten Start wird die Adresse des eigenen Servers eingetragen.',
   ].join('\n'),
-  whatsNew: 'Erste Version für den Familientest.',
+  whatsNew: [
+    'Zwei-Finger-Zoom im Foto-Viewer funktioniert wieder.',
+    'Die Zahl auf dem App-Symbol zeigt nur noch ungelesene Einträge und verschwindet nach dem Öffnen des Verlaufs.',
+    'Einladungs-Screen erklärt falsche Codes und verlinkt zur Anmeldung; Server-Adresse wird nicht mehr vorbelegt.',
+    'Konto löschen für Admins, Speicherplatz-Anzeige, Open-Source-Hinweis.',
+  ].join('\n'),
   copyright: env.ASC_COPYRIGHT,
   // Rückblick-Musik von Kevin MacLeod (CC BY 4.0) ist Drittinhalt mit Nutzungsrecht
   contentRightsDeclaration: 'USES_THIRD_PARTY_CONTENT',
@@ -82,18 +87,17 @@ const patch = (type, id, attributes, relationships) => api('PATCH', `/v1/${type}
 const appId = (await api('GET', `/v1/apps?filter[bundleId]=${BUNDLE_ID}`)).data[0]?.id;
 if (!appId) throw new Error('App nicht gefunden');
 
-// ---------- App-Info: Untertitel, Datenschutz, Kategorie ----------
-const infos = await api('GET', `/v1/apps/${appId}/appInfos?include=appInfoLocalizations`);
-const info = infos.data.find((i) => ['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'WAITING_FOR_REVIEW'].includes(i.attributes.state)) ?? infos.data[0];
-const infoLoc = (infos.included ?? []).find((l) => l.type === 'appInfoLocalizations' && l.attributes.locale === LOCALE && infos.data.find((i) => i.id === info.id));
-if (infoLoc) await patch('appInfoLocalizations', infoLoc.id, { subtitle: listing.subtitle, privacyPolicyUrl: listing.privacyPolicyUrl });
-else await api('POST', '/v1/appInfoLocalizations', { data: { type: 'appInfoLocalizations', attributes: { locale: LOCALE, subtitle: listing.subtitle, privacyPolicyUrl: listing.privacyPolicyUrl }, relationships: { appInfo: { data: { type: 'appInfos', id: info.id } } } } });
-await patch('appInfos', info.id, undefined, { primaryCategory: { data: { type: 'appCategories', id: listing.primaryCategory } } });
-console.log('App-Info: Untertitel, Datenschutz-URL, Kategorie gesetzt');
-
 // ---------- Version: Beschreibung, Keywords, Support ----------
-const versions = await api('GET', `/v1/apps/${appId}/appStoreVersions?filter[platform]=IOS&include=appStoreVersionLocalizations&limit=3`);
-const version = versions.data.find((v) => !['READY_FOR_SALE', 'REPLACED_WITH_NEW_VERSION', 'REMOVED_FROM_SALE'].includes(v.attributes.appStoreState)) ?? versions.data[0];
+let versions = await api('GET', `/v1/apps/${appId}/appStoreVersions?filter[platform]=IOS&include=appStoreVersionLocalizations&limit=3`);
+let version = versions.data.find((v) => !['READY_FOR_SALE', 'REPLACED_WITH_NEW_VERSION', 'REMOVED_FROM_SALE'].includes(v.attributes.appStoreState));
+const pubspecVersionEarly = /^version:\s*([\d.]+)\+/m.exec(readFileSync(resolve(app, 'pubspec.yaml'), 'utf8'))?.[1];
+if (!version) {
+  // Alles veröffentlicht → neue Version mit der Nummer aus der pubspec anlegen (Texte werden von der letzten übernommen)
+  const created = await api('POST', '/v1/appStoreVersions', { data: { type: 'appStoreVersions', attributes: { platform: 'IOS', versionString: pubspecVersionEarly, releaseType: 'AFTER_APPROVAL' }, relationships: { app: { data: { type: 'apps', id: appId } } } } });
+  console.log(`Neue App-Store-Version ${pubspecVersionEarly} angelegt`);
+  versions = await api('GET', `/v1/apps/${appId}/appStoreVersions?filter[platform]=IOS&include=appStoreVersionLocalizations&limit=3`);
+  version = versions.data.find((v) => v.id === created.data.id);
+}
 // Versionsnummer in App Store Connect an die pubspec angleichen (Build muss dieselbe Nummer tragen)
 const pubspecVersion = /^version:\s*([\d.]+)\+/m.exec(readFileSync(resolve(app, 'pubspec.yaml'), 'utf8'))?.[1];
 if (pubspecVersion && version.attributes.versionString !== pubspecVersion && version.attributes.appStoreState === 'PREPARE_FOR_SUBMISSION') {
@@ -101,7 +105,7 @@ if (pubspecVersion && version.attributes.versionString !== pubspecVersion && ver
   version.attributes.versionString = pubspecVersion;
   console.log(`App-Store-Version heisst jetzt ${pubspecVersion}`);
 }
-let vloc = (versions.included ?? []).find((l) => l.type === 'appStoreVersionLocalizations' && l.attributes.locale === LOCALE);
+let vloc = (versions.included ?? []).find((l) => l.type === 'appStoreVersionLocalizations' && l.attributes.locale === LOCALE && version.relationships.appStoreVersionLocalizations.data.some((d) => d.id === l.id));
 const vattrs = { description: listing.description, keywords: listing.keywords, promotionalText: listing.promotionalText, supportUrl: listing.supportUrl, marketingUrl: listing.marketingUrl, whatsNew: listing.whatsNew };
 // «Neue Funktionen» gibt es erst ab der zweiten Version; bei 1.0 lehnt Apple das Feld ab
 async function patchVersionLoc(id, attrs) {
@@ -118,6 +122,20 @@ else vloc = (await api('POST', '/v1/appStoreVersionLocalizations', { data: { typ
 await patch('appStoreVersions', version.id, { copyright: listing.copyright });
 await patch('apps', appId, { contentRightsDeclaration: listing.contentRightsDeclaration });
 console.log(`Version ${version.attributes.versionString}: Beschreibung, Keywords, Support-URL, Copyright, Inhaltsrechte gesetzt`);
+
+// ---------- App-Info: Untertitel, Datenschutz, Kategorie (erst nach der Versionsanlage, dann ist eine bearbeitbare Info da) ----------
+const infos = await api('GET', `/v1/apps/${appId}/appInfos?include=appInfoLocalizations`);
+const info = infos.data.find((i) => ['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'WAITING_FOR_REVIEW'].includes(i.attributes.state)) ?? infos.data[0];
+const infoLoc = (infos.included ?? []).find((l) => l.type === 'appInfoLocalizations' && l.attributes.locale === LOCALE && info.relationships.appInfoLocalizations.data.some((d) => d.id === l.id));
+try {
+  if (infoLoc) await patch('appInfoLocalizations', infoLoc.id, { subtitle: listing.subtitle, privacyPolicyUrl: listing.privacyPolicyUrl });
+  else await api('POST', '/v1/appInfoLocalizations', { data: { type: 'appInfoLocalizations', attributes: { locale: LOCALE, subtitle: listing.subtitle, privacyPolicyUrl: listing.privacyPolicyUrl }, relationships: { appInfo: { data: { type: 'appInfos', id: info.id } } } } });
+  await patch('appInfos', info.id, undefined, { primaryCategory: { data: { type: 'appCategories', id: listing.primaryCategory } } });
+  console.log('App-Info: Untertitel, Datenschutz-URL, Kategorie gesetzt');
+} catch (e) {
+  if (!String(e).includes('can not be modified')) throw e;
+  console.log('App-Info: veröffentlicht, unverändert');
+}
 
 // ---------- Neuster verarbeiteter Build an die App-Store-Version hängen ----------
 const builds = await api('GET', `/v1/builds?filter[app]=${appId}&sort=-uploadedDate&limit=5&fields[builds]=version,processingState,expired`);
