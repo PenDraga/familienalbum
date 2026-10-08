@@ -176,7 +176,8 @@ try {
 }
 
 // ---------- Neuster verarbeiteter Build an die App-Store-Version hängen ----------
-const builds = await api('GET', `/v1/builds?filter[app]=${appId}&sort=-uploadedDate&limit=5&fields[builds]=version,processingState,expired`);
+// Nur Builds mit derselben Versionsnummer wie die App-Store-Version kommen in Frage
+const builds = await api('GET', `/v1/builds?filter[app]=${appId}&filter[preReleaseVersion.version]=${version.attributes.versionString}&sort=-uploadedDate&limit=5&fields[builds]=version,processingState,expired`);
 const latest = builds.data.find((b) => b.attributes.processingState === 'VALID' && !b.attributes.expired);
 const current = (await api('GET', `/v1/appStoreVersions/${version.id}/relationships/build`)).data?.id;
 const editable = ['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'METADATA_REJECTED', 'INVALID_BINARY'].includes(version.attributes.appStoreState);
@@ -185,6 +186,8 @@ if (latest && latest.id !== current && editable) {
   console.log(`Version ${version.attributes.versionString}: Build ${latest.attributes.version} angehängt`);
 } else if (latest && latest.id !== current) {
   console.log(`Version ${version.attributes.versionString} ist ${version.attributes.appStoreState}: Build bleibt, neuster wäre ${latest.attributes.version}`);
+} else if (!latest) {
+  console.log(`Version ${version.attributes.versionString}: noch kein verarbeiteter Build mit dieser Nummer – später erneut ausführen`);
 }
 
 // ---------- App-Review-Informationen (Kontakt, Demo-Konto-Name, Notizen; Passwort bleibt, wie in ASC hinterlegt) ----------
