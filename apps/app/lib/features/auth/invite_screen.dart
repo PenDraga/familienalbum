@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/auth_shell.dart';
 import 'auth_controller.dart';
@@ -66,8 +67,9 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
   /// Aus dem Browser in die installierte App wechseln (Schema familienalbum://).
   Future<void> _openInApp() async {
     final uri = Uri.parse(inviteAppLink(_server.text.trim(), _code.text.trim()));
+    final l10n = context.l10n;
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication, webOnlyWindowName: '_self');
-    if (!ok && mounted) setState(() => _error = 'Die App scheint nicht installiert zu sein. Du kannst die Einladung auch hier im Browser annehmen.');
+    if (!ok && mounted) setState(() => _error = l10n.inviteAppNotInstalled);
   }
 
   @override
@@ -93,6 +95,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
   }
 
   Future<void> _lookup() => _run(() async {
+    final l10n = context.l10n;
     await ref.read(settingsProvider.notifier).setBaseUrl(_server.text);
     final repo = AuthRepository(ref.read(apiClientProvider));
     try {
@@ -104,7 +107,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
         throw ApiException(
           status: e.status,
           code: 'INVITE_INVALID',
-          detail: 'Das ist kein gültiger Einladungscode. Codes haben 10 Zeichen, zum Beispiel AJYP8NH2HG, und kommen vom Album-Admin. Wenn du schon ein Konto hast, melde dich stattdessen an.',
+          detail: l10n.inviteCodeInvalid,
         );
       }
       rethrow;
@@ -131,16 +134,17 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final l10n = context.l10n;
     final loggedIn = ref.watch(meProvider) != null;
     final preview = _preview;
 
     return AuthShell(
-      title: 'Einladung',
+      title: l10n.inviteTitle,
       subtitle: preview == null
-          ? 'Gib den Code ein, den du bekommen hast.'
+          ? l10n.inviteSubtitleEnterCode
           : loggedIn
-          ? 'Du wurdest eingeladen. Tritt dem Album bei.'
-          : 'Du wurdest eingeladen. Lege dein eigenes Konto an, um beizutreten.',
+          ? l10n.inviteSubtitleJoin
+          : l10n.inviteSubtitleRegister,
       onBack: () => context.go(loggedIn ? '/' : '/login'),
       child: Form(
         key: _form,
@@ -151,7 +155,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
             if (!loggedIn && preview == null) ...[
               TextFormField(
                 controller: _server,
-                decoration: const InputDecoration(labelText: 'Server', prefixIcon: Icon(Icons.dns_outlined)),
+                decoration: InputDecoration(labelText: l10n.authServerLabel, prefixIcon: const Icon(Icons.dns_outlined)),
                 keyboardType: TextInputType.url,
               ),
               const SizedBox(height: 12),
@@ -159,19 +163,19 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
             if (preview == null) ...[
               TextFormField(
                 controller: _code,
-                decoration: const InputDecoration(labelText: 'Einladungscode', prefixIcon: Icon(Icons.key_outlined)),
+                decoration: InputDecoration(labelText: l10n.inviteCodeLabel, prefixIcon: const Icon(Icons.key_outlined)),
                 textCapitalization: TextCapitalization.characters,
                 autocorrect: false,
                 style: const TextStyle(letterSpacing: 2, fontWeight: FontWeight.w600),
                 onFieldSubmitted: (_) => _lookup(),
               ),
               const SizedBox(height: 20),
-              FilledButton(onPressed: _busy ? null : _lookup, child: const Text('Einladung prüfen')),
+              FilledButton(onPressed: _busy ? null : _lookup, child: Text(l10n.inviteCheck)),
               if (!loggedIn) ...[
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: _busy ? null : () => context.go('/login'),
-                  child: const Text('Ich habe schon ein Konto – anmelden'),
+                  child: Text(l10n.inviteHaveAccountSignIn),
                 ),
               ],
             ] else ...[
@@ -179,7 +183,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                 OutlinedButton.icon(
                   onPressed: _busy ? null : _openInApp,
                   icon: const Icon(Icons.phone_iphone),
-                  label: const Text('In der App öffnen'),
+                  label: Text(l10n.inviteOpenInApp),
                 ),
                 const SizedBox(height: 12),
               ],
@@ -202,21 +206,21 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                     const SizedBox(height: 8),
                     Text(
                       preview.isValid
-                          ? 'Gültig bis ${DateFormat.yMd('de_CH').format(preview.expiresAt.toLocal())}'
-                          : 'Diese Einladung ist nicht mehr gültig.',
+                          ? l10n.inviteValidUntil(DateFormat.yMd(context.localeTag).format(preview.expiresAt.toLocal()))
+                          : l10n.inviteExpired,
                       style: text.bodyMedium?.copyWith(color: preview.isValid ? scheme.onSurfaceVariant : scheme.error),
                     ),
                     const SizedBox(height: 10),
-                    Text('Du darfst:', style: text.labelMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                    Text(l10n.inviteYouMay, style: text.labelMedium?.copyWith(color: scheme.onSurfaceVariant)),
                     const SizedBox(height: 6),
                     Wrap(
                       spacing: 8,
                       runSpacing: 6,
                       children: [
-                        const Chip(avatar: Icon(Icons.visibility_outlined, size: 16), label: Text('Ansehen')),
-                        if (preview.flags.canUpload) const Chip(avatar: Icon(Icons.upload_outlined, size: 16), label: Text('Hochladen')),
-                        if (preview.flags.canDownload) const Chip(avatar: Icon(Icons.download_outlined, size: 16), label: Text('Herunterladen')),
-                        if (preview.flags.canComment) const Chip(avatar: Icon(Icons.chat_bubble_outline, size: 16), label: Text('Kommentieren')),
+                        Chip(avatar: const Icon(Icons.visibility_outlined, size: 16), label: Text(l10n.rightsView)),
+                        if (preview.flags.canUpload) Chip(avatar: const Icon(Icons.upload_outlined, size: 16), label: Text(l10n.rightsUpload)),
+                        if (preview.flags.canDownload) Chip(avatar: const Icon(Icons.download_outlined, size: 16), label: Text(l10n.rightsDownload)),
+                        if (preview.flags.canComment) Chip(avatar: const Icon(Icons.chat_bubble_outline, size: 16), label: Text(l10n.rightsComment)),
                       ],
                     ),
                   ],
@@ -224,51 +228,50 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
               ),
               const SizedBox(height: 20),
               if (!loggedIn) ...[
-                Text('Neues Konto anlegen', style: text.titleMedium),
+                Text(l10n.inviteNewAccountTitle, style: text.titleMedium),
                 const SizedBox(height: 4),
                 Text(
-                  'Zum Beitreten brauchst du ein eigenes Konto. Mit dieser E-Mail und diesem Passwort '
-                  'meldest du dich künftig in der App an.',
+                  l10n.inviteNewAccountHint,
                   style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _name,
-                  decoration: const InputDecoration(labelText: 'Dein Name (wird den anderen angezeigt)', prefixIcon: Icon(Icons.person_outline)),
+                  decoration: InputDecoration(labelText: l10n.inviteNameLabel, prefixIcon: const Icon(Icons.person_outline)),
                   textInputAction: TextInputAction.next,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Bitte Namen angeben' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? l10n.authNameRequired : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _email,
-                  decoration: const InputDecoration(labelText: 'E-Mail', prefixIcon: Icon(Icons.mail_outline)),
+                  decoration: InputDecoration(labelText: l10n.authEmailLabel, prefixIcon: const Icon(Icons.mail_outline)),
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  validator: (v) => (v == null || !v.contains('@')) ? 'E-Mail-Adresse angeben' : null,
+                  validator: (v) => (v == null || !v.contains('@')) ? l10n.authEmailRequired : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _password,
-                  decoration: const InputDecoration(labelText: 'Passwort wählen (min. 8 Zeichen)', prefixIcon: Icon(Icons.lock_outline)),
+                  decoration: InputDecoration(labelText: l10n.inviteChoosePasswordLabel, prefixIcon: const Icon(Icons.lock_outline)),
                   obscureText: true,
                   onFieldSubmitted: (_) => _accept(),
-                  validator: (v) => (v == null || v.length < 8) ? 'Mindestens 8 Zeichen' : null,
+                  validator: (v) => (v == null || v.length < 8) ? l10n.authPasswordMin8 : null,
                 ),
                 const SizedBox(height: 20),
               ],
               FilledButton(
                 onPressed: _busy || !preview.isValid ? null : _accept,
-                child: Text(loggedIn ? 'Album beitreten' : 'Konto anlegen und beitreten'),
+                child: Text(loggedIn ? l10n.inviteJoinAlbum : l10n.inviteCreateAndJoin),
               ),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: _busy ? null : () => setState(() => _preview = null),
-                child: const Text('Anderen Code eingeben'),
+                child: Text(l10n.inviteOtherCode),
               ),
               if (!loggedIn)
                 TextButton(
                   onPressed: _busy ? null : () => context.go('/login'),
-                  child: const Text('Ich habe schon ein Konto – zuerst anmelden'),
+                  child: Text(l10n.inviteHaveAccountSignInFirst),
                 ),
             ],
             if (_error != null) ...[const SizedBox(height: 12), ErrorBanner(_error!)],

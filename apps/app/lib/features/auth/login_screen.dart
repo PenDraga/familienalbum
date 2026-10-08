@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../../widgets/auth_shell.dart';
 import 'auth_controller.dart';
 
@@ -60,6 +61,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
     final serverHost = Uri.tryParse(_server.text)?.host ?? _server.text;
     // Startprüfung am Server gescheitert (z.B. umgezogen): Grund zeigen, Server-Feld ist unten änderbar.
     // Nur echte API-/Netzwerkfehler – interne Ausnahmen gehören nicht auf den Login-Screen.
@@ -67,8 +69,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final startupProblem = startupError is ApiException ? startupError : null;
 
     return AuthShell(
-      title: 'Familienalbum',
-      subtitle: 'Eure Fotos und Videos – privat, zu Hause.',
+      title: l10n.appTitle,
+      subtitle: l10n.loginSubtitle,
       child: Form(
         key: _form,
         child: AutofillGroup(
@@ -78,18 +80,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             children: [
               TextFormField(
                 controller: _email,
-                decoration: const InputDecoration(labelText: 'E-Mail', prefixIcon: Icon(Icons.mail_outline)),
+                decoration: InputDecoration(labelText: l10n.authEmailLabel, prefixIcon: const Icon(Icons.mail_outline)),
                 keyboardType: TextInputType.emailAddress,
                 autofillHints: const [AutofillHints.username, AutofillHints.email],
                 autocorrect: false,
                 textInputAction: TextInputAction.next,
-                validator: (v) => (v == null || !v.contains('@')) ? 'E-Mail-Adresse angeben' : null,
+                validator: (v) => (v == null || !v.contains('@')) ? l10n.authEmailRequired : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _password,
                 decoration: InputDecoration(
-                  labelText: 'Passwort',
+                  labelText: l10n.authPasswordLabel,
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
                     icon: Icon(_showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined),
@@ -100,22 +102,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 autofillHints: const [AutofillHints.password],
                 textInputAction: TextInputAction.done,
                 onFieldSubmitted: (_) => _submit(),
-                validator: (v) => (v == null || v.isEmpty) ? 'Passwort angeben' : null,
+                validator: (v) => (v == null || v.isEmpty) ? l10n.authPasswordRequired : null,
               ),
               const SizedBox(height: 12),
               if (_editServer)
                 TextFormField(
                   controller: _server,
-                  decoration: const InputDecoration(
-                    labelText: 'Server',
+                  decoration: InputDecoration(
+                    labelText: l10n.authServerLabel,
                     hintText: 'https://album.example.ch',
-                    prefixIcon: Icon(Icons.dns_outlined),
+                    prefixIcon: const Icon(Icons.dns_outlined),
                   ),
                   keyboardType: TextInputType.url,
                   autocorrect: false,
                   validator: (v) {
                     final u = Uri.tryParse((v ?? '').trim());
-                    if (u == null || !u.hasScheme || u.host.isEmpty) return 'Bitte eine gültige URL angeben (https://…)';
+                    if (u == null || !u.hasScheme || u.host.isEmpty) return l10n.authServerUrlInvalid;
                     return null;
                   },
                 )
@@ -125,24 +127,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: TextButton.icon(
                     onPressed: () => setState(() => _editServer = true),
                     icon: const Icon(Icons.dns_outlined, size: 18),
-                    label: Text('Server: $serverHost', style: TextStyle(color: scheme.onSurfaceVariant)),
+                    label: Text(l10n.loginServerShown(serverHost), style: TextStyle(color: scheme.onSurfaceVariant)),
                   ),
                 ),
               if (_error != null)
                 ...[const SizedBox(height: 12), ErrorBanner(_error!)]
               else if (startupProblem != null)
-                ...[const SizedBox(height: 12), ErrorBanner('${startupProblem.detail} Server: $serverHost')],
+                ...[const SizedBox(height: 12), ErrorBanner(l10n.loginStartupProblem(startupProblem.detail, serverHost))],
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: _busy ? null : _submit,
                 child: _busy
                     ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Anmelden'),
+                    : Text(l10n.loginSubmit),
               ),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: _busy ? null : () => context.go('/invite'),
-                child: const Text('Ich habe einen Einladungscode'),
+                child: Text(l10n.loginHaveInviteCode),
               ),
             ],
           ),

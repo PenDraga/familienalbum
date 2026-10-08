@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_repository.dart';
 
@@ -14,6 +15,7 @@ import '../auth/auth_repository.dart';
 Future<void> showAvatarSheet(BuildContext context, WidgetRef ref) async {
   final me = ref.read(meProvider);
   if (me == null) return;
+  final l10n = context.l10n;
   final action = await showModalBottomSheet<String>(
     context: context,
     builder: (ctx) => SafeArea(
@@ -23,12 +25,12 @@ Future<void> showAvatarSheet(BuildContext context, WidgetRef ref) async {
           const SizedBox(height: 8),
           ListTile(
             leading: const Icon(Icons.photo_library_outlined),
-            title: const Text('Bild aus der Mediathek wählen'),
+            title: Text(l10n.avatarPickFromLibrary),
             onTap: () => Navigator.pop(ctx, 'pick'),
           ),
           if (me.avatarUrl != null)
-            ListTile(leading: const Icon(Icons.delete_outline), title: const Text('Profilbild entfernen'), onTap: () => Navigator.pop(ctx, 'remove')),
-          ListTile(leading: const Icon(Icons.close), title: const Text('Abbrechen'), onTap: () => Navigator.pop(ctx)),
+            ListTile(leading: const Icon(Icons.delete_outline), title: Text(l10n.avatarRemove), onTap: () => Navigator.pop(ctx, 'remove')),
+          ListTile(leading: const Icon(Icons.close), title: Text(l10n.commonCancel), onTap: () => Navigator.pop(ctx)),
           const SizedBox(height: 8),
         ],
       ),
@@ -41,15 +43,15 @@ Future<void> showAvatarSheet(BuildContext context, WidgetRef ref) async {
     if (action == 'remove') {
       await repo.deleteAvatar();
     } else {
-      final picked = await FilePicker.pickFiles(type: FileType.image, dialogTitle: 'Profilbild wählen');
+      final picked = await FilePicker.pickFiles(type: FileType.image, dialogTitle: l10n.avatarPickerTitle);
       final file = picked.firstOrNull;
       if (file == null) return;
       final bytes = await _prepare(file);
       if (bytes == null) {
-        messenger.showSnackBar(const SnackBar(content: Text('Bild konnte nicht gelesen werden.')));
+        messenger.showSnackBar(SnackBar(content: Text(l10n.avatarReadFailed)));
         return;
       }
-      messenger.showSnackBar(const SnackBar(content: Text('Profilbild wird hochgeladen …'), duration: Duration(seconds: 1)));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.avatarUploading), duration: const Duration(seconds: 1)));
       await repo.uploadAvatar(bytes, contentType: 'image/jpeg');
     }
     await ref.read(authControllerProvider.notifier).refreshMe();

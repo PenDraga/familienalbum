@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../l10n/l10n.dart';
 import '../auth/auth_controller.dart';
 import 'auto_upload_controller.dart';
 import 'auto_upload_service.dart';
@@ -19,32 +20,36 @@ class AutoUploadSection extends ConsumerWidget {
     final s = state.settings;
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final fmt = DateFormat.yMd('de_CH').add_Hm();
+    final l10n = context.l10n;
+    final localeTag = context.localeTag;
+    final fmt = DateFormat.yMd(localeTag).add_Hm();
     final allowed = AutoUploadController.uploadableFamilies(me);
     final mayUpload = allowed.isNotEmpty;
+    // Der gespeicherte Lauf-Text kann in einer anderen Sprache entstanden sein als der aktuellen
+    final offPrefixes = AppLocalizations.supportedLocales.map((l) => lookupAppLocalizations(l).autoUploadOffPrefix);
 
     return Card(
       child: Column(
         children: [
           SwitchListTile(
-            title: const Text('Neue Fotos automatisch hochladen'),
+            title: Text(l10n.autoUploadToggleTitle),
             subtitle: Text(
               !mayUpload
-                  ? 'Dafür brauchst du das Recht «Hochladen» in einem Album. Frag einen Album-Admin.'
+                  ? l10n.autoUploadNeedsRight
                   : s.enabled
-                  ? 'Aufnahmen ab ${s.since == null ? 'jetzt' : DateFormat.yMd('de_CH').format(s.since!)} werden im Hintergrund hochgeladen.'
-                  : 'Lädt neue Aufnahmen aus der Galerie hoch, ohne dass du daran denken musst.',
+                  ? l10n.autoUploadEnabledSince(s.since == null ? l10n.autoUploadNow : DateFormat.yMd(localeTag).format(s.since!))
+                  : l10n.autoUploadDisabledHint,
             ),
             value: s.enabled && mayUpload,
             onChanged: me == null || !mayUpload ? null : (v) => ctrl.setEnabled(v),
           ),
-          if (!mayUpload && s.lastRunSummary != null && s.lastRunSummary!.startsWith('Ausgeschaltet'))
+          if (!mayUpload && s.lastRunSummary != null && offPrefixes.any(s.lastRunSummary!.startsWith))
             ListTile(leading: Icon(Icons.info_outline, color: scheme.onSurfaceVariant), title: Text(s.lastRunSummary!, style: text.bodySmall)),
           if (s.enabled && mayUpload) ...[
             if (allowed.length > 1)
               ListTile(
                 leading: const Icon(Icons.photo_album_outlined),
-                title: const Text('In dieses Album'),
+                title: Text(l10n.autoUploadTargetAlbum),
                 trailing: DropdownButton<String>(
                   value: allowed.any((f) => f.id == s.familyId) ? s.familyId : allowed.first.id,
                   underline: const SizedBox.shrink(),
@@ -54,27 +59,27 @@ class AutoUploadSection extends ConsumerWidget {
               ),
             SwitchListTile(
               secondary: const Icon(Icons.wifi),
-              title: const Text('Nur im WLAN'),
+              title: Text(l10n.autoUploadWifiOnly),
               value: s.wifiOnly,
               onChanged: (v) => ctrl.setWifiOnly(v),
             ),
             SwitchListTile(
               secondary: const Icon(Icons.videocam_outlined),
-              title: const Text('Videos einschliessen'),
+              title: Text(l10n.autoUploadIncludeVideos),
               value: s.includeVideos,
               onChanged: (v) => ctrl.setIncludeVideos(v),
             ),
             ListTile(
               leading: const Icon(Icons.history),
-              title: const Text('Ältere Aufnahmen ab Datum nachladen'),
-              subtitle: Text(s.since == null ? '–' : DateFormat.yMd('de_CH').format(s.since!)),
+              title: Text(l10n.autoUploadBackfillSince),
+              subtitle: Text(s.since == null ? '–' : DateFormat.yMd(localeTag).format(s.since!)),
               onTap: () async {
                 final picked = await showDatePicker(
                   context: context,
                   initialDate: s.since ?? DateTime.now(),
                   firstDate: DateTime(2000),
                   lastDate: DateTime.now(),
-                  locale: const Locale('de', 'CH'),
+                  locale: Localizations.localeOf(context),
                 );
                 if (picked != null) await ctrl.setSince(picked);
               },
@@ -84,15 +89,15 @@ class AutoUploadSection extends ConsumerWidget {
               leading: state.running
                   ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
                   : Icon(state.lastError != null ? Icons.error_outline : Icons.cloud_done_outlined, color: state.lastError != null ? scheme.error : null),
-              title: Text(state.running ? 'Synchronisiert …' : (state.lastError ?? s.lastRunSummary ?? 'Noch nicht gelaufen')),
+              title: Text(state.running ? l10n.autoUploadSyncing : (state.lastError ?? s.lastRunSummary ?? l10n.autoUploadNotRunYet)),
               subtitle: Text(
                 [
-                  if (s.lastRunAt != null) 'Zuletzt ${fmt.format(s.lastRunAt!)}',
-                  if (s.uploadedCount > 0) '${s.uploadedCount} insgesamt hochgeladen',
+                  if (s.lastRunAt != null) l10n.autoUploadLastRun(fmt.format(s.lastRunAt!)),
+                  if (s.uploadedCount > 0) l10n.autoUploadTotalUploaded(s.uploadedCount),
                 ].join(' · '),
                 style: text.bodySmall,
               ),
-              trailing: TextButton(onPressed: state.running ? null : () => ctrl.runNow(), child: const Text('Jetzt')),
+              trailing: TextButton(onPressed: state.running ? null : () => ctrl.runNow(), child: Text(l10n.autoUploadRunNow)),
             ),
           ],
         ],

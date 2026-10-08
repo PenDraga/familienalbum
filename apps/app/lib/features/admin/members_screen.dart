@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/api_exception.dart';
+import '../../l10n/l10n.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_models.dart';
 import 'admin_models.dart';
@@ -34,7 +35,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
 
   Future<void> _editRights(MemberItem m) async {
     final me = ref.read(meProvider);
-    final flags = await showRightsSheet(context, title: 'Rechte von ${m.displayName}', initial: m.flags);
+    final flags = await showRightsSheet(context, title: context.l10n.membersRightsOf(m.displayName), initial: m.flags);
     if (flags == null) return;
     try {
       await ref.read(adminRepositoryProvider).updateMember(widget.familyId, m.userId, flagsToJson(flags));
@@ -46,17 +47,18 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
   }
 
   Future<void> _remove(MemberItem m) async {
+    final l10n = context.l10n;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('${m.displayName} entfernen?'),
-        content: const Text('Die Person verliert den Zugriff auf dieses Album. Ihre hochgeladenen Fotos bleiben erhalten.'),
+        title: Text(l10n.membersRemoveTitle(m.displayName)),
+        content: Text(l10n.membersRemoveBody),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.commonCancel)),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Entfernen'),
+            child: Text(l10n.membersRemoveAction),
           ),
         ],
       ),
@@ -71,6 +73,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
   }
 
   Future<void> _addMenu() async {
+    final l10n = context.l10n;
     final choice = await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -79,14 +82,14 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.person_add_alt_1_outlined),
-              title: const Text('Konto anlegen'),
-              subtitle: const Text('E-Mail und Startpasswort vergeben, z.B. für Grosseltern'),
+              title: Text(l10n.membersCreateAccount),
+              subtitle: Text(l10n.membersCreateAccountSubtitle),
               onTap: () => Navigator.pop(ctx, 'account'),
             ),
             ListTile(
               leading: const Icon(Icons.key_outlined),
-              title: const Text('Einladungscode erzeugen'),
-              subtitle: const Text('Die Person registriert sich selbst mit dem Code'),
+              title: Text(l10n.membersCreateInvite),
+              subtitle: Text(l10n.membersCreateInviteSubtitle),
               onTap: () => Navigator.pop(ctx, 'invite'),
             ),
           ],
@@ -105,18 +108,19 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
 
   Future<void> _createInvite() async {
     var flags = const MembershipFlags(isFamilyAdmin: false, canUpload: true, canDownload: false, canComment: true);
+    final l10n = context.l10n;
     final go = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          title: const Text('Einladung erstellen'),
+          title: Text(l10n.membersInviteDialogTitle),
           content: SizedBox(
             width: 380,
             child: RightsEditor(value: flags, allowAdminToggle: false, onChanged: (v) => setState(() => flags = v)),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Code erzeugen')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.commonCancel)),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.membersGenerateCode)),
           ],
         ),
       ),
@@ -138,22 +142,23 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     final family = me?.families.where((f) => f.id == widget.familyId).firstOrNull;
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final fmt = DateFormat.yMd('de_CH');
+    final l10n = context.l10n;
+    final fmt = DateFormat.yMd(context.localeTag);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(family == null ? 'Mitglieder' : 'Mitglieder · ${family.name}'),
+        title: Text(family == null ? l10n.membersTitle : l10n.membersTitleWithFamily(family.name)),
         leading: BackButton(onPressed: () => context.canPop() ? context.pop() : context.go('/settings')),
         actions: [
           if (family != null)
             IconButton(
-              tooltip: 'Album umbenennen',
+              tooltip: l10n.renameAlbumTitle,
               icon: const Icon(Icons.edit_outlined),
               onPressed: () => showRenameFamilyDialog(context, ref, familyId: family.id, currentName: family.name),
             ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(onPressed: _addMenu, icon: const Icon(Icons.add), label: const Text('Hinzufügen')),
+      floatingActionButton: FloatingActionButton.extended(onPressed: _addMenu, icon: const Icon(Icons.add), label: Text(l10n.commonAdd)),
       body: FutureBuilder<List<MemberItem>>(
         future: _future,
         builder: (context, snap) {
@@ -166,7 +171,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                   children: [
                     Text(errorMessage(snap.error!), textAlign: TextAlign.center),
                     const SizedBox(height: 12),
-                    FilledButton.tonal(onPressed: _refresh, child: const Text('Nochmals versuchen')),
+                    FilledButton.tonal(onPressed: _refresh, child: Text(l10n.commonRetry)),
                   ],
                 ),
               ),
@@ -193,18 +198,21 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                       color: m.flags.isFamilyAdmin ? scheme.primary : scheme.secondary,
                       foregroundColor: m.flags.isFamilyAdmin ? scheme.onPrimary : scheme.onSecondary,
                     ),
-                    title: Text(isMe ? '${m.displayName} (du)' : m.displayName, style: text.titleMedium),
+                    title: Text(isMe ? l10n.commonNameYou(m.displayName) : m.displayName, style: text.titleMedium),
                     subtitle: Text(
-                      '${describeRights(m.flags)}\n'
-                      '${m.lastSeenAt == null ? 'Noch nie aktiv' : 'Zuletzt aktiv ${fmt.format(m.lastSeenAt!.toLocal())}'} · dabei seit ${fmt.format(m.joinedAt.toLocal())}',
+                      l10n.membersSubtitle(
+                        describeRights(l10n, m.flags),
+                        m.lastSeenAt == null ? l10n.membersNeverActive : l10n.membersLastActive(fmt.format(m.lastSeenAt!.toLocal())),
+                        fmt.format(m.joinedAt.toLocal()),
+                      ),
                       style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                     ),
                     isThreeLine: true,
                     trailing: PopupMenuButton<String>(
                       onSelected: (v) => v == 'rights' ? _editRights(m) : _remove(m),
                       itemBuilder: (_) => [
-                        const PopupMenuItem(value: 'rights', child: Text('Rechte bearbeiten')),
-                        if (!isMe) const PopupMenuItem(value: 'remove', child: Text('Aus dem Album entfernen')),
+                        PopupMenuItem(value: 'rights', child: Text(l10n.membersEditRights)),
+                        if (!isMe) PopupMenuItem(value: 'remove', child: Text(l10n.membersRemoveFromAlbum)),
                       ],
                     ),
                   ),
@@ -268,8 +276,9 @@ class _CreateAccountDialogState extends ConsumerState<_CreateAccountDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AlertDialog(
-      title: const Text('Konto anlegen'),
+      title: Text(l10n.membersCreateAccount),
       content: SizedBox(
         width: 400,
         child: Form(
@@ -280,25 +289,25 @@ class _CreateAccountDialogState extends ConsumerState<_CreateAccountDialog> {
               children: [
                 TextFormField(
                   controller: _name,
-                  decoration: const InputDecoration(labelText: 'Anzeigename', prefixIcon: Icon(Icons.person_outline)),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Bitte Namen angeben' : null,
+                  decoration: InputDecoration(labelText: l10n.profileDisplayName, prefixIcon: const Icon(Icons.person_outline)),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? l10n.authNameRequired : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _email,
-                  decoration: const InputDecoration(labelText: 'E-Mail', prefixIcon: Icon(Icons.mail_outline)),
+                  decoration: InputDecoration(labelText: l10n.authEmailLabel, prefixIcon: const Icon(Icons.mail_outline)),
                   keyboardType: TextInputType.emailAddress,
-                  validator: (v) => (v == null || !v.contains('@')) ? 'E-Mail-Adresse angeben' : null,
+                  validator: (v) => (v == null || !v.contains('@')) ? l10n.authEmailRequired : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _password,
-                  decoration: const InputDecoration(
-                    labelText: 'Startpasswort (min. 8 Zeichen)',
-                    prefixIcon: Icon(Icons.lock_outline),
-                    helperText: 'Die Person kann es später in den Einstellungen ändern.',
+                  decoration: InputDecoration(
+                    labelText: l10n.membersStartPasswordLabel,
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    helperText: l10n.membersStartPasswordHelper,
                   ),
-                  validator: (v) => (v == null || v.length < 8) ? 'Mindestens 8 Zeichen' : null,
+                  validator: (v) => (v == null || v.length < 8) ? l10n.authPasswordMin8 : null,
                 ),
                 const SizedBox(height: 8),
                 RightsEditor(value: _flags, onChanged: (v) => setState(() => _flags = v)),
@@ -309,8 +318,8 @@ class _CreateAccountDialogState extends ConsumerState<_CreateAccountDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: _busy ? null : () => Navigator.pop(context, false), child: const Text('Abbrechen')),
-        FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? 'Speichert …' : 'Anlegen')),
+        TextButton(onPressed: _busy ? null : () => Navigator.pop(context, false), child: Text(l10n.commonCancel)),
+        FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? l10n.commonSaving : l10n.commonCreate)),
       ],
     );
   }

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/api_exception.dart';
+import '../../l10n/l10n.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_models.dart';
 import 'admin_models.dart';
@@ -59,14 +60,15 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final l10n = context.l10n;
     final me = ref.watch(meProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Benutzer'),
+        title: Text(l10n.usersTitle),
         leading: BackButton(onPressed: () => context.canPop() ? context.pop() : context.go('/settings')),
       ),
-      floatingActionButton: FloatingActionButton.extended(onPressed: _create, icon: const Icon(Icons.person_add_alt_1_outlined), label: const Text('Benutzer anlegen')),
+      floatingActionButton: FloatingActionButton.extended(onPressed: _create, icon: const Icon(Icons.person_add_alt_1_outlined), label: Text(l10n.usersCreate)),
       body: Column(
         children: [
           Padding(
@@ -75,7 +77,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               controller: _search,
               onChanged: _onSearch,
               decoration: InputDecoration(
-                hintText: 'Name oder E-Mail suchen',
+                hintText: l10n.usersSearchHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _search.text.isEmpty
                     ? null
@@ -96,7 +98,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                 if (snap.hasError) return Center(child: Text(errorMessage(snap.error!)));
                 if (!snap.hasData) return const Center(child: CircularProgressIndicator());
                 final users = snap.data!;
-                if (users.isEmpty) return Center(child: Text('Keine Benutzer gefunden', style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)));
+                if (users.isEmpty) return Center(child: Text(l10n.usersEmpty, style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)));
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                   itemCount: users.length,
@@ -112,15 +114,15 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                           child: Text(u.displayName.isNotEmpty ? u.displayName[0].toUpperCase() : '?'),
                         ),
                         title: Text(
-                          u.id == me?.id ? '${u.displayName} (du)' : u.displayName,
+                          u.id == me?.id ? l10n.commonNameYou(u.displayName) : u.displayName,
                           style: text.titleMedium?.copyWith(decoration: u.isDisabled ? TextDecoration.lineThrough : null),
                         ),
                         subtitle: Text(u.email),
                         trailing: Wrap(
                           spacing: 6,
                           children: [
-                            if (u.isAdmin) const Chip(label: Text('Admin'), visualDensity: VisualDensity.compact),
-                            if (u.isDisabled) Chip(label: const Text('Gesperrt'), backgroundColor: scheme.errorContainer, visualDensity: VisualDensity.compact),
+                            if (u.isAdmin) Chip(label: Text(l10n.commonAdmin), visualDensity: VisualDensity.compact),
+                            if (u.isDisabled) Chip(label: Text(l10n.usersBlocked), backgroundColor: scheme.errorContainer, visualDensity: VisualDensity.compact),
                           ],
                         ),
                       ),
@@ -192,8 +194,9 @@ class _UserDialogState extends ConsumerState<_UserDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AlertDialog(
-      title: Text(_isNew ? 'Benutzer anlegen' : 'Benutzer bearbeiten'),
+      title: Text(_isNew ? l10n.usersCreate : l10n.usersEdit),
       content: SizedBox(
         width: 400,
         child: Form(
@@ -203,31 +206,31 @@ class _UserDialogState extends ConsumerState<_UserDialog> {
             children: [
               TextFormField(
                 controller: _name,
-                decoration: const InputDecoration(labelText: 'Anzeigename', prefixIcon: Icon(Icons.person_outline)),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Bitte Namen angeben' : null,
+                decoration: InputDecoration(labelText: l10n.profileDisplayName, prefixIcon: const Icon(Icons.person_outline)),
+                validator: (v) => (v == null || v.trim().isEmpty) ? l10n.authNameRequired : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _email,
                 enabled: _isNew,
-                decoration: const InputDecoration(labelText: 'E-Mail', prefixIcon: Icon(Icons.mail_outline)),
+                decoration: InputDecoration(labelText: l10n.authEmailLabel, prefixIcon: const Icon(Icons.mail_outline)),
                 keyboardType: TextInputType.emailAddress,
-                validator: (v) => (v == null || !v.contains('@')) ? 'E-Mail-Adresse angeben' : null,
+                validator: (v) => (v == null || !v.contains('@')) ? l10n.authEmailRequired : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _password,
                 decoration: InputDecoration(
-                  labelText: _isNew ? 'Startpasswort (min. 8 Zeichen)' : 'Neues Passwort (leer = unverändert)',
+                  labelText: _isNew ? l10n.membersStartPasswordLabel : l10n.usersNewPasswordOptional,
                   prefixIcon: const Icon(Icons.lock_outline),
                 ),
-                validator: (v) => (_isNew || (v != null && v.isNotEmpty)) && (v == null || v.length < 8) ? 'Mindestens 8 Zeichen' : null,
+                validator: (v) => (_isNew || (v != null && v.isNotEmpty)) && (v == null || v.length < 8) ? l10n.authPasswordMin8 : null,
               ),
               if (_isNew)
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Globaler Admin'),
-                  subtitle: const Text('Darf Benutzer und Alben verwalten'),
+                  title: Text(l10n.usersGlobalAdmin),
+                  subtitle: Text(l10n.usersGlobalAdminSubtitle),
                   value: _isAdmin,
                   onChanged: (v) => setState(() => _isAdmin = v),
                 ),
@@ -237,8 +240,8 @@ class _UserDialogState extends ConsumerState<_UserDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: _busy ? null : () => Navigator.pop(context, false), child: const Text('Abbrechen')),
-        FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? 'Speichert …' : (_isNew ? 'Anlegen' : 'Speichern'))),
+        TextButton(onPressed: _busy ? null : () => Navigator.pop(context, false), child: Text(l10n.commonCancel)),
+        FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? l10n.commonSaving : (_isNew ? l10n.commonCreate : l10n.commonSave))),
       ],
     );
   }
@@ -267,34 +270,32 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
   /// Konto löschen: Sicherheitsabfrage mit dem Namen, dann anonymisiert der Server das Konto.
   Future<void> _delete(AdminUserDetail u) async {
     final controller = TextEditingController();
+    final l10n = context.l10n;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          title: Text('${u.displayName} löschen?'),
+          title: Text(l10n.usersDeleteTitle(u.displayName)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Das Konto wird endgültig gelöscht: E-Mail, Name, Passwort, Profilbild, Geräte und Mitgliedschaften. '
-                'Fotos, Videos und Kommentare bleiben im Album und tragen danach «Gelöschtes Konto» als Urheber.',
-              ),
+              Text(l10n.usersDeleteBody),
               const SizedBox(height: 12),
               TextField(
                 controller: controller,
                 autofocus: true,
-                decoration: InputDecoration(labelText: 'Zur Bestätigung «${u.displayName}» eingeben'),
+                decoration: InputDecoration(labelText: l10n.usersDeleteConfirmLabel(u.displayName)),
                 onChanged: (_) => setState(() {}),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.commonCancel)),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
               onPressed: controller.text.trim() == u.displayName.trim() ? () => Navigator.pop(ctx, true) : null,
-              child: const Text('Endgültig löschen'),
+              child: Text(l10n.usersDeleteAction),
             ),
           ],
         ),
@@ -304,7 +305,7 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
     try {
       await ref.read(adminRepositoryProvider).deleteUser(u.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Konto von ${u.displayName} gelöscht')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.usersDeleted(u.displayName))));
       Navigator.pop(context, true);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage(e))));
@@ -331,8 +332,9 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
     }
     final available = families.where((f) => !u.families.any((x) => x.id == f.id)).toList();
     if (!mounted) return;
+    final l10n = context.l10n;
     if (available.isEmpty) {
-      _snack('Ist bereits in allen Alben.');
+      _snack(l10n.usersAlreadyInAllAlbums);
       return;
     }
     final picked = await showModalBottomSheet<AdminFamily>(
@@ -341,9 +343,9 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
         child: ListView(
           shrinkWrap: true,
           children: [
-            Padding(padding: const EdgeInsets.all(16), child: Text('Zu Album hinzufügen', style: Theme.of(ctx).textTheme.titleLarge)),
+            Padding(padding: const EdgeInsets.all(16), child: Text(l10n.usersAddToAlbum, style: Theme.of(ctx).textTheme.titleLarge)),
             for (final f in available)
-              ListTile(leading: const Icon(Icons.photo_album_outlined), title: Text(f.name), subtitle: Text('${f.memberCount} Mitglieder'), onTap: () => Navigator.pop(ctx, f)),
+              ListTile(leading: const Icon(Icons.photo_album_outlined), title: Text(f.name), subtitle: Text(l10n.familiesMemberCount(f.memberCount)), onTap: () => Navigator.pop(ctx, f)),
           ],
         ),
       ),
@@ -351,7 +353,7 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
     if (picked == null || !mounted) return;
     final flags = await showRightsSheet(
       context,
-      title: 'Rechte in ${picked.name}',
+      title: l10n.usersRightsIn(picked.name),
       initial: const MembershipFlags(isFamilyAdmin: false, canUpload: true, canDownload: false, canComment: true),
     );
     if (flags == null) return;
@@ -369,7 +371,8 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
     final me = ref.watch(meProvider);
     final text = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
-    final fmt = DateFormat.yMd('de_CH');
+    final l10n = context.l10n;
+    final fmt = DateFormat.yMd(context.localeTag);
 
     return PopScope(
       canPop: false,
@@ -401,12 +404,12 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
                         children: [
                           Text(u.displayName, style: text.titleLarge),
                           Text(u.email, style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
-                          Text('Seit ${fmt.format(u.createdAt.toLocal())} · ${u.deviceCount} Gerät${u.deviceCount == 1 ? '' : 'e'} mit Push', style: text.bodySmall?.copyWith(color: scheme.outline)),
+                          Text(l10n.usersSinceDevices(fmt.format(u.createdAt.toLocal()), u.deviceCount), style: text.bodySmall?.copyWith(color: scheme.outline)),
                         ],
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Name / Passwort',
+                      tooltip: l10n.usersEditTooltip,
                       icon: const Icon(Icons.edit_outlined),
                       onPressed: () async {
                         final ok = await showDialog<bool>(context: context, builder: (_) => _UserDialog(existing: u));
@@ -418,35 +421,35 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
                 const SizedBox(height: 16),
                 SwitchListTile(
                   secondary: const Icon(Icons.admin_panel_settings_outlined),
-                  title: const Text('Globaler Admin'),
-                  subtitle: Text(isMe ? 'Dir selbst kannst du das nicht entziehen' : 'Verwaltet Benutzer und Alben'),
+                  title: Text(l10n.usersGlobalAdmin),
+                  subtitle: Text(isMe ? l10n.usersCannotRevokeSelf : l10n.usersGlobalAdminManages),
                   value: u.isAdmin,
                   onChanged: isMe ? null : (v) => _toggle(u, isAdmin: v),
                 ),
                 SwitchListTile(
                   secondary: Icon(Icons.block, color: u.isDisabled ? scheme.error : null),
-                  title: const Text('Gesperrt'),
-                  subtitle: Text(isMe ? 'Dich selbst kannst du nicht sperren' : 'Kann sich nicht mehr anmelden, alle Sitzungen werden beendet'),
+                  title: Text(l10n.usersBlocked),
+                  subtitle: Text(isMe ? l10n.usersCannotBlockSelf : l10n.usersBlockedSubtitle),
                   value: u.isDisabled,
                   onChanged: isMe ? null : (v) => _toggle(u, isDisabled: v),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Text('Alben', style: text.titleMedium),
+                    Text(l10n.albumsTitle, style: text.titleMedium),
                     const Spacer(),
-                    TextButton.icon(onPressed: () => _addToFamily(u), icon: const Icon(Icons.add), label: const Text('Hinzufügen')),
+                    TextButton.icon(onPressed: () => _addToFamily(u), icon: const Icon(Icons.add), label: Text(l10n.commonAdd)),
                   ],
                 ),
                 if (u.families.isEmpty)
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text('In keinem Album', style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant))),
+                  Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(l10n.usersNoAlbum, style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant))),
                 for (final f in u.families)
                   Card(
                     margin: const EdgeInsets.only(bottom: 6),
                     child: ListTile(
                       leading: const Icon(Icons.photo_album_outlined),
                       title: Text(f.name),
-                      subtitle: Text(describeRights(f.membership)),
+                      subtitle: Text(describeRights(l10n, f.membership)),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => context.push('/settings/members/${f.id}'),
                     ),
@@ -456,7 +459,7 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
                   style: OutlinedButton.styleFrom(foregroundColor: scheme.error, side: BorderSide(color: scheme.error.withValues(alpha: 0.5))),
                   onPressed: isMe ? null : () => _delete(u),
                   icon: const Icon(Icons.person_off_outlined),
-                  label: Text(isMe ? 'Dein eigenes Konto kannst du nicht löschen' : 'Konto löschen'),
+                  label: Text(isMe ? l10n.usersCannotDeleteSelf : l10n.usersDeleteAccount),
                 ),
               ],
             );
