@@ -12,12 +12,12 @@ const require = createRequire(resolve(here, '../../../node_modules/'));
 const { JWT } = require('google-auth-library');
 
 const PACKAGE = 'ch.familienalbum.familienalbum';
-const LANG = 'de-DE';
+const LANGS = ['de-DE', 'en-US'];
 const store = resolve(here, '..', 'store');
 const args = new Set(process.argv.slice(2));
 
 const listing = {
-  language: LANG,
+  language: 'de-DE',
   title: 'Familienalbum',
   shortDescription: 'Privates Familienalbum: Fotos, Videos und Kommentare auf eurem eigenen Server.',
   fullDescription: [
@@ -35,6 +35,25 @@ const listing = {
     'Wer einen Server betreibt, ist dessen Admin und lädt die Familie per Link ein. Es gibt bewusst keine öffentliche Registrierung. Beim ersten Start wird die Adresse des eigenen Servers eingetragen.',
   ].join('\n'),
 };
+const listingEn = {
+  language: 'en-US',
+  title: 'Familienalbum',
+  shortDescription: 'Private family album: photos, videos and comments on your own server.',
+  fullDescription: [
+    'Familienalbum is a private photo album for your own family. The app connects to a server that the family runs itself. No ads, no tracking, no third-party access.',
+    '',
+    '• Upload photos and videos, sorted by capture date',
+    '• Comments and notifications for new pictures',
+    '• Recap videos per month and year, a one-second film, "On this day"',
+    '• Automatic background upload of new captures',
+    '• Export of all photos and comments as a ZIP. Your data stays yours.',
+    '• Albums with their own permissions: upload, download, comment',
+    '',
+    'Open source: Familienalbum is a client for your own server, comparable to Nextcloud or Immich. Source code and setup guide on GitHub: https://github.com/PenDraga/familienalbum',
+    '',
+    'Whoever runs a server is its admin and invites the family by link. There is deliberately no public sign-up. On first launch you enter the address of your own server.',
+  ].join('\n'),
+};
 
 const key = JSON.parse(readFileSync(resolve(here, '..', 'android', 'play-service-account.json'), 'utf8'));
 const client = new JWT({ email: key.client_email, key: key.private_key, scopes: ['https://www.googleapis.com/auth/androidpublisher'] });
@@ -50,24 +69,28 @@ async function call(method, url, body, contentType = 'application/json') {
 }
 
 const edit = await call('POST', `${base}/edits`, '{}');
-await call('PUT', `${base}/edits/${edit.id}/listings/${LANG}`, JSON.stringify(listing));
+for (const l of [listing, listingEn]) await call('PUT', `${base}/edits/${edit.id}/listings/${l.language}`, JSON.stringify(l));
 // Store-Kontakt: Website auf das öffentliche Repo (Kontakt-E-Mail bleibt, wie in der Console hinterlegt)
 const details = await call('GET', `${base}/edits/${edit.id}/details`);
 await call('PATCH', `${base}/edits/${edit.id}/details`, JSON.stringify({ ...details, contactWebsite: 'https://github.com/PenDraga/familienalbum' }));
 console.log('Texte gesetzt');
 
-async function replaceImages(type, files) {
-  await call('DELETE', `${base}/edits/${edit.id}/listings/${LANG}/${type}`);
+async function replaceImages(lang, type, files) {
+  await call('DELETE', `${base}/edits/${edit.id}/listings/${lang}/${type}`);
   for (const f of files) {
-    await call('POST', `${upload}/edits/${edit.id}/listings/${LANG}/${type}?uploadType=media`, readFileSync(f), 'image/png');
-    console.log(`${type}: ${f.split('/').pop()}`);
+    await call('POST', `${upload}/edits/${edit.id}/listings/${lang}/${type}?uploadType=media`, readFileSync(f), 'image/png');
+    console.log(`${lang} ${type}: ${f.split('/').pop()}`);
   }
 }
-await replaceImages('icon', [resolve(store, 'icon-512.png')]);
-await replaceImages('featureGraphic', [resolve(store, 'feature-1024x500.png')]);
-if (args.has('--screenshots') && existsSync(resolve(store, 'screenshots'))) {
-  const shots = readdirSync(resolve(store, 'screenshots')).filter((f) => f.endsWith('.png')).sort().map((f) => resolve(store, 'screenshots', f));
-  if (shots.length) await replaceImages('phoneScreenshots', shots);
+for (const lang of LANGS) {
+  await replaceImages(lang, 'icon', [resolve(store, 'icon-512.png')]);
+  await replaceImages(lang, 'featureGraphic', [resolve(store, 'feature-1024x500.png')]);
+}
+// Screenshots: store/screenshots/<lang>/*.png, ohne Sprachordner gilt store/screenshots/*.png für alle Sprachen
+for (const lang of args.has('--screenshots') ? LANGS : []) {
+  const dir = existsSync(resolve(store, 'screenshots', lang)) ? resolve(store, 'screenshots', lang) : resolve(store, 'screenshots');
+  const shots = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.png')).sort().map((f) => resolve(dir, f)) : [];
+  if (shots.length) await replaceImages(lang, 'phoneScreenshots', shots);
 }
 await call('POST', `${base}/edits/${edit.id}:commit`, '{}');
 console.log('Store-Eintrag gespeichert.');

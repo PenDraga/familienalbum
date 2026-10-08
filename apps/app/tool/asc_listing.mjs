@@ -1,7 +1,8 @@
 // App-Store-Connect-Eintrag pflegen (Texte, Kategorie, Copyright, Inhaltsrechte, TestFlight-Infos, Screenshots, neuster Build).
 // Preis (kostenlos, Basisregion CHE) wurde einmalig per API gesetzt; Datenschutz-Angaben und Altersfreigabe nur in der Console.
 //   node tool/asc_listing.mjs                → Texte, Kategorie, Datenschutz-URL, TestFlight-Beschreibung setzen
-//   node tool/asc_listing.mjs --screenshots  → zusätzlich store/ios/<DISPLAY_TYPE>/*.png hochladen (ersetzt vorhandene)
+//   node tool/asc_listing.mjs --screenshots  → zusätzlich Screenshots hochladen: store/ios/<locale>/<DISPLAY_TYPE>/*.png,
+//                                              ohne Sprachordner gilt store/ios/<DISPLAY_TYPE>/ für alle Sprachen (de-DE, en-US)
 // Braucht ios/asc.env (siehe ios/asc.env.example). Texte stehen unten in `listing`.
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
@@ -15,7 +16,7 @@ const { SignJWT, importPKCS8 } = require('jose');
 const here = dirname(fileURLToPath(import.meta.url));
 const app = resolve(here, '..');
 const args = new Set(process.argv.slice(2));
-const LOCALE = 'de-DE';
+const LOCALES = ['de-DE', 'en-US'];
 const BUNDLE_ID = 'ch.familienalbum.familienalbum';
 
 // ---------- Konfiguration (persönliche Werte in ios/asc.env, nicht im Git) ----------
@@ -72,6 +73,35 @@ const listing = {
   ].join('\n'),
 };
 
+/** Englische Fassung der sprachabhängigen Felder; alles andere kommt aus `listing`. */
+const EN = {
+  subtitle: 'Photos just for your family',
+  keywords: 'family,album,photos,videos,private,self-hosted,comments,recap,kids,grandparents',
+  promotionalText: 'A private family album on your own server: photos, videos, comments and recap videos. Access by invitation only.',
+  description: [
+    'Familienalbum is a private photo album for your own family. The app connects to a server that the family runs itself. No ads, no tracking, no third-party access.',
+    '',
+    '• Upload photos and videos, sorted by capture date',
+    '• Comments and notifications for new pictures',
+    '• Recap videos per month and year, a one-second film, "On this day"',
+    '• Automatic background upload of new captures',
+    '• Export of all photos and comments as a ZIP. Your data stays yours.',
+    '• Albums with their own permissions: upload, download, comment',
+    '',
+    `Open source: Familienalbum is a client for your own server, comparable to Nextcloud or Immich. Source code and setup guide on GitHub: ${listing.marketingUrl}`,
+    '',
+    'Whoever runs a server is its admin and invites the family by link. There is deliberately no public sign-up. On first launch you enter the address of your own server.',
+  ].join('\n'),
+  whatsNew: [
+    'The app now speaks English as well as German and follows your device language.',
+    'Two-finger zoom in the photo viewer, unread badge on the app icon, clearer invitation screen.',
+  ].join('\n'),
+  betaDescription: 'Private, self-hosted family album: photos, videos, comments and recap videos. To sign in you need the server address and an invitation link from your album admin.',
+};
+const texts = (locale) => (locale === 'en-US'
+  ? { subtitle: EN.subtitle, keywords: EN.keywords, promotionalText: EN.promotionalText, description: EN.description, whatsNew: EN.whatsNew, betaDescription: EN.betaDescription }
+  : { subtitle: listing.subtitle, keywords: listing.keywords, promotionalText: listing.promotionalText, description: listing.description, whatsNew: listing.whatsNew, betaDescription: listing.beta.description });
+
 
 const keyPath = (env.ASC_KEY_PATH || `~/.appstoreconnect/private_keys/AuthKey_${env.ASC_KEY_ID}.p8`).replace(/^~/, homedir());
 const privateKey = await importPKCS8(readFileSync(keyPath, 'utf8'), 'ES256');
@@ -105,8 +135,6 @@ if (pubspecVersion && version.attributes.versionString !== pubspecVersion && ver
   version.attributes.versionString = pubspecVersion;
   console.log(`App-Store-Version heisst jetzt ${pubspecVersion}`);
 }
-let vloc = (versions.included ?? []).find((l) => l.type === 'appStoreVersionLocalizations' && l.attributes.locale === LOCALE && version.relationships.appStoreVersionLocalizations.data.some((d) => d.id === l.id));
-const vattrs = { description: listing.description, keywords: listing.keywords, promotionalText: listing.promotionalText, supportUrl: listing.supportUrl, marketingUrl: listing.marketingUrl, whatsNew: listing.whatsNew };
 // «Neue Funktionen» gibt es erst ab der zweiten Version; bei 1.0 lehnt Apple das Feld ab
 async function patchVersionLoc(id, attrs) {
   try {
@@ -117,19 +145,29 @@ async function patchVersionLoc(id, attrs) {
     await patch('appStoreVersionLocalizations', id, rest);
   }
 }
-if (vloc) await patchVersionLoc(vloc.id, vattrs);
-else vloc = (await api('POST', '/v1/appStoreVersionLocalizations', { data: { type: 'appStoreVersionLocalizations', attributes: { locale: LOCALE, ...vattrs }, relationships: { appStoreVersion: { data: { type: 'appStoreVersions', id: version.id } } } } })).data;
+const vlocs = {};
+for (const LOCALE of LOCALES) {
+  const t = texts(LOCALE);
+  const vattrs = { description: t.description, keywords: t.keywords, promotionalText: t.promotionalText, supportUrl: listing.supportUrl, marketingUrl: listing.marketingUrl, whatsNew: t.whatsNew };
+  let vloc = (versions.included ?? []).find((l) => l.type === 'appStoreVersionLocalizations' && l.attributes.locale === LOCALE && version.relationships.appStoreVersionLocalizations.data.some((d) => d.id === l.id));
+  if (vloc) await patchVersionLoc(vloc.id, vattrs);
+  else vloc = (await api('POST', '/v1/appStoreVersionLocalizations', { data: { type: 'appStoreVersionLocalizations', attributes: { locale: LOCALE, ...vattrs }, relationships: { appStoreVersion: { data: { type: 'appStoreVersions', id: version.id } } } } })).data;
+  vlocs[LOCALE] = vloc;
+}
 await patch('appStoreVersions', version.id, { copyright: listing.copyright });
 await patch('apps', appId, { contentRightsDeclaration: listing.contentRightsDeclaration });
-console.log(`Version ${version.attributes.versionString}: Beschreibung, Keywords, Support-URL, Copyright, Inhaltsrechte gesetzt`);
+console.log(`Version ${version.attributes.versionString}: Beschreibung, Keywords, Support-URL, Copyright, Inhaltsrechte gesetzt (${LOCALES.join(', ')})`);
 
 // ---------- App-Info: Untertitel, Datenschutz, Kategorie (erst nach der Versionsanlage, dann ist eine bearbeitbare Info da) ----------
 const infos = await api('GET', `/v1/apps/${appId}/appInfos?include=appInfoLocalizations`);
 const info = infos.data.find((i) => ['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'WAITING_FOR_REVIEW'].includes(i.attributes.state)) ?? infos.data[0];
-const infoLoc = (infos.included ?? []).find((l) => l.type === 'appInfoLocalizations' && l.attributes.locale === LOCALE && info.relationships.appInfoLocalizations.data.some((d) => d.id === l.id));
 try {
-  if (infoLoc) await patch('appInfoLocalizations', infoLoc.id, { subtitle: listing.subtitle, privacyPolicyUrl: listing.privacyPolicyUrl });
-  else await api('POST', '/v1/appInfoLocalizations', { data: { type: 'appInfoLocalizations', attributes: { locale: LOCALE, subtitle: listing.subtitle, privacyPolicyUrl: listing.privacyPolicyUrl }, relationships: { appInfo: { data: { type: 'appInfos', id: info.id } } } } });
+  for (const LOCALE of LOCALES) {
+    const infoLoc = (infos.included ?? []).find((l) => l.type === 'appInfoLocalizations' && l.attributes.locale === LOCALE && info.relationships.appInfoLocalizations.data.some((d) => d.id === l.id));
+    const attrs = { subtitle: texts(LOCALE).subtitle, privacyPolicyUrl: listing.privacyPolicyUrl };
+    if (infoLoc) await patch('appInfoLocalizations', infoLoc.id, attrs);
+    else await api('POST', '/v1/appInfoLocalizations', { data: { type: 'appInfoLocalizations', attributes: { locale: LOCALE, ...attrs }, relationships: { appInfo: { data: { type: 'appInfos', id: info.id } } } } });
+  }
   await patch('appInfos', info.id, undefined, { primaryCategory: { data: { type: 'appCategories', id: listing.primaryCategory } } });
   console.log('App-Info: Untertitel, Datenschutz-URL, Kategorie gesetzt');
 } catch (e) {
@@ -158,19 +196,23 @@ console.log('App-Review-Informationen gesetzt (Demo-Passwort nur in App Store Co
 
 // ---------- TestFlight: Beschreibung, Feedback, Review-Notizen ----------
 const beta = await api('GET', `/v1/apps/${appId}/betaAppLocalizations`);
-const bloc = beta.data.find((b) => b.attributes.locale === LOCALE);
-const battrs = { description: listing.beta.description, feedbackEmail: listing.beta.feedbackEmail, privacyPolicyUrl: listing.privacyPolicyUrl };
-if (bloc) await patch('betaAppLocalizations', bloc.id, battrs);
-else await api('POST', '/v1/betaAppLocalizations', { data: { type: 'betaAppLocalizations', attributes: { locale: LOCALE, ...battrs }, relationships: { app: { data: { type: 'apps', id: appId } } } } });
+for (const LOCALE of LOCALES) {
+  const bloc = beta.data.find((b) => b.attributes.locale === LOCALE);
+  const battrs = { description: texts(LOCALE).betaDescription, feedbackEmail: listing.beta.feedbackEmail, privacyPolicyUrl: listing.privacyPolicyUrl };
+  if (bloc) await patch('betaAppLocalizations', bloc.id, battrs);
+  else await api('POST', '/v1/betaAppLocalizations', { data: { type: 'betaAppLocalizations', attributes: { locale: LOCALE, ...battrs }, relationships: { app: { data: { type: 'apps', id: appId } } } } });
+}
 const review = await api('GET', `/v1/apps/${appId}/betaAppReviewDetail`);
 await patch('betaAppReviewDetails', review.data.id, { demoAccountRequired: true, notes: listing.betaReviewNotes });
 console.log('TestFlight: Beschreibung, Feedback-Adresse, Review-Notizen gesetzt (Demo-Konto bitte in App Store Connect eintragen)');
 
 // ---------- Screenshots ----------
-if (args.has('--screenshots')) {
-  const root = resolve(app, 'store/ios');
+for (const LOCALE of args.has('--screenshots') ? LOCALES : []) {
+  const vloc = vlocs[LOCALE];
+  const root = existsSync(resolve(app, 'store/ios', LOCALE)) ? resolve(app, 'store/ios', LOCALE) : resolve(app, 'store/ios');
+  console.log(`Screenshots ${LOCALE} aus ${root.replace(app + '/', '')}`);
   const sets = await api('GET', `/v1/appStoreVersionLocalizations/${vloc.id}/appScreenshotSets?include=appScreenshots`);
-  for (const dir of readdirSync(root).filter((d) => statSync(resolve(root, d)).isDirectory())) {
+  for (const dir of readdirSync(root).filter((d) => d.startsWith('APP_') && statSync(resolve(root, d)).isDirectory())) {
     const files = readdirSync(resolve(root, dir)).filter((f) => f.endsWith('.png')).sort();
     if (!files.length) continue;
     let set = sets.data.find((s) => s.attributes.screenshotDisplayType === dir);
