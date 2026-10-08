@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { countUnread } from './activity.service.js';
+import { recapTitle } from './recap-select.js';
 import type { PushMessage, PushSender } from './push.js';
 
 export interface NotifyOutcome {
@@ -87,8 +88,8 @@ export class NotificationService {
     if (!recap || recap.status !== 'READY') return NONE;
     const members = await this.prisma.familyMember.findMany({ where: { familyId: recap.familyId }, select: { userId: true } });
     const sent = await this.sendToUsers(members.map((m) => m.userId), (lang) => ({
-      title: lang === 'en' ? `Recap ${recap.title}` : `Rückblick ${recap.title}`,
-      body: lang === 'en' ? `Your video is ready – ${recap.mediaCount} moments from ${recap.title} · ${recap.family.name}` : `Euer Video ist da – ${recap.mediaCount} Momente aus ${recap.title} · ${recap.family.name}`,
+      title: lang === 'en' ? `Recap ${recapTitle(recap.kind, recap.periodStart, 'en')}` : `Rückblick ${recap.title}`,
+      body: lang === 'en' ? `Your video is ready – ${recap.mediaCount} moments from ${recapTitle(recap.kind, recap.periodStart, 'en')} · ${recap.family.name}` : `Euer Video ist da – ${recap.mediaCount} Momente aus ${recap.title} · ${recap.family.name}`,
       data: { type: 'recap', familyId: recap.familyId, recapId: recap.id },
     }));
     return { ...sent, count: 1 };

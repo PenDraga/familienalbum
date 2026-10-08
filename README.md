@@ -10,8 +10,8 @@ gesichert. Läuft als Docker-Compose-Stack zu Hause, von aussen über einen Reve
 Cloudflare Tunnel erreichbar.
 Clients: iOS, Android, Web (ein Flutter-Codebase). Projekt-Brief und Konventionen: [CLAUDE.md](./CLAUDE.md).
 
-**Status: Version 1.0.** Server im Dauerbetrieb, iOS-App über TestFlight/App Store, Android-App über Google Play oder
-APK, Web-App im Browser. Änderungen siehe [CHANGELOG.md](./CHANGELOG.md). Lizenz: [MIT](./LICENSE).
+**Status: Version 1.1.** Server im Dauerbetrieb, iOS-App im App Store, Android-App über Google Play oder APK,
+Web-App im Browser. Oberfläche auf Deutsch und Englisch, je nach Systemsprache. Änderungen siehe [CHANGELOG.md](./CHANGELOG.md). Lizenz: [MIT](./LICENSE).
 
 | Timeline | Foto | Kommentare | Rückblick | Einstellungen |
 |---|---|---|---|---|

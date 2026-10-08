@@ -5,10 +5,17 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 
 ## [Unreleased]
 
-### 1.1 (in Arbeit): Deutsch und Englisch
-- Server: Fehlertexte nach `Accept-Language`, Push-Texte nach Sprache des Geräts (`POST /devices` mit `locale`),
-  Migration `m13_device_locale`
-- App: Texte in ARB-Dateien, Sprache folgt dem System (Deutsch Standard)
+## [1.1.0] – 2026-10-08
+
+Die App spricht Deutsch und Englisch und folgt der Systemsprache des Geräts; Deutsch bleibt Standard.
+
+### Server
+- Fehlertexte nach `Accept-Language` (Katalog `src/lib/messages.en.ts`), Push-Texte nach Sprache des Geräts
+  (`POST /devices` mit `locale`, Migration `m13_device_locale`), Rückblick-Titel und «An diesem Tag» je Sprache
+
+### App
+- Rund 400 Oberflächentexte in `lib/l10n/app_de.arb` und `app_en.arb`; Datums- und Zahlenformate nach Sprache
+- Store-Einträge in App Store und Google Play auf Deutsch und Englisch, englische Screenshots
 
 ## [1.0.1] – 2026-10-07
 

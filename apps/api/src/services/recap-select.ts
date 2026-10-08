@@ -101,6 +101,13 @@ export function periodBounds(kind: RecapKind, period: string): { start: Date; en
   const [y, mo] = [Number(m[1]), Number(m[2])];
   if (mo < 1 || mo > 12) return null;
   const start = new Date(Date.UTC(y, mo - 1, 1));
-  const title = start.toLocaleDateString('de-CH', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-  return { start, end: new Date(Date.UTC(y, mo, 1)), title: kind === 'SECONDS' ? `Sekunden-Film ${title}` : title };
+  return { start, end: new Date(Date.UTC(y, mo, 1)), title: recapTitle(kind, start) };
+}
+
+/** Anzeigetitel eines Rückblicks in der gewünschten Sprache (gespeichert wird der deutsche). */
+export function recapTitle(kind: RecapKind, periodStart: Date, lang: 'de' | 'en' = 'de'): string {
+  if (kind === 'YEAR') return String(periodStart.getUTCFullYear());
+  const month = periodStart.toLocaleDateString(lang === 'en' ? 'en-US' : 'de-CH', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  if (kind === 'SECONDS') return lang === 'en' ? `One-second film ${month}` : `Sekunden-Film ${month}`;
+  return month;
 }

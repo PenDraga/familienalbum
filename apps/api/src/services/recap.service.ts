@@ -9,7 +9,20 @@ import { MIME_EXTENSIONS, type MediaStorage } from '../lib/storage.js';
 import { iso, isoOrNull } from './dto.js';
 import type { MediaService, MediaViewContext } from './media.service.js';
 import { buildRecapVideo, type RecapSource } from './recap-builder.js';
-import { periodBounds, planFor, selectRecapMedia, type RecapCandidate } from './recap-select.js';
+import { periodBounds, planFor, recapTitle, selectRecapMedia, type RecapCandidate } from './recap-select.js';
+
+type Lang = 'de' | 'en';
+
+/** «Vor 3 Monaten» / «3 months ago» */
+function agoLabel(monthsAgo: number, lang: Lang): string {
+  const years = monthsAgo / 12;
+  if (lang === 'en') {
+    if (monthsAgo % 12 === 0) return years === 1 ? '1 year ago' : `${years} years ago`;
+    return monthsAgo === 1 ? '1 month ago' : `${monthsAgo} months ago`;
+  }
+  if (monthsAgo % 12 === 0) return years === 1 ? 'Vor 1 Jahr' : `Vor ${years} Jahren`;
+  return monthsAgo === 1 ? 'Vor 1 Monat' : `Vor ${monthsAgo} Monaten`;
+}
 
 export interface RecapBuildEnv {
   ffmpegPath: string;
@@ -28,7 +41,7 @@ export class RecapService {
     private readonly queue: MediaQueue,
   ) {}
 
-  toDto(r: Recap) {
+  toDto(r: Recap, lang: Lang = 'de') {
     const ready = r.status === 'READY';
     const base = `${API_PREFIX}/recaps/${r.id}`;
     return {
@@ -36,7 +49,7 @@ export class RecapService {
       familyId: r.familyId,
       kind: r.kind,
       period: periodString(r),
-      title: r.title,
+      title: recapTitle(r.kind, r.periodStart, lang),
       status: r.status,
       error: r.status === 'FAILED' ? r.error : null,
       durationSec: r.durationSec,
@@ -51,9 +64,9 @@ export class RecapService {
     };
   }
 
-  async list(familyId: string) {
+  async list(familyId: string, lang: Lang = 'de') {
     const rows = await this.prisma.recap.findMany({ where: { familyId }, orderBy: [{ periodStart: 'desc' }, { createdAt: 'desc' }] });
-    return rows.map((r) => this.toDto(r));
+    return rows.map((r) => this.toDto(r, lang));
   }
 
   async get(recapId: string) {
@@ -63,7 +76,7 @@ export class RecapService {
   }
 
   /** Anlegen oder neu bauen. 409, wenn der Zeitraum keine fertigen Medien hat. */
-  async create(familyId: string, kind: RecapKind, period: string) {
+  async create(familyId: string, kind: RecapKind, period: string, lang: Lang = 'de') {
     const bounds = periodBounds(kind, period);
     if (!bounds) throw Errors.badRequest('Zeitraum: Monat als JJJJ-MM, Jahr als JJJJ.', 'RECAP_PERIOD_INVALID');
     const count = await this.prisma.media.count({
@@ -72,7 +85,7 @@ export class RecapService {
     if (count === 0) throw Errors.conflict('In diesem Zeitraum gibt es keine Fotos oder Videos.', 'RECAP_EMPTY');
 
     const existing = await this.prisma.recap.findUnique({ where: { familyId_kind_periodStart: { familyId, kind, periodStart: bounds.start } } });
-    if (existing?.status === 'PROCESSING') return this.toDto(existing);
+    if (existing?.status === 'PROCESSING') return this.toDto(existing, lang);
     if (existing) await this.storage.removeQuietly(this.storage.recapDir(familyId, existing.id));
 
     const recap = existing
@@ -84,7 +97,7 @@ export class RecapService {
           data: { familyId, kind, periodStart: bounds.start, periodEnd: bounds.end, title: bounds.title, status: 'PROCESSING' },
         });
     await this.queue.enqueueRecap(recap.id);
-    return this.toDto(recap);
+    return this.toDto(recap, lang);
   }
 
   async remove(recap: Recap) {
@@ -121,7 +134,7 @@ export class RecapService {
   }
 
   /** «An diesem Tag»: derselbe Kalendertag vor 1–12 Monaten und vor 1–10 Jahren, nur wo es Medien gibt. */
-  async onThisDay(familyId: string, ctx: MediaViewContext, media: MediaService, now = new Date()) {
+  async onThisDay(familyId: string, ctx: MediaViewContext, media: MediaService, now = new Date(), lang: Lang = 'de') {
     const groups: Array<{ label: string; date: string; monthsAgo: number; items: ReturnType<MediaService['toDto']>[] }> = [];
     const seen = new Set<string>();
     const candidates: number[] = [...Array.from({ length: 12 }, (_, i) => i + 1), ...Array.from({ length: 10 }, (_, i) => (i + 1) * 12)];
@@ -145,7 +158,7 @@ export class RecapService {
       });
       if (items.length === 0) continue;
       groups.push({
-        label: monthsAgo % 12 === 0 ? (monthsAgo === 12 ? 'Vor 1 Jahr' : `Vor ${monthsAgo / 12} Jahren`) : monthsAgo === 1 ? 'Vor 1 Monat' : `Vor ${monthsAgo} Monaten`,
+        label: agoLabel(monthsAgo, lang),
         date: key,
         monthsAgo,
         items: items.map((m) => media.toDto(m, ctx)),

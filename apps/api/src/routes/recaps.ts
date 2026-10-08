@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { Errors } from '../lib/errors.js';
+import { requestLanguage } from '../lib/messages.en.js';
 import { sendFile } from '../lib/send-file.js';
 import { requireFamilyPermission } from '../plugins/permissions.js';
 import { emptyResponse, errorResponses, idParamsSchema } from '../schemas/common.js';
@@ -49,7 +50,7 @@ export const recapRoutes: FastifyPluginAsyncZod = async (app) => {
         response: { 200: z.array(recapSchema), ...errorResponses(401, 403, 404) },
       },
     },
-    async (request) => recaps.list(request.params.id),
+    async (request) => recaps.list(request.params.id, requestLanguage(request.headers['accept-language'])),
   );
 
   app.post(
@@ -67,7 +68,7 @@ export const recapRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request, reply) => {
-      const dto = await recaps.create(request.params.id, request.body.kind, request.body.period);
+      const dto = await recaps.create(request.params.id, request.body.kind, request.body.period, requestLanguage(request.headers['accept-language']));
       return reply.code(202).send(dto);
     },
   );
@@ -84,7 +85,7 @@ export const recapRoutes: FastifyPluginAsyncZod = async (app) => {
         response: { 200: onThisDaySchema, ...errorResponses(401, 403, 404) },
       },
     },
-    async (request) => recaps.onThisDay(request.params.id, { membership: request.membership! }, media),
+    async (request) => recaps.onThisDay(request.params.id, { membership: request.membership! }, media, new Date(), requestLanguage(request.headers['accept-language'])),
   );
 
   app.delete(
