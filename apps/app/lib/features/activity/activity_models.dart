@@ -1,3 +1,4 @@
+import '../../l10n/l10n.dart';
 import '../timeline/media_model.dart';
 
 enum FeedType { upload, comment }
@@ -57,12 +58,13 @@ class FeedItem {
   String? get targetMediaId => commentMediaId ?? media.firstOrNull?.id;
 
   /// „12 Fotos und 1 Video“
-  String get mediaLabel {
+  String mediaLabel(AppLocalizations l10n) {
     final parts = <String>[
-      if (photos > 0) photos == 1 ? '1 Foto' : '$photos Fotos',
-      if (videos > 0) videos == 1 ? '1 Video' : '$videos Videos',
+      if (photos > 0) l10n.activityPhotos(photos),
+      if (videos > 0) l10n.activityVideos(videos),
     ];
-    return parts.isEmpty ? '$count Medien' : parts.join(' und ');
+    if (parts.isEmpty) return l10n.activityMediaCount(count);
+    return parts.length == 1 ? parts.single : l10n.activityAnd(parts[0], parts[1]);
   }
 
   FeedItem copyWith({bool? unread}) => FeedItem(

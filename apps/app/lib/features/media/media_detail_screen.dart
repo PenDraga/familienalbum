@@ -8,6 +8,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../../widgets/app_image.dart';
 import '../../widgets/glass.dart';
 import '../comments/comments_sheet.dart';
@@ -142,6 +143,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
     if (url == null || _downloading.containsKey(item.id)) return;
     setState(() => _downloading[item.id] = 0);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     PreparedOriginal? prepared;
     try {
       prepared = await prepareOriginal(
@@ -158,9 +160,9 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
       setState(() => _downloading.remove(item.id));
 
       final actions = <_OriginalAction>[
-        if (prepared.canSaveToPhotos) const _OriginalAction(Icons.photo_library_outlined, 'In Fotos sichern', _OriginalActionKind.photos),
-        if (prepared.canShare) const _OriginalAction(Icons.ios_share, 'Teilen …', _OriginalActionKind.share),
-        if (prepared.canDownload) const _OriginalAction(Icons.download_outlined, 'Als Datei herunterladen', _OriginalActionKind.download),
+        if (prepared.canSaveToPhotos) _OriginalAction(Icons.photo_library_outlined, l10n.mediaSaveToPhotos, _OriginalActionKind.photos),
+        if (prepared.canShare) _OriginalAction(Icons.ios_share, l10n.mediaShare, _OriginalActionKind.share),
+        if (prepared.canDownload) _OriginalAction(Icons.download_outlined, l10n.mediaDownloadFile, _OriginalActionKind.download),
       ];
       // Nur eine Möglichkeit (Desktop-Browser): direkt ausführen, sonst fragen.
       // Das Teilen-Blatt im Browser braucht eine frische Nutzergeste, deshalb erst nach dem Download fragen.
@@ -169,12 +171,12 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
       switch (choice) {
         case _OriginalActionKind.photos:
           await prepared.saveToPhotos();
-          messenger.showSnackBar(const SnackBar(content: Text('In Fotos gesichert')));
+          messenger.showSnackBar(SnackBar(content: Text(l10n.mediaSavedToPhotos)));
         case _OriginalActionKind.share:
           await prepared.share();
         case _OriginalActionKind.download:
           await prepared.download();
-          messenger.showSnackBar(SnackBar(content: Text('„${item.originalName}“ heruntergeladen')));
+          messenger.showSnackBar(SnackBar(content: Text(l10n.mediaDownloaded(item.originalName))));
       }
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e is OriginalSaveException ? e.message : errorMessage(e))));
@@ -202,7 +204,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Original bereit', style: Theme.of(ctx).textTheme.titleMedium),
+                        Text(ctx.l10n.mediaOriginalReady, style: Theme.of(ctx).textTheme.titleMedium),
                         Text(
                           '${item.originalName} · ${formatBytes(item.sizeBytes)}',
                           style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
@@ -242,19 +244,20 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
 
   Future<void> _editCaption(MediaItem item) async {
     final controller = TextEditingController(text: item.caption ?? '');
+    final l10n = context.l10n;
     final result = await showDialog<String?>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Beschreibung'),
+        title: Text(l10n.mediaCaptionTitle),
         content: TextField(
           controller: controller,
           maxLines: 3,
           autofocus: true,
-          decoration: const InputDecoration(hintText: 'Was ist hier zu sehen?'),
+          decoration: InputDecoration(hintText: l10n.mediaCaptionHint),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text), child: const Text('Speichern')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text), child: Text(l10n.commonSave)),
         ],
       ),
     );
@@ -269,17 +272,18 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
   }
 
   Future<void> _delete(MediaItem item) async {
+    final l10n = context.l10n;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Löschen?'),
-        content: Text('„${item.originalName}“ wird aus dem Album entfernt.'),
+        title: Text(l10n.mediaDeleteTitle),
+        content: Text(l10n.mediaDeleteText(item.originalName)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.commonCancel)),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Löschen'),
+            child: Text(l10n.commonDelete),
           ),
         ],
       ),
@@ -320,8 +324,9 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
         if (mounted) _openComments(item);
       });
     }
-    final dateFormat = DateFormat.yMMMMEEEEd('de_CH');
-    final timeFormat = DateFormat.Hm('de_CH');
+    final dateFormat = DateFormat.yMMMMEEEEd(context.localeTag);
+    final timeFormat = DateFormat.Hm(context.localeTag);
+    final l10n = context.l10n;
     final padding = MediaQuery.paddingOf(context);
 
     final wide = MediaQuery.sizeOf(context).width >= 700;
@@ -387,7 +392,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                     child: GlassIconButton(
                       icon: Icons.chevron_left,
                       dark: true,
-                      tooltip: 'Vorheriges',
+                      tooltip: l10n.mediaPrevious,
                       onPressed: () => _goTo(-1, items.length),
                     ),
                   ),
@@ -401,7 +406,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                     child: GlassIconButton(
                       icon: Icons.chevron_right,
                       dark: true,
-                      tooltip: 'Nächstes',
+                      tooltip: l10n.mediaNext,
                       onPressed: () => _goTo(1, items.length),
                     ),
                   ),
@@ -420,7 +425,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                     padding: EdgeInsets.fromLTRB(8, padding.top + 8, 8, 10),
                     child: Row(
                       children: [
-                        GlassIconButton(icon: Icons.arrow_back, dark: true, tooltip: 'Zurück', onPressed: _close),
+                        GlassIconButton(icon: Icons.arrow_back, dark: true, tooltip: l10n.mediaBack, onPressed: _close),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -446,10 +451,10 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                               'date' => _editDate(item),
                               _ => _delete(item),
                             },
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(value: 'caption', child: ListTile(leading: Icon(Icons.notes), title: Text('Beschreibung bearbeiten'))),
-                              PopupMenuItem(value: 'date', child: ListTile(leading: Icon(Icons.edit_calendar_outlined), title: Text('Datum und Uhrzeit ändern'))),
-                              PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete_outline), title: Text('Löschen'))),
+                            itemBuilder: (_) => [
+                              PopupMenuItem(value: 'caption', child: ListTile(leading: const Icon(Icons.notes), title: Text(l10n.mediaEditCaption))),
+                              PopupMenuItem(value: 'date', child: ListTile(leading: const Icon(Icons.edit_calendar_outlined), title: Text(l10n.mediaEditDateTime))),
+                              PopupMenuItem(value: 'delete', child: ListTile(leading: const Icon(Icons.delete_outline), title: Text(l10n.commonDelete))),
                             ],
                           ),
                       ],
@@ -486,18 +491,18 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                           children: [
                             _BarButton(
                               icon: Icons.chat_bubble_outline,
-                              label: item.commentCount == 0 ? 'Kommentieren' : commentLabel(item.commentCount),
+                              label: l10n.mediaCommentCount(item.commentCount),
                               onTap: () => _openComments(item),
                             ),
                             const SizedBox(width: 14),
-                            _BarButton(icon: Icons.info_outline, label: 'Info', onTap: () => _showInfo(item)),
+                            _BarButton(icon: Icons.info_outline, label: l10n.mediaInfo, onTap: () => _showInfo(item)),
                             const SizedBox(width: 14),
                             if (item.urls.original != null)
                               _BarButton(
                                 icon: Icons.download_outlined,
                                 label: _downloading.containsKey(item.id)
-                                    ? (_downloading[item.id] == null ? 'Lädt …' : '${(_downloading[item.id]! * 100).round()} %')
-                                    : 'Original',
+                                    ? (_downloading[item.id] == null ? l10n.mediaLoading : '${(_downloading[item.id]! * 100).round()} %')
+                                    : l10n.mediaOriginal,
                                 progress: _downloading.containsKey(item.id) ? _downloading[item.id] : null,
                                 busy: _downloading.containsKey(item.id),
                                 onTap: () => _saveOriginal(item),
@@ -529,11 +534,6 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
       ),
     );
   }
-}
-
-String commentLabel(int count) {
-  if (count == 0) return 'Kommentieren';
-  return count == 1 ? '1 Kommentar' : '$count Kommentare';
 }
 
 enum _OriginalActionKind { photos, share, download }
@@ -761,7 +761,7 @@ class _VideoViewState extends State<_VideoView> {
     super.initState();
     final url = widget.item.urls.preview;
     if (url == null) {
-      _error = 'Keine Video-Vorschau vorhanden.';
+      _error = currentL10n().mediaNoVideoPreview;
       return;
     }
     final c = VideoPlayerController.networkUrl(Uri.parse(url));
@@ -774,7 +774,7 @@ class _VideoViewState extends State<_VideoView> {
           if (widget.active) c.play();
         })
         .catchError((Object e) {
-          if (mounted) setState(() => _error = 'Video konnte nicht geladen werden: $e');
+          if (mounted) setState(() => _error = context.l10n.mediaVideoLoadError('$e'));
         });
   }
 
@@ -883,14 +883,14 @@ class _VideoControlsState extends State<_VideoControls> {
               padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
               child: Row(
                 children: [
-                  IconButton(color: Colors.white, tooltip: '10 s zurück', icon: const Icon(Icons.replay_10), onPressed: () => _skip(-10)),
+                  IconButton(color: Colors.white, tooltip: context.l10n.mediaSkipBack, icon: const Icon(Icons.replay_10), onPressed: () => _skip(-10)),
                   IconButton(
                     color: Colors.white,
-                    tooltip: v.isPlaying ? 'Pause' : 'Abspielen',
+                    tooltip: v.isPlaying ? context.l10n.mediaPause : context.l10n.mediaPlay,
                     icon: Icon(v.isPlaying ? Icons.pause : Icons.play_arrow),
                     onPressed: () => v.isPlaying ? c.pause() : c.play(),
                   ),
-                  IconButton(color: Colors.white, tooltip: '10 s vor', icon: const Icon(Icons.forward_10), onPressed: () => _skip(10)),
+                  IconButton(color: Colors.white, tooltip: context.l10n.mediaSkipForward, icon: const Icon(Icons.forward_10), onPressed: () => _skip(10)),
                   Text(_fmt(Duration(milliseconds: (pos * 1000).round())), style: const TextStyle(color: Colors.white, fontSize: 12)),
                   Expanded(
                     child: SliderTheme(

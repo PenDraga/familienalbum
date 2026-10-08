@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 
 import '../../core/api_client.dart';
 import '../../core/api_exception.dart';
+import '../../l10n/l10n.dart';
 import 'chunk_source.dart';
 
 class UploadSession {
@@ -53,8 +54,9 @@ class UploadService {
     required void Function(double progress, String phase) onProgress,
     CancelToken? cancel,
   }) async {
-    onProgress(0, 'Prüfsumme');
-    final hash = await sha256Hex(source, onProgress: (p) => onProgress(p * 0.1, 'Prüfsumme'));
+    final l10n = currentL10n();
+    onProgress(0, l10n.uploadPhaseChecksum);
+    final hash = await sha256Hex(source, onProgress: (p) => onProgress(p * 0.1, l10n.uploadPhaseChecksum));
 
     final UploadSession session;
     try {
@@ -80,7 +82,7 @@ class UploadService {
       rethrow;
     }
 
-    onProgress(0.1, 'Hochladen');
+    onProgress(0.1, l10n.uploadPhaseUploading);
     final pending = [for (var i = 0; i < session.totalChunks; i++) if (!session.receivedChunks.contains(i)) i];
     var uploadedBytes = session.receivedChunks.length * session.chunkSize;
     for (final index in pending) {
@@ -98,16 +100,16 @@ class UploadService {
             cancelToken: cancel,
             onSendProgress: (sent, _) {
               final total = source.length == 0 ? 1 : source.length;
-              onProgress(0.1 + 0.85 * ((uploadedBytes + sent) / total).clamp(0, 1), 'Hochladen');
+              onProgress(0.1 + 0.85 * ((uploadedBytes + sent) / total).clamp(0, 1), l10n.uploadPhaseUploading);
             },
           )
           .unwrap();
       uploadedBytes += bytes.length;
     }
 
-    onProgress(0.95, 'Abschliessen');
+    onProgress(0.95, l10n.uploadPhaseFinishing);
     final media = await _api.dio.post<Map<String, dynamic>>('/uploads/${session.id}/complete', cancelToken: cancel).unwrap();
-    onProgress(1, 'Fertig');
+    onProgress(1, l10n.uploadPhaseFinished);
     return UploadResult(mediaId: media['id'] as String, duplicate: false);
   }
 }

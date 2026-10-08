@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/api_exception.dart';
+import '../../l10n/l10n.dart';
 import 'recap_models.dart';
 import 'recaps_repository.dart';
 
@@ -13,22 +15,23 @@ Future<void> showCreateRecapDialog(BuildContext context, WidgetRef ref, String f
   var kind = RecapKind.month;
   var year = prev.year;
   var month = prev.month;
-  const months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+  final l10n = context.l10n;
+  final monthName = DateFormat.MMMM(context.localeTag);
 
   final result = await showDialog<(RecapKind, String)>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) => AlertDialog(
-        title: const Text('Rückblick erstellen'),
+        title: Text(l10n.recapCreateTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SegmentedButton<RecapKind>(
-              segments: const [
-                ButtonSegment(value: RecapKind.month, label: Text('Monat')),
-                ButtonSegment(value: RecapKind.year, label: Text('Jahr')),
-                ButtonSegment(value: RecapKind.seconds, label: Text('Sekunden')),
+              segments: [
+                ButtonSegment(value: RecapKind.month, label: Text(l10n.recapMonth)),
+                ButtonSegment(value: RecapKind.year, label: Text(l10n.recapYear)),
+                ButtonSegment(value: RecapKind.seconds, label: Text(l10n.recapSeconds)),
               ],
               selected: {kind},
               onSelectionChanged: (s) => setState(() => kind = s.first),
@@ -40,8 +43,8 @@ Future<void> showCreateRecapDialog(BuildContext context, WidgetRef ref, String f
                   Expanded(
                     child: DropdownButtonFormField<int>(
                       initialValue: month,
-                      decoration: const InputDecoration(labelText: 'Monat'),
-                      items: [for (var i = 1; i <= 12; i++) DropdownMenuItem(value: i, child: Text(months[i - 1]))],
+                      decoration: InputDecoration(labelText: l10n.recapMonth),
+                      items: [for (var i = 1; i <= 12; i++) DropdownMenuItem(value: i, child: Text(monthName.format(DateTime(2000, i))))],
                       onChanged: (v) => setState(() => month = v ?? month),
                     ),
                   ),
@@ -51,7 +54,7 @@ Future<void> showCreateRecapDialog(BuildContext context, WidgetRef ref, String f
                   width: kind == RecapKind.year ? 160 : 100,
                   child: DropdownButtonFormField<int>(
                     initialValue: year,
-                    decoration: const InputDecoration(labelText: 'Jahr'),
+                    decoration: InputDecoration(labelText: l10n.recapYear),
                     items: [for (var y = now.year; y >= now.year - 30; y--) DropdownMenuItem(value: y, child: Text('$y'))],
                     onChanged: (v) => setState(() => year = v ?? year),
                   ),
@@ -61,19 +64,19 @@ Future<void> showCreateRecapDialog(BuildContext context, WidgetRef ref, String f
             const SizedBox(height: 12),
             Text(
               switch (kind) {
-                RecapKind.month => 'Rund 30 Momente des Monats mit sanfter Kamerafahrt, Musik und Titelkarte. Etwa anderthalb Minuten.',
-                RecapKind.year => 'Rund 60 Momente des Jahres, gleichmässig über die Wochen verteilt. Etwa zwei Minuten.',
-                RecapKind.seconds => 'Ein Moment pro Tag, je eine Sekunde – der ganze Monat im Zeitraffer.',
+                RecapKind.month => l10n.recapDescMonth,
+                RecapKind.year => l10n.recapDescYear,
+                RecapKind.seconds => l10n.recapDescSeconds,
               },
               style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, (kind, kind == RecapKind.year ? '$year' : '$year-${month.toString().padLeft(2, '0')}')),
-            child: const Text('Erstellen'),
+            child: Text(l10n.commonCreate),
           ),
         ],
       ),
@@ -84,7 +87,7 @@ Future<void> showCreateRecapDialog(BuildContext context, WidgetRef ref, String f
   try {
     final recap = await ref.read(recapsRepositoryProvider).create(familyId, result.$1, result.$2);
     ref.invalidate(recapsProvider);
-    messenger.showSnackBar(SnackBar(content: Text('«${recap.title}» wird erstellt – du bekommst eine Mitteilung, sobald das Video fertig ist.')));
+    messenger.showSnackBar(SnackBar(content: Text(l10n.recapCreateStarted(recap.title))));
   } catch (e) {
     messenger.showSnackBar(SnackBar(content: Text(errorMessage(e))));
   }

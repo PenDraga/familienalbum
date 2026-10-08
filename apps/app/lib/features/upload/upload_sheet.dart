@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app.dart' show rootMessengerKey;
+import '../../l10n/l10n.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass.dart';
 import 'upload_controller.dart';
@@ -13,13 +14,14 @@ Future<void> pickAndUpload(BuildContext context, WidgetRef ref, String familyId)
   // FileType.media → accept="image/*,video/*": iOS Safari zeigt damit die Fotomediathek an und wandelt
   // HEIC beim Auswählen automatisch in JPEG um. Eine Endungsliste würde beides verhindern.
   // Der Server prüft den Typ ohnehin (415 bei nicht unterstützten Formaten).
-  final files = await FilePicker.pickFiles(dialogTitle: 'Fotos und Videos auswählen', type: FileType.media);
+  final l10n = context.l10n;
+  final files = await FilePicker.pickFiles(dialogTitle: l10n.uploadPickTitle, type: FileType.media);
   if (files.isEmpty) return;
   ref.read(uploadControllerProvider.notifier).enqueue(familyId, files);
   // Sofortige Rückmeldung – auf iOS Safari kommt die Seite manchmal erst verzögert zurück,
   // dann ist der ursprüngliche Kontext nicht mehr gültig und das Sheet bliebe aus.
   rootMessengerKey.currentState?.showSnackBar(
-    SnackBar(content: Text(files.length == 1 ? '1 Datei wird hochgeladen' : '${files.length} Dateien werden hochgeladen')),
+    SnackBar(content: Text(l10n.uploadStarted(files.length))),
   );
   final ctx = context.mounted ? context : rootMessengerKey.currentContext;
   if (ctx != null && ctx.mounted) showUploadSheet(ctx);
@@ -63,8 +65,8 @@ class UploadProgressBar extends ConsumerWidget {
                     children: [
                       Text(
                         active.isEmpty
-                            ? '$failed Upload${failed == 1 ? '' : 's'} fehlgeschlagen'
-                            : '${done + 1} von ${tasks.length}: ${running?.fileName ?? '…'}',
+                            ? context.l10n.uploadFailedCount(failed)
+                            : context.l10n.uploadProgressOf(done + 1, tasks.length, running?.fileName ?? '…'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -76,7 +78,7 @@ class UploadProgressBar extends ConsumerWidget {
                           child: LinearProgressIndicator(value: running?.progress ?? 0, minHeight: 6),
                         ),
                         const SizedBox(height: 4),
-                        Text(running?.phase ?? 'Wartet', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
+                        Text(running?.phase ?? context.l10n.uploadPhaseWaiting, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
                       ],
                     ],
                   ),
@@ -108,28 +110,28 @@ class _UploadSheet extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 4, 12, 4),
             child: Row(
               children: [
-                Text('Uploads', style: Theme.of(context).textTheme.titleLarge),
+                Text(context.l10n.uploadsTitle, style: Theme.of(context).textTheme.titleLarge),
                 const Spacer(),
                 if (tasks.any((t) => t.status == UploadStatus.failed))
                   TextButton(
                     onPressed: () => ref.read(uploadControllerProvider.notifier).retryAllFailed(),
-                    child: const Text('Alle wiederholen'),
+                    child: Text(context.l10n.uploadRetryAll),
                   ),
                 if (tasks.any((t) => t.status == UploadStatus.failed))
                   TextButton(
                     onPressed: () => ref.read(uploadControllerProvider.notifier).retryAllFailed(),
-                    child: const Text('Alle wiederholen'),
+                    child: Text(context.l10n.uploadRetryAll),
                   ),
                 TextButton(
                   onPressed: () => ref.read(uploadControllerProvider.notifier).clearFinished(),
-                  child: const Text('Erledigte ausblenden'),
+                  child: Text(context.l10n.uploadHideFinished),
                 ),
               ],
             ),
           ),
           Expanded(
             child: tasks.isEmpty
-                ? Center(child: Text('Keine Uploads', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)))
+                ? Center(child: Text(context.l10n.uploadNone, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)))
                 : ListView.separated(
                     controller: controller,
                     padding: const EdgeInsets.fromLTRB(8, 0, 8, 24),
@@ -175,12 +177,12 @@ class _TaskTile extends ConsumerWidget {
       trailing: switch (task.status) {
         UploadStatus.running || UploadStatus.queued => IconButton(
           icon: const Icon(Icons.close),
-          tooltip: 'Abbrechen',
+          tooltip: context.l10n.commonCancel,
           onPressed: () => ref.read(uploadControllerProvider.notifier).cancel(task.id),
         ),
         UploadStatus.failed || UploadStatus.cancelled => IconButton(
           icon: const Icon(Icons.refresh),
-          tooltip: 'Erneut versuchen',
+          tooltip: context.l10n.commonRetry,
           onPressed: () => ref.read(uploadControllerProvider.notifier).retry(task.id),
         ),
         _ => null,

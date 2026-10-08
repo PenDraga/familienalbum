@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:web/web.dart' as web;
 
+import '../../../l10n/l10n.dart';
 import 'prepared_original.dart';
 
 /// Web: Original in den Speicher laden. Auf mobilen Browsern (iPhone/iPad/Android) bietet das
@@ -23,7 +24,7 @@ Future<PreparedOriginal> prepareOriginal(
     onReceiveProgress: (received, total) => onProgress(total > 0 ? received / total : null),
   );
   final data = res.data;
-  if (data == null || data.isEmpty) throw const OriginalSaveException('Leere Antwort vom Server.');
+  if (data == null || data.isEmpty) throw OriginalSaveException(currentL10n().originalEmptyResponse);
   return _WebOriginal(Uint8List.fromList(data), fileName, mimeType);
 }
 
@@ -56,14 +57,14 @@ class _WebOriginal implements PreparedOriginal {
   bool get canDownload => true;
 
   web.File _file() {
-    final bytes = _bytes ?? (throw const OriginalSaveException('Download bereits verworfen.'));
+    final bytes = _bytes ?? (throw OriginalSaveException(currentL10n().originalAlreadyDisposed));
     return web.File(<JSAny>[bytes.toJS].toJS, fileName, web.FilePropertyBag(type: _mimeType));
   }
 
   web.ShareData _shareData() => web.ShareData(files: <web.File>[_file()].toJS);
 
   @override
-  Future<void> saveToPhotos() => throw const OriginalSaveException('Im Browser nicht möglich.');
+  Future<void> saveToPhotos() => throw OriginalSaveException(currentL10n().originalNotInBrowser);
 
   @override
   Future<void> share() async {
@@ -72,13 +73,13 @@ class _WebOriginal implements PreparedOriginal {
     } catch (e) {
       final msg = e.toString();
       if (msg.contains('AbortError')) return; // Nutzer hat abgebrochen
-      throw OriginalSaveException('Teilen nicht möglich: $msg');
+      throw OriginalSaveException(currentL10n().originalShareFailed(msg));
     }
   }
 
   @override
   Future<void> download() async {
-    final bytes = _bytes ?? (throw const OriginalSaveException('Download bereits verworfen.'));
+    final bytes = _bytes ?? (throw OriginalSaveException(currentL10n().originalAlreadyDisposed));
     final blob = web.Blob(<JSAny>[bytes.toJS].toJS, web.BlobPropertyBag(type: _mimeType));
     final objectUrl = web.URL.createObjectURL(blob);
     final a = web.HTMLAnchorElement()

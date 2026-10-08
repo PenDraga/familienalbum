@@ -1,301 +1,1106 @@
 {
   "@@locale": "de",
+  "activityAdded": "{mine, select, true{hast {media} hinzugefügt} other{hat {media} hinzugefügt}}",
+  "@activityAdded": {
+    "description": "Folgt auf den fett gesetzten Namen; media z.B. «12 Fotos und 1 Video»",
+    "placeholders": {
+      "mine": {
+        "type": "String"
+      },
+      "media": {
+        "type": "String"
+      }
+    }
+  },
+  "activityAnd": "{a} und {b}",
+  "@activityAnd": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCommented": "{mine, select, true{hast kommentiert} other{hat kommentiert}}",
+  "@activityCommented": {
+    "description": "Folgt auf den fett gesetzten Namen; mine = true, wenn ich selbst es war",
+    "placeholders": {
+      "mine": {
+        "type": "String"
+      }
+    }
+  },
+  "activityEmpty": "Noch keine Aktivität.\nSobald jemand hochlädt oder kommentiert, steht es hier.",
+  "activityLoadMoreError": "Erneut laden – {error}",
+  "@activityLoadMoreError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "activityMediaCount": "{count} Medien",
+  "@activityMediaCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityPhotos": "{count, plural, =1{1 Foto} other{{count} Fotos}}",
+  "@activityPhotos": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityTitle": "Aktivität",
+  "activityToday": "Heute",
+  "activityVideos": "{count, plural, =1{1 Video} other{{count} Videos}}",
+  "@activityVideos": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityYesterday": "Gestern",
+  "activityYou": "Du",
+  "albumsTitle": "Alben",
+  "appChangeServerOrLogin": "Server ändern oder neu anmelden",
+  "appConnectingTo": "Verbinde mit {host} …",
+  "@appConnectingTo": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
   "appTitle": "Familienalbum",
-  "@appTitle": {"description": "Name der App, bleibt in allen Sprachen gleich"},
-  "commonCancel": "Abbrechen",
-  "commonSave": "Speichern",
-  "commonClose": "Schliessen",
-  "commonDelete": "Löschen",
-  "commonOk": "OK",
-  "commonCreate": "Anlegen",
-  "commonAdd": "Hinzufügen",
-  "commonSaving": "Speichert …",
-  "commonRetry": "Nochmals versuchen",
-  "commonAdmin": "Admin",
-  "@commonAdmin": {"description": "Chip neben globalen Admins"},
-  "commonNameYou": "{name} (du)",
-  "@commonNameYou": {"description": "Eigener Name in Listen", "placeholders": {"name": {"type": "String"}}},
-  "commonPhotoCount": "{count, plural, =1{1 Foto} other{{count} Fotos}}",
-  "@commonPhotoCount": {"placeholders": {"count": {"type": "int"}}},
-  "commonVideoCount": "{count, plural, =1{1 Video} other{{count} Videos}}",
-  "@commonVideoCount": {"placeholders": {"count": {"type": "int"}}},
-
-  "errorUnknown": "Unbekannter Fehler",
-  "errorServerStatus": "Server antwortete mit {status}.",
-  "@errorServerStatus": {"placeholders": {"status": {"type": "int"}}},
-  "errorTimeout": "Zeitüberschreitung – ist der Server erreichbar?",
-  "errorNoConnection": "Keine Verbindung zum Server.",
-  "errorNetwork": "Netzwerkfehler: {message}",
-  "@errorNetwork": {"placeholders": {"message": {"type": "String"}}},
-  "errorUnexpected": "Unerwarteter Fehler: {error}",
-  "@errorUnexpected": {"placeholders": {"error": {"type": "String"}}},
-
+  "@appTitle": {
+    "description": "Name der App, bleibt in allen Sprachen gleich"
+  },
   "authEmailLabel": "E-Mail",
   "authEmailRequired": "E-Mail-Adresse angeben",
-  "authPasswordLabel": "Passwort",
-  "authPasswordRequired": "Passwort angeben",
-  "authPasswordMin8": "Mindestens 8 Zeichen",
   "authNameRequired": "Bitte Namen angeben",
+  "authPasswordLabel": "Passwort",
+  "authPasswordMin8": "Mindestens 8 Zeichen",
+  "authPasswordRequired": "Passwort angeben",
   "authServerLabel": "Server",
   "authServerUrlInvalid": "Bitte eine gültige URL angeben (https://…)",
-
-  "loginSubtitle": "Eure Fotos und Videos – privat, zu Hause.",
-  "loginServerShown": "Server: {host}",
-  "@loginServerShown": {"placeholders": {"host": {"type": "String"}}},
-  "loginStartupProblem": "{detail} Server: {host}",
-  "@loginStartupProblem": {"description": "Fehler der Startprüfung plus Server-Host", "placeholders": {"detail": {"type": "String"}, "host": {"type": "String"}}},
-  "loginSubmit": "Anmelden",
-  "loginHaveInviteCode": "Ich habe einen Einladungscode",
-
-  "inviteTitle": "Einladung",
+  "autoUploadBackfillSince": "Ältere Aufnahmen ab Datum nachladen",
+  "autoUploadDisabledHint": "Lädt neue Aufnahmen aus der Galerie hoch, ohne dass du daran denken musst.",
+  "autoUploadEnabledSince": "Aufnahmen ab {since} werden im Hintergrund hochgeladen.",
+  "@autoUploadEnabledSince": {
+    "description": "since ist ein Datum oder autoUploadNow",
+    "placeholders": {
+      "since": {
+        "type": "String"
+      }
+    }
+  },
+  "autoUploadIncludeVideos": "Videos einschliessen",
+  "autoUploadLastRun": "Zuletzt {time}",
+  "@autoUploadLastRun": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "autoUploadNeedsRight": "Dafür brauchst du das Recht «Hochladen» in einem Album. Frag einen Album-Admin.",
+  "autoUploadNotRunYet": "Noch nicht gelaufen",
+  "autoUploadNow": "jetzt",
+  "autoUploadOffNoRight": "Ausgeschaltet: du darfst in «{name}» nicht hochladen",
+  "@autoUploadOffNoRight": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "autoUploadOffNotMember": "Ausgeschaltet: du bist nicht mehr Mitglied dieses Albums",
+  "autoUploadOffPrefix": "Ausgeschaltet:",
+  "@autoUploadOffPrefix": {
+    "description": "Anfang der beiden autoUploadOff…-Meldungen; daran erkennt die Oberfläche, dass der Auto-Upload wegen fehlender Rechte aus ist"
+  },
+  "autoUploadRightCheckFailed": "Upload-Recht nicht prüfbar: {detail}",
+  "@autoUploadRightCheckFailed": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "autoUploadRunNow": "Jetzt",
+  "autoUploadSkipNoPhotoAccess": "Kein Zugriff auf die Fotomediathek",
+  "autoUploadSkipNotSignedIn": "Nicht angemeldet",
+  "autoUploadSkipOff": "Auto-Upload ist aus",
+  "autoUploadSkipPlatform": "Nur auf Android und iOS",
+  "autoUploadSkipWaitingWifi": "Wartet auf WLAN",
+  "autoUploadSummaryDuplicates": "{count} bereits vorhanden",
+  "@autoUploadSummaryDuplicates": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autoUploadSummaryFailed": "{count} fehlgeschlagen",
+  "@autoUploadSummaryFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autoUploadSummaryNothingNew": "Nichts Neues",
+  "autoUploadSummaryUploaded": "{count} hochgeladen",
+  "@autoUploadSummaryUploaded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autoUploadSyncing": "Synchronisiert …",
+  "autoUploadTargetAlbum": "In dieses Album",
+  "autoUploadToggleTitle": "Neue Fotos automatisch hochladen",
+  "autoUploadTotalUploaded": "{count} insgesamt hochgeladen",
+  "@autoUploadTotalUploaded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autoUploadWifiOnly": "Nur im WLAN",
+  "avatarPickFromLibrary": "Bild aus der Mediathek wählen",
+  "avatarPickerTitle": "Profilbild wählen",
+  "avatarReadFailed": "Bild konnte nicht gelesen werden.",
+  "avatarRemove": "Profilbild entfernen",
+  "avatarUploading": "Profilbild wird hochgeladen …",
+  "collectionsItemCount": "{count, plural, =1{1 Foto} other{{count} Medien}}",
+  "@collectionsItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "collectionsTitle": "Sammlungen",
+  "commentsDeleteTitle": "Kommentar löschen?",
+  "commentsEdit": "Bearbeiten",
+  "commentsEdited": "bearbeitet",
+  "@commentsEdited": {
+    "description": "Zusatz hinter der Uhrzeit eines nachträglich geänderten Kommentars"
+  },
+  "commentsEditing": "Kommentar von {name} bearbeiten",
+  "@commentsEditing": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "commentsEmpty": "Noch keine Kommentare.",
+  "commentsEmptyWrite": "Noch keine Kommentare. Schreib den ersten!",
+  "commentsNewTextHint": "Neuer Text …",
+  "commentsSend": "Senden",
+  "commentsTitle": "Kommentare",
+  "commentsWriteHint": "Kommentar schreiben …",
+  "commonAdd": "Hinzufügen",
+  "commonAdmin": "Admin",
+  "@commonAdmin": {
+    "description": "Chip neben globalen Admins"
+  },
+  "commonCancel": "Abbrechen",
+  "commonClose": "Schliessen",
+  "commonCreate": "Anlegen",
+  "commonDelete": "Löschen",
+  "commonNameYou": "{name} (du)",
+  "@commonNameYou": {
+    "description": "Eigener Name in Listen",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "commonOk": "OK",
+  "commonPhotoCount": "{count, plural, =1{1 Foto} other{{count} Fotos}}",
+  "@commonPhotoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commonRetry": "Nochmals versuchen",
+  "commonSave": "Speichern",
+  "commonSaving": "Speichert …",
+  "commonVideoCount": "{count, plural, =1{1 Video} other{{count} Videos}}",
+  "@commonVideoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorNetwork": "Netzwerkfehler: {message}",
+  "@errorNetwork": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "errorNoConnection": "Keine Verbindung zum Server.",
+  "errorServerStatus": "Server antwortete mit {status}.",
+  "@errorServerStatus": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      }
+    }
+  },
+  "errorTimeout": "Zeitüberschreitung – ist der Server erreichbar?",
+  "errorUnexpected": "Unerwarteter Fehler: {error}",
+  "@errorUnexpected": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorUnknown": "Unbekannter Fehler",
+  "familiesDeleteAlbum": "Album löschen",
+  "familiesDeleteBody": "{members} Mitgliedschaften und {media} Medien werden entfernt. Das lässt sich nicht rückgängig machen.",
+  "@familiesDeleteBody": {
+    "placeholders": {
+      "members": {
+        "type": "int"
+      },
+      "media": {
+        "type": "int"
+      }
+    }
+  },
+  "familiesDeleteTitle": "„{name}“ löschen?",
+  "@familiesDeleteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "familiesEmpty": "Noch keine Alben",
+  "familiesJoinAsAdmin": "Mich als Album-Admin eintragen",
+  "familiesJoinSelfAsAdmin": "Mich als Album-Admin hinzufügen",
+  "familiesManageMembers": "Mitglieder verwalten",
+  "familiesMemberCount": "{count, plural, =1{1 Mitglied} other{{count} Mitglieder}}",
+  "@familiesMemberCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "familiesNameLabel": "Name",
+  "familiesNewAlbum": "Neues Album",
+  "familiesNotMember": "Du bist kein Mitglied",
+  "familiesRename": "Umbenennen",
+  "familiesYouAreAdmin": "Du bist Album-Admin",
+  "familiesYouAreMember": "Du bist Mitglied",
   "inviteAppNotInstalled": "Die App scheint nicht installiert zu sein. Du kannst die Einladung auch hier im Browser annehmen.",
+  "inviteCheck": "Einladung prüfen",
+  "inviteChoosePasswordLabel": "Passwort wählen (min. 8 Zeichen)",
   "inviteCodeInvalid": "Das ist kein gültiger Einladungscode. Codes haben 10 Zeichen, zum Beispiel AJYP8NH2HG, und kommen vom Album-Admin. Wenn du schon ein Konto hast, melde dich stattdessen an.",
+  "inviteCodeLabel": "Einladungscode",
+  "inviteCreateAndJoin": "Konto anlegen und beitreten",
+  "inviteExpired": "Diese Einladung ist nicht mehr gültig.",
+  "inviteHaveAccountSignIn": "Ich habe schon ein Konto – anmelden",
+  "inviteHaveAccountSignInFirst": "Ich habe schon ein Konto – zuerst anmelden",
+  "inviteJoinAlbum": "Album beitreten",
+  "inviteNameLabel": "Dein Name (wird den anderen angezeigt)",
+  "inviteNewAccountHint": "Zum Beitreten brauchst du ein eigenes Konto. Mit dieser E-Mail und diesem Passwort meldest du dich künftig in der App an.",
+  "inviteNewAccountTitle": "Neues Konto anlegen",
+  "inviteOpenInApp": "In der App öffnen",
+  "inviteOtherCode": "Anderen Code eingeben",
+  "inviteShareAction": "Teilen",
+  "inviteShareCopied": "Einladung kopiert",
+  "inviteShareCopy": "Kopieren",
+  "inviteShareLinkHint": "Der Link öffnet die Einladung mit Server und Code, im Browser oder in der App. Am einfachsten per «Teilen» verschicken.",
+  "inviteShareMessage": "Du bist ins Album «{familyName}» eingeladen.\n{link}\n\nFalls der Link nicht geht: Server {server}, Code {code}. Gültig 7 Tage.",
+  "@inviteShareMessage": {
+    "placeholders": {
+      "familyName": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteShareSubject": "Einladung ins Album «{familyName}»",
+  "@inviteShareSubject": {
+    "placeholders": {
+      "familyName": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteShareValidity": "7 Tage gültig, eine Nutzung.",
   "inviteSubtitleEnterCode": "Gib den Code ein, den du bekommen hast.",
   "inviteSubtitleJoin": "Du wurdest eingeladen. Tritt dem Album bei.",
   "inviteSubtitleRegister": "Du wurdest eingeladen. Lege dein eigenes Konto an, um beizutreten.",
-  "inviteCodeLabel": "Einladungscode",
-  "inviteCheck": "Einladung prüfen",
-  "inviteHaveAccountSignIn": "Ich habe schon ein Konto – anmelden",
-  "inviteOpenInApp": "In der App öffnen",
+  "inviteTitle": "Einladung",
   "inviteValidUntil": "Gültig bis {date}",
-  "@inviteValidUntil": {"placeholders": {"date": {"type": "String"}}},
-  "inviteExpired": "Diese Einladung ist nicht mehr gültig.",
+  "@inviteValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "inviteYouMay": "Du darfst:",
-  "inviteNewAccountTitle": "Neues Konto anlegen",
-  "inviteNewAccountHint": "Zum Beitreten brauchst du ein eigenes Konto. Mit dieser E-Mail und diesem Passwort meldest du dich künftig in der App an.",
-  "inviteNameLabel": "Dein Name (wird den anderen angezeigt)",
-  "inviteChoosePasswordLabel": "Passwort wählen (min. 8 Zeichen)",
-  "inviteJoinAlbum": "Album beitreten",
-  "inviteCreateAndJoin": "Konto anlegen und beitreten",
-  "inviteOtherCode": "Anderen Code eingeben",
-  "inviteHaveAccountSignInFirst": "Ich habe schon ein Konto – zuerst anmelden",
-
-  "inviteShareMessage": "Du bist ins Album «{familyName}» eingeladen.\n{link}\n\nFalls der Link nicht geht: Server {server}, Code {code}. Gültig 7 Tage.",
-  "@inviteShareMessage": {"placeholders": {"familyName": {"type": "String"}, "link": {"type": "String"}, "server": {"type": "String"}, "code": {"type": "String"}}},
-  "inviteShareValidity": "7 Tage gültig, eine Nutzung.",
-  "inviteShareLinkHint": "Der Link öffnet die Einladung mit Server und Code, im Browser oder in der App. Am einfachsten per «Teilen» verschicken.",
-  "inviteShareCopied": "Einladung kopiert",
-  "inviteShareCopy": "Kopieren",
-  "inviteShareSubject": "Einladung ins Album «{familyName}»",
-  "@inviteShareSubject": {"placeholders": {"familyName": {"type": "String"}}},
-  "inviteShareAction": "Teilen",
-
-  "rightsView": "Ansehen",
-  "rightsUpload": "Hochladen",
-  "rightsDownload": "Herunterladen",
-  "rightsComment": "Kommentieren",
-  "rightsAlbumAdmin": "Album-Admin",
-  "rightsViewOnly": "Nur ansehen",
-  "rightsMayUpload": "Darf hochladen",
-  "rightsMayDownload": "Darf Originale herunterladen",
-  "rightsMayComment": "Darf kommentieren",
-  "rightsAlbumAdminSubtitle": "Verwaltet Mitglieder und Einladungen",
-
-  "settingsTitle": "Einstellungen",
-  "settingsTapForAvatar": "Tippen für ein Profilbild",
-  "settingsChangeDisplayName": "Anzeigename ändern",
-  "settingsChangePassword": "Passwort ändern",
-  "settingsSectionManagement": "Verwaltung",
-  "settingsMembersOf": "Mitglieder von {name}",
-  "@settingsMembersOf": {"placeholders": {"name": {"type": "String"}}},
-  "settingsMembersSubtitle": "Rechte, Konten anlegen, Einladungen",
-  "settingsUsersSubtitle": "Alle Konten, Admin-Rechte, Sperren",
-  "settingsAlbumsSubtitle": "Anlegen, löschen, Mitglied werden",
-  "settingsSectionAppearance": "Darstellung",
-  "settingsThemeSystem": "System",
-  "settingsThemeLight": "Hell",
-  "settingsThemeDark": "Dunkel",
-  "settingsSectionAutoUpload": "Automatischer Upload",
-  "settingsSectionLastSeen": "Zuletzt im Album",
-  "settingsSectionStorage": "Speicherplatz",
-  "settingsRedeemInvite": "Einladungscode einlösen",
-  "settingsSectionRecaps": "Rückblicke",
-  "settingsCreateRecap": "Rückblick erstellen",
-  "settingsCreateRecapSubtitle": "Monat, Jahr oder Sekunden-Film. Monats- und Jahresvideos entstehen auch automatisch.",
-  "settingsSectionExport": "Export",
-  "settingsExportAll": "Alle Fotos, Videos und Kommentare",
-  "settingsExportAllSubtitle": "ZIP mit Originalen nach Jahr/Monat, Kommentare als Datei. Am besten am Computer.",
-  "settingsExportMonth": "Einzelnen Monat exportieren",
-  "settingsSectionConnection": "Verbindung",
-  "settingsLogout": "Abmelden",
-  "settingsPrivacyPolicy": "Datenschutzerklärung",
-  "settingsChangeServerTitle": "Server wechseln",
-  "settingsChangeServerHint": "Du wirst abgemeldet und musst dich auf dem neuen Server neu anmelden.",
-  "settingsServerUrlLabel": "Server-URL",
-  "settingsChangeServerAction": "Wechseln",
-  "settingsExportOpenFailed": "Download konnte nicht geöffnet werden.",
-  "settingsExportPreparing": "Wird vorbereitet …",
-  "settingsExportLoadingTitle": "Export wird geladen",
-  "settingsExportShareHint": "Danach erscheint das Teilen-Blatt – dort «In Dateien sichern» wählen.",
-  "settingsExportProgressNoTotal": "{mb} MB geladen …",
-  "@settingsExportProgressNoTotal": {"placeholders": {"mb": {"type": "String"}}},
-  "settingsExportProgress": "{mb} von {total} MB",
-  "@settingsExportProgress": {"placeholders": {"mb": {"type": "String"}, "total": {"type": "String"}}},
-  "settingsExportMonthTitle": "Monat exportieren",
-  "settingsMonthLabel": "Monat",
-  "settingsYearLabel": "Jahr",
-  "settingsExportAction": "Exportieren",
-  "settingsVersionSelfHosted": "Selbst gehostet",
-  "settingsVersionLabel": "Version {version} ({build}) · selbst gehostet",
-  "@settingsVersionLabel": {"placeholders": {"version": {"type": "String"}, "build": {"type": "String"}}},
-
+  "lastSeenDaysAgo": "{count, plural, =1{Vor 1 Tag} other{Vor {count} Tagen}}",
+  "@lastSeenDaysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastSeenHoursAgo": "{count, plural, =1{Vor 1 Stunde} other{Vor {count} Stunden}}",
+  "@lastSeenHoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastSeenMinutesAgo": "{count, plural, =1{Vor 1 Minute} other{Vor {count} Minuten}}",
+  "@lastSeenMinutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "lastSeenNever": "Noch nie im Album gewesen",
   "lastSeenNow": "Gerade jetzt",
-  "lastSeenMinutesAgo": "{count, plural, =1{Vor 1 Minute} other{Vor {count} Minuten}}",
-  "@lastSeenMinutesAgo": {"placeholders": {"count": {"type": "int"}}},
-  "lastSeenHoursAgo": "{count, plural, =1{Vor 1 Stunde} other{Vor {count} Stunden}}",
-  "@lastSeenHoursAgo": {"placeholders": {"count": {"type": "int"}}},
-  "lastSeenYesterday": "Gestern",
-  "lastSeenDaysAgo": "{count, plural, =1{Vor 1 Tag} other{Vor {count} Tagen}}",
-  "@lastSeenDaysAgo": {"placeholders": {"count": {"type": "int"}}},
-  "lastSeenWeeksAgo": "{count, plural, =1{Vor 1 Woche} other{Vor {count} Wochen}}",
-  "@lastSeenWeeksAgo": {"placeholders": {"count": {"type": "int"}}},
   "lastSeenOnDate": "Am {date}",
-  "@lastSeenOnDate": {"placeholders": {"date": {"type": "String"}}},
-
-  "avatarPickFromLibrary": "Bild aus der Mediathek wählen",
-  "avatarRemove": "Profilbild entfernen",
-  "avatarPickerTitle": "Profilbild wählen",
-  "avatarReadFailed": "Bild konnte nicht gelesen werden.",
-  "avatarUploading": "Profilbild wird hochgeladen …",
-
-  "profileDisplayName": "Anzeigename",
-  "profileCurrentPassword": "Aktuelles Passwort",
-  "profileRequired": "Bitte angeben",
-  "profileNewPasswordLabel": "Neues Passwort (min. 8 Zeichen)",
-  "profileRepeatPassword": "Neues Passwort wiederholen",
-  "profilePasswordMismatch": "Passwörter stimmen nicht überein",
-  "profilePasswordChanged": "Passwort geändert",
-  "profileChangeAction": "Ändern",
-
-  "storageAlbumUses": "Euer Album belegt {size}",
-  "@storageAlbumUses": {"placeholders": {"size": {"type": "String"}}},
-  "storageLegendPhotos": "Fotos {size}",
-  "@storageLegendPhotos": {"placeholders": {"size": {"type": "String"}}},
-  "storageLegendVideos": "Videos {size}",
-  "@storageLegendVideos": {"placeholders": {"size": {"type": "String"}}},
-  "storageServerFree": "Server: {free} frei von {total}",
-  "@storageServerFree": {"placeholders": {"free": {"type": "String"}, "total": {"type": "String"}}},
-  "storagePercentUsed": "{percent} % belegt",
-  "@storagePercentUsed": {"placeholders": {"percent": {"type": "int"}}},
-  "storageAlmostFull": "Der Speicher wird knapp. Zeit, den Server zu erweitern.",
-
-  "albumsTitle": "Alben",
-  "familiesNewAlbum": "Neues Album",
-  "familiesNameLabel": "Name",
-  "familiesJoinAsAdmin": "Mich als Album-Admin eintragen",
-  "familiesDeleteTitle": "„{name}“ löschen?",
-  "@familiesDeleteTitle": {"placeholders": {"name": {"type": "String"}}},
-  "familiesDeleteBody": "{members} Mitgliedschaften und {media} Medien werden entfernt. Das lässt sich nicht rückgängig machen.",
-  "@familiesDeleteBody": {"placeholders": {"members": {"type": "int"}, "media": {"type": "int"}}},
-  "familiesEmpty": "Noch keine Alben",
-  "familiesMemberCount": "{count, plural, =1{1 Mitglied} other{{count} Mitglieder}}",
-  "@familiesMemberCount": {"placeholders": {"count": {"type": "int"}}},
-  "familiesNotMember": "Du bist kein Mitglied",
-  "familiesYouAreAdmin": "Du bist Album-Admin",
-  "familiesYouAreMember": "Du bist Mitglied",
-  "familiesManageMembers": "Mitglieder verwalten",
-  "familiesRename": "Umbenennen",
-  "familiesJoinSelfAsAdmin": "Mich als Album-Admin hinzufügen",
-  "familiesDeleteAlbum": "Album löschen",
-
-  "renameAlbumTitle": "Album umbenennen",
-  "renameAlbumNameLabel": "Name des Albums",
-  "renameAlbumNameRequired": "Bitte einen Namen eingeben",
-  "renameAlbumDone": "Album heisst jetzt «{name}»",
-  "@renameAlbumDone": {"placeholders": {"name": {"type": "String"}}},
-
-  "membersTitle": "Mitglieder",
-  "membersTitleWithFamily": "Mitglieder · {name}",
-  "@membersTitleWithFamily": {"placeholders": {"name": {"type": "String"}}},
-  "membersRightsOf": "Rechte von {name}",
-  "@membersRightsOf": {"placeholders": {"name": {"type": "String"}}},
-  "membersRemoveTitle": "{name} entfernen?",
-  "@membersRemoveTitle": {"placeholders": {"name": {"type": "String"}}},
-  "membersRemoveBody": "Die Person verliert den Zugriff auf dieses Album. Ihre hochgeladenen Fotos bleiben erhalten.",
-  "membersRemoveAction": "Entfernen",
+  "@lastSeenOnDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lastSeenWeeksAgo": "{count, plural, =1{Vor 1 Woche} other{Vor {count} Wochen}}",
+  "@lastSeenWeeksAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastSeenYesterday": "Gestern",
+  "loginHaveInviteCode": "Ich habe einen Einladungscode",
+  "loginServerShown": "Server: {host}",
+  "@loginServerShown": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "loginStartupProblem": "{detail} Server: {host}",
+  "@loginStartupProblem": {
+    "description": "Fehler der Startprüfung plus Server-Host",
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "loginSubmit": "Anmelden",
+  "loginSubtitle": "Eure Fotos und Videos – privat, zu Hause.",
+  "mediaBack": "Zurück",
+  "mediaCaptionHint": "Was ist hier zu sehen?",
+  "mediaCaptionTitle": "Beschreibung",
+  "mediaCommentCount": "{count, plural, =0{Kommentieren} =1{1 Kommentar} other{{count} Kommentare}}",
+  "@mediaCommentCount": {
+    "description": "Knopf in der unteren Leiste des Viewers",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mediaDeleteText": "„{name}“ wird aus dem Album entfernt.",
+  "@mediaDeleteText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mediaDeleteTitle": "Löschen?",
+  "mediaDownloadFile": "Als Datei herunterladen",
+  "mediaDownloaded": "„{name}“ heruntergeladen",
+  "@mediaDownloaded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mediaEditCaption": "Beschreibung bearbeiten",
+  "mediaEditDateTime": "Datum und Uhrzeit ändern",
+  "mediaInfo": "Info",
+  "mediaInfoAltitude": "{meters} m ü. M.",
+  "@mediaInfoAltitude": {
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "mediaInfoCamera": "Kamera",
+  "mediaInfoChange": "Ändern",
+  "mediaInfoChecksumCopied": "Prüfsumme kopiert",
+  "mediaInfoDateHint": "Das Aufnahmedatum bestimmt die Einordnung im Album.",
+  "mediaInfoFocalEquivalent": "{focal} mm ({equivalent} mm KB)",
+  "@mediaInfoFocalEquivalent": {
+    "description": "Brennweite mit Kleinbild-Äquivalent",
+    "placeholders": {
+      "focal": {
+        "type": "String"
+      },
+      "equivalent": {
+        "type": "String"
+      }
+    }
+  },
+  "mediaInfoFromFile": "Laut Datei: {dateTime}",
+  "@mediaInfoFromFile": {
+    "description": "Aufnahmezeit laut EXIF, wenn sie vom gespeicherten Datum abweicht",
+    "placeholders": {
+      "dateTime": {
+        "type": "String"
+      }
+    }
+  },
+  "mediaInfoLocation": "Aufnahmeort",
+  "mediaInfoMap": "Karte",
+  "mediaInfoNoMetadata": "Die Datei enthält keine Kamera-Metadaten.",
+  "mediaInfoPhoto": "Foto",
+  "mediaInfoSize": "Grösse",
+  "mediaInfoSoftware": "Software",
+  "mediaInfoType": "Typ",
+  "mediaInfoUploaded": "Hochgeladen",
+  "mediaInfoUploadedBy": "{dateTime} von {name}",
+  "@mediaInfoUploadedBy": {
+    "placeholders": {
+      "dateTime": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mediaInfoVideo": "Video",
+  "mediaLoading": "Lädt …",
+  "mediaNext": "Nächstes",
+  "mediaNoVideoPreview": "Keine Video-Vorschau vorhanden.",
+  "mediaOriginal": "Original",
+  "mediaOriginalReady": "Original bereit",
+  "mediaPause": "Pause",
+  "mediaPlay": "Abspielen",
+  "mediaPrevious": "Vorheriges",
+  "mediaSaveToPhotos": "In Fotos sichern",
+  "mediaSavedToPhotos": "In Fotos gesichert",
+  "mediaShare": "Teilen …",
+  "mediaSkipBack": "10 s zurück",
+  "mediaSkipForward": "10 s vor",
+  "mediaVideoLoadError": "Video konnte nicht geladen werden: {error}",
+  "@mediaVideoLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "membersCreateAccount": "Konto anlegen",
   "membersCreateAccountSubtitle": "E-Mail und Startpasswort vergeben, z.B. für Grosseltern",
   "membersCreateInvite": "Einladungscode erzeugen",
   "membersCreateInviteSubtitle": "Die Person registriert sich selbst mit dem Code",
-  "membersInviteDialogTitle": "Einladung erstellen",
-  "membersGenerateCode": "Code erzeugen",
-  "membersNeverActive": "Noch nie aktiv",
-  "membersLastActive": "Zuletzt aktiv {date}",
-  "@membersLastActive": {"placeholders": {"date": {"type": "String"}}},
-  "membersSubtitle": "{rights}\n{activity} · dabei seit {joined}",
-  "@membersSubtitle": {"description": "Zweite Zeile unter dem Mitgliedsnamen: Rechte, letzte Aktivität, Beitrittsdatum", "placeholders": {"rights": {"type": "String"}, "activity": {"type": "String"}, "joined": {"type": "String"}}},
   "membersEditRights": "Rechte bearbeiten",
+  "membersGenerateCode": "Code erzeugen",
+  "membersInviteDialogTitle": "Einladung erstellen",
+  "membersLastActive": "Zuletzt aktiv {date}",
+  "@membersLastActive": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "membersNeverActive": "Noch nie aktiv",
+  "membersRemoveAction": "Entfernen",
+  "membersRemoveBody": "Die Person verliert den Zugriff auf dieses Album. Ihre hochgeladenen Fotos bleiben erhalten.",
   "membersRemoveFromAlbum": "Aus dem Album entfernen",
-  "membersStartPasswordLabel": "Startpasswort (min. 8 Zeichen)",
+  "membersRemoveTitle": "{name} entfernen?",
+  "@membersRemoveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "membersRightsOf": "Rechte von {name}",
+  "@membersRightsOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "membersStartPasswordHelper": "Die Person kann es später in den Einstellungen ändern.",
-
-  "usersTitle": "Benutzer",
-  "usersCreate": "Benutzer anlegen",
-  "usersSearchHint": "Name oder E-Mail suchen",
-  "usersEmpty": "Keine Benutzer gefunden",
+  "membersStartPasswordLabel": "Startpasswort (min. 8 Zeichen)",
+  "membersSubtitle": "{rights}\n{activity} · dabei seit {joined}",
+  "@membersSubtitle": {
+    "description": "Zweite Zeile unter dem Mitgliedsnamen: Rechte, letzte Aktivität, Beitrittsdatum",
+    "placeholders": {
+      "rights": {
+        "type": "String"
+      },
+      "activity": {
+        "type": "String"
+      },
+      "joined": {
+        "type": "String"
+      }
+    }
+  },
+  "membersTitle": "Mitglieder",
+  "membersTitleWithFamily": "Mitglieder · {name}",
+  "@membersTitleWithFamily": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "onThisDayTitle": "An diesem Tag",
+  "originalAlreadyDisposed": "Download bereits verworfen.",
+  "originalEmptyResponse": "Leere Antwort vom Server.",
+  "originalNoPhotosAccess": "Kein Zugriff auf die Fotos-Mediathek. Bitte in den Einstellungen erlauben.",
+  "originalNotAvailable": "Nicht verfügbar.",
+  "originalNotInBrowser": "Im Browser nicht möglich.",
+  "originalShareFailed": "Teilen nicht möglich: {error}",
+  "@originalShareFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "profileChangeAction": "Ändern",
+  "profileCurrentPassword": "Aktuelles Passwort",
+  "profileDisplayName": "Anzeigename",
+  "profileNewPasswordLabel": "Neues Passwort (min. 8 Zeichen)",
+  "profilePasswordChanged": "Passwort geändert",
+  "profilePasswordMismatch": "Passwörter stimmen nicht überein",
+  "profileRepeatPassword": "Neues Passwort wiederholen",
+  "profileRequired": "Bitte angeben",
+  "recapCreateStarted": "«{title}» wird erstellt – du bekommst eine Mitteilung, sobald das Video fertig ist.",
+  "@recapCreateStarted": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "recapCreateSubtitle": "Monat, Jahr oder Sekunden-Film",
+  "recapCreateTitle": "Rückblick erstellen",
+  "recapCreating": "Wird erstellt …",
+  "recapCreatingHint": "Je nach Anzahl Fotos dauert das ein paar Minuten. Du bekommst eine Mitteilung.",
+  "recapCreatingText": "Das Video wird gerade erstellt …",
+  "recapDeleteText": "Das Video wird entfernt. Es lässt sich jederzeit neu erstellen.",
+  "recapDeleteTitle": "«{title}» löschen?",
+  "@recapDeleteTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "recapDescMonth": "Rund 30 Momente des Monats mit sanfter Kamerafahrt, Musik und Titelkarte. Etwa anderthalb Minuten.",
+  "recapDescSeconds": "Ein Moment pro Tag, je eine Sekunde – der ganze Monat im Zeitraffer.",
+  "recapDescYear": "Rund 60 Momente des Jahres, gleichmässig über die Wochen verteilt. Etwa zwei Minuten.",
+  "recapDownload": "Herunterladen",
+  "recapFailed": "Fehlgeschlagen",
+  "recapFailedText": "Das Video konnte nicht erstellt werden.",
+  "recapKindMonth": "Monats-Rückblick",
+  "recapKindSeconds": "Sekunden-Film",
+  "recapKindYear": "Jahres-Rückblick",
+  "recapMoments": "{count, plural, =1{1 Moment} other{{count} Momente}}",
+  "@recapMoments": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recapMonth": "Monat",
+  "recapMusic": "Musik: {track} – Kevin MacLeod (CC BY 4.0)",
+  "@recapMusic": {
+    "placeholders": {
+      "track": {
+        "type": "String"
+      }
+    }
+  },
+  "recapNotFound": "Rückblick nicht gefunden.",
+  "recapSeconds": "Sekunden",
+  "recapShareOrSave": "Teilen oder sichern",
+  "recapTitle": "Rückblick",
+  "recapYear": "Jahr",
+  "renameAlbumDone": "Album heisst jetzt «{name}»",
+  "@renameAlbumDone": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "renameAlbumNameLabel": "Name des Albums",
+  "renameAlbumNameRequired": "Bitte einen Namen eingeben",
+  "renameAlbumTitle": "Album umbenennen",
+  "rightsAlbumAdmin": "Album-Admin",
+  "rightsAlbumAdminSubtitle": "Verwaltet Mitglieder und Einladungen",
+  "rightsComment": "Kommentieren",
+  "rightsDownload": "Herunterladen",
+  "rightsMayComment": "Darf kommentieren",
+  "rightsMayDownload": "Darf Originale herunterladen",
+  "rightsMayUpload": "Darf hochladen",
+  "rightsUpload": "Hochladen",
+  "rightsView": "Ansehen",
+  "rightsViewOnly": "Nur ansehen",
+  "settingsAlbumsSubtitle": "Anlegen, löschen, Mitglied werden",
+  "settingsChangeDisplayName": "Anzeigename ändern",
+  "settingsChangePassword": "Passwort ändern",
+  "settingsChangeServerAction": "Wechseln",
+  "settingsChangeServerHint": "Du wirst abgemeldet und musst dich auf dem neuen Server neu anmelden.",
+  "settingsChangeServerTitle": "Server wechseln",
+  "settingsCreateRecap": "Rückblick erstellen",
+  "settingsCreateRecapSubtitle": "Monat, Jahr oder Sekunden-Film. Monats- und Jahresvideos entstehen auch automatisch.",
+  "settingsExportAction": "Exportieren",
+  "settingsExportAll": "Alle Fotos, Videos und Kommentare",
+  "settingsExportAllSubtitle": "ZIP mit Originalen nach Jahr/Monat, Kommentare als Datei. Am besten am Computer.",
+  "settingsExportLoadingTitle": "Export wird geladen",
+  "settingsExportMonth": "Einzelnen Monat exportieren",
+  "settingsExportMonthTitle": "Monat exportieren",
+  "settingsExportOpenFailed": "Download konnte nicht geöffnet werden.",
+  "settingsExportPreparing": "Wird vorbereitet …",
+  "settingsExportProgress": "{mb} von {total} MB",
+  "@settingsExportProgress": {
+    "placeholders": {
+      "mb": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsExportProgressNoTotal": "{mb} MB geladen …",
+  "@settingsExportProgressNoTotal": {
+    "placeholders": {
+      "mb": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsExportShareHint": "Danach erscheint das Teilen-Blatt – dort «In Dateien sichern» wählen.",
+  "settingsLogout": "Abmelden",
+  "settingsMembersOf": "Mitglieder von {name}",
+  "@settingsMembersOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMembersSubtitle": "Rechte, Konten anlegen, Einladungen",
+  "settingsMonthLabel": "Monat",
+  "settingsPrivacyPolicy": "Datenschutzerklärung",
+  "settingsRedeemInvite": "Einladungscode einlösen",
+  "settingsSectionAppearance": "Darstellung",
+  "settingsSectionAutoUpload": "Automatischer Upload",
+  "settingsSectionConnection": "Verbindung",
+  "settingsSectionExport": "Export",
+  "settingsSectionLastSeen": "Zuletzt im Album",
+  "settingsSectionManagement": "Verwaltung",
+  "settingsSectionRecaps": "Rückblicke",
+  "settingsSectionStorage": "Speicherplatz",
+  "settingsServerUrlLabel": "Server-URL",
+  "settingsTapForAvatar": "Tippen für ein Profilbild",
+  "settingsThemeDark": "Dunkel",
+  "settingsThemeLight": "Hell",
+  "settingsThemeSystem": "System",
+  "settingsTitle": "Einstellungen",
+  "settingsUsersSubtitle": "Alle Konten, Admin-Rechte, Sperren",
+  "settingsVersionLabel": "Version {version} ({build}) · selbst gehostet",
+  "@settingsVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsVersionSelfHosted": "Selbst gehostet",
+  "settingsYearLabel": "Jahr",
+  "storageAlbumUses": "Euer Album belegt {size}",
+  "@storageAlbumUses": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "storageAlmostFull": "Der Speicher wird knapp. Zeit, den Server zu erweitern.",
+  "storageLegendPhotos": "Fotos {size}",
+  "@storageLegendPhotos": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "storageLegendVideos": "Videos {size}",
+  "@storageLegendVideos": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "storagePercentUsed": "{percent} % belegt",
+  "@storagePercentUsed": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "storageServerFree": "Server: {free} frei von {total}",
+  "@storageServerFree": {
+    "placeholders": {
+      "free": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "takenAtApply": "Übernehmen",
+  "takenAtDate": "Datum",
+  "takenAtDays": "Tage",
+  "takenAtEarlier": "Früher",
+  "takenAtHours": "Stunden",
+  "takenAtLater": "Später",
+  "takenAtMinutes": "Minuten",
+  "takenAtPreview": "Vorschau",
+  "takenAtSameForAll": "Alle ausgewählten Medien erhalten denselben Zeitpunkt.",
+  "takenAtSet": "Setzen",
+  "takenAtShift": "Verschieben",
+  "takenAtShiftHint": "Praktisch bei falscher Zeitzone oder verstellter Kamera-Uhr: Die Abstände zwischen den Aufnahmen bleiben erhalten.",
+  "takenAtTime": "Uhrzeit",
+  "takenAtTitle": "Datum und Uhrzeit",
+  "takenAtTitleMany": "Datum für {count} Medien",
+  "@takenAtTitleMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineActivityTooltip": "Aktivität",
+  "timelineAdjustDate": "Datum anpassen",
+  "timelineClearSelection": "Auswahl aufheben",
+  "timelineDateAdjusted": "{count, plural, =1{Datum von 1 Medium angepasst} other{Datum von {count} Medien angepasst}}",
+  "@timelineDateAdjusted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineDateAdjustedSkipped": "{updated} angepasst, {skipped} übersprungen",
+  "@timelineDateAdjustedSkipped": {
+    "placeholders": {
+      "updated": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineDeleteConfirmText": "Die Dateien werden aus dem Album entfernt. Das lässt sich nicht rückgängig machen.",
+  "timelineDeleteConfirmTitle": "{count, plural, =1{Ein Medium löschen?} other{{count} Medien löschen?}}",
+  "@timelineDeleteConfirmTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineDeleteCount": "Löschen ({count})",
+  "@timelineDeleteCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineDeleted": "{count, plural, =1{1 Medium gelöscht} other{{count} Medien gelöscht}}",
+  "@timelineDeleted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineDeletedWithError": "{count} gelöscht, Fehler: {error}",
+  "@timelineDeletedWithError": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "timelineFilterAll": "Alle",
+  "timelineFilterPhotos": "Fotos",
+  "timelineFilterVideos": "Videos",
+  "timelineFilterWithComments": "Mit Kommentar",
+  "timelineInviteCanDownload": "Darf Originale herunterladen",
+  "timelineInviteCanUpload": "Darf hochladen",
+  "timelineInviteCreateText": "Wer die Einladung annimmt, wird Mitglied von «{familyName}».",
+  "@timelineInviteCreateText": {
+    "placeholders": {
+      "familyName": {
+        "type": "String"
+      }
+    }
+  },
+  "timelineInviteCreateTitle": "Einladung erstellen",
+  "timelineInviteTooltip": "Einladen",
+  "timelineMediaCount": "{count, plural, =1{1 Medium} other{{count} Medien}}",
+  "@timelineMediaCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineMediaCountMore": "{count}+ Medien",
+  "@timelineMediaCountMore": {
+    "description": "Zähler im Hero-Kopf, wenn noch mehr Medien nachladbar sind",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineNoAlbumText": "Du bist noch in keinem Album. Löse eine Einladung ein oder bitte einen Admin, dich hinzuzufügen.",
+  "timelineNoAlbumTitle": "Noch kein Album",
+  "timelineNoPhotosTitle": "Noch keine Fotos",
+  "timelineNoPhotosUploadHint": "Lade das erste Foto oder Video hoch – es erscheint hier nach Aufnahmedatum sortiert.",
+  "timelineNoPhotosWaitHint": "Sobald jemand etwas hochlädt, erscheint es hier.",
+  "timelineNotYoursCount": "{count} davon nicht von dir",
+  "@timelineNotYoursCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineProcessing": "Wird verarbeitet",
+  "timelineProcessingFailed": "Fehlgeschlagen",
+  "timelineRetry": "Nochmals versuchen",
+  "timelineSelectedCount": "{count} ausgewählt",
+  "@timelineSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineSettingsTooltip": "Einstellungen",
+  "timelineSince": "seit {month}",
+  "@timelineSince": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "timelineSwitchAlbum": "Album wechseln",
+  "timelineUpload": "Hochladen",
+  "uploadFailedCount": "{count, plural, =1{1 Upload fehlgeschlagen} other{{count} Uploads fehlgeschlagen}}",
+  "@uploadFailedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadHideFinished": "Erledigte ausblenden",
+  "uploadNone": "Keine Uploads",
+  "uploadPhaseCancelled": "Abgebrochen",
+  "uploadPhaseChecksum": "Prüfsumme",
+  "uploadPhaseDone": "Hochgeladen",
+  "uploadPhaseDuplicate": "Bereits vorhanden",
+  "uploadPhaseError": "Fehler",
+  "uploadPhaseFinished": "Fertig",
+  "uploadPhaseFinishing": "Abschliessen",
+  "uploadPhasePreparing": "Vorbereiten",
+  "uploadPhaseReconnect": "Verbindung unterbrochen – neuer Versuch {attempt}/{max}",
+  "@uploadPhaseReconnect": {
+    "placeholders": {
+      "attempt": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadPhaseRetry": "Neuer Versuch {attempt}/{max}",
+  "@uploadPhaseRetry": {
+    "placeholders": {
+      "attempt": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadPhaseUploading": "Hochladen",
+  "uploadPhaseWaiting": "Wartet",
+  "uploadPickTitle": "Fotos und Videos auswählen",
+  "uploadProgressOf": "{current} von {total}: {name}",
+  "@uploadProgressOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "uploadRetryAll": "Alle wiederholen",
+  "uploadStarted": "{count, plural, =1{1 Datei wird hochgeladen} other{{count} Dateien werden hochgeladen}}",
+  "@uploadStarted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadsTitle": "Uploads",
+  "usersAddToAlbum": "Zu Album hinzufügen",
+  "usersAlreadyInAllAlbums": "Ist bereits in allen Alben.",
   "usersBlocked": "Gesperrt",
-  "usersEdit": "Benutzer bearbeiten",
-  "usersNewPasswordOptional": "Neues Passwort (leer = unverändert)",
-  "usersGlobalAdmin": "Globaler Admin",
-  "usersGlobalAdminSubtitle": "Darf Benutzer und Alben verwalten",
-  "usersDeleteTitle": "{name} löschen?",
-  "@usersDeleteTitle": {"placeholders": {"name": {"type": "String"}}},
+  "usersBlockedSubtitle": "Kann sich nicht mehr anmelden, alle Sitzungen werden beendet",
+  "usersCannotBlockSelf": "Dich selbst kannst du nicht sperren",
+  "usersCannotDeleteSelf": "Dein eigenes Konto kannst du nicht löschen",
+  "usersCannotRevokeSelf": "Dir selbst kannst du das nicht entziehen",
+  "usersCreate": "Benutzer anlegen",
+  "usersDeleteAccount": "Konto löschen",
+  "usersDeleteAction": "Endgültig löschen",
   "usersDeleteBody": "Das Konto wird endgültig gelöscht: E-Mail, Name, Passwort, Profilbild, Geräte und Mitgliedschaften. Fotos, Videos und Kommentare bleiben im Album und tragen danach «Gelöschtes Konto» als Urheber.",
   "usersDeleteConfirmLabel": "Zur Bestätigung «{name}» eingeben",
-  "@usersDeleteConfirmLabel": {"placeholders": {"name": {"type": "String"}}},
-  "usersDeleteAction": "Endgültig löschen",
+  "@usersDeleteConfirmLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "usersDeleteTitle": "{name} löschen?",
+  "@usersDeleteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "usersDeleted": "Konto von {name} gelöscht",
-  "@usersDeleted": {"placeholders": {"name": {"type": "String"}}},
-  "usersAlreadyInAllAlbums": "Ist bereits in allen Alben.",
-  "usersAddToAlbum": "Zu Album hinzufügen",
-  "usersRightsIn": "Rechte in {name}",
-  "@usersRightsIn": {"placeholders": {"name": {"type": "String"}}},
-  "usersSinceDevices": "Seit {date} · {count, plural, =1{1 Gerät} other{{count} Geräte}} mit Push",
-  "@usersSinceDevices": {"placeholders": {"date": {"type": "String"}, "count": {"type": "int"}}},
+  "@usersDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "usersEdit": "Benutzer bearbeiten",
   "usersEditTooltip": "Name / Passwort",
-  "usersCannotRevokeSelf": "Dir selbst kannst du das nicht entziehen",
+  "usersEmpty": "Keine Benutzer gefunden",
+  "usersGlobalAdmin": "Globaler Admin",
   "usersGlobalAdminManages": "Verwaltet Benutzer und Alben",
-  "usersCannotBlockSelf": "Dich selbst kannst du nicht sperren",
-  "usersBlockedSubtitle": "Kann sich nicht mehr anmelden, alle Sitzungen werden beendet",
+  "usersGlobalAdminSubtitle": "Darf Benutzer und Alben verwalten",
+  "usersNewPasswordOptional": "Neues Passwort (leer = unverändert)",
   "usersNoAlbum": "In keinem Album",
-  "usersCannotDeleteSelf": "Dein eigenes Konto kannst du nicht löschen",
-  "usersDeleteAccount": "Konto löschen",
-
-  "autoUploadToggleTitle": "Neue Fotos automatisch hochladen",
-  "autoUploadNeedsRight": "Dafür brauchst du das Recht «Hochladen» in einem Album. Frag einen Album-Admin.",
-  "autoUploadEnabledSince": "Aufnahmen ab {since} werden im Hintergrund hochgeladen.",
-  "@autoUploadEnabledSince": {"description": "since ist ein Datum oder autoUploadNow", "placeholders": {"since": {"type": "String"}}},
-  "autoUploadNow": "jetzt",
-  "autoUploadDisabledHint": "Lädt neue Aufnahmen aus der Galerie hoch, ohne dass du daran denken musst.",
-  "autoUploadTargetAlbum": "In dieses Album",
-  "autoUploadWifiOnly": "Nur im WLAN",
-  "autoUploadIncludeVideos": "Videos einschliessen",
-  "autoUploadBackfillSince": "Ältere Aufnahmen ab Datum nachladen",
-  "autoUploadSyncing": "Synchronisiert …",
-  "autoUploadNotRunYet": "Noch nicht gelaufen",
-  "autoUploadLastRun": "Zuletzt {time}",
-  "@autoUploadLastRun": {"placeholders": {"time": {"type": "String"}}},
-  "autoUploadTotalUploaded": "{count} insgesamt hochgeladen",
-  "@autoUploadTotalUploaded": {"placeholders": {"count": {"type": "int"}}},
-  "autoUploadRunNow": "Jetzt",
-  "autoUploadOffPrefix": "Ausgeschaltet:",
-  "@autoUploadOffPrefix": {"description": "Anfang der beiden autoUploadOff…-Meldungen; daran erkennt die Oberfläche, dass der Auto-Upload wegen fehlender Rechte aus ist"},
-  "autoUploadOffNotMember": "Ausgeschaltet: du bist nicht mehr Mitglied dieses Albums",
-  "autoUploadOffNoRight": "Ausgeschaltet: du darfst in «{name}» nicht hochladen",
-  "@autoUploadOffNoRight": {"placeholders": {"name": {"type": "String"}}},
-  "autoUploadRightCheckFailed": "Upload-Recht nicht prüfbar: {detail}",
-  "@autoUploadRightCheckFailed": {"placeholders": {"detail": {"type": "String"}}},
-  "autoUploadSummaryUploaded": "{count} hochgeladen",
-  "@autoUploadSummaryUploaded": {"placeholders": {"count": {"type": "int"}}},
-  "autoUploadSummaryDuplicates": "{count} bereits vorhanden",
-  "@autoUploadSummaryDuplicates": {"placeholders": {"count": {"type": "int"}}},
-  "autoUploadSummaryFailed": "{count} fehlgeschlagen",
-  "@autoUploadSummaryFailed": {"placeholders": {"count": {"type": "int"}}},
-  "autoUploadSummaryNothingNew": "Nichts Neues",
-  "autoUploadSkipOff": "Auto-Upload ist aus",
-  "autoUploadSkipPlatform": "Nur auf Android und iOS",
-  "autoUploadSkipNotSignedIn": "Nicht angemeldet",
-  "autoUploadSkipWaitingWifi": "Wartet auf WLAN",
-  "autoUploadSkipNoPhotoAccess": "Kein Zugriff auf die Fotomediathek"
+  "usersRightsIn": "Rechte in {name}",
+  "@usersRightsIn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "usersSearchHint": "Name oder E-Mail suchen",
+  "usersSinceDevices": "Seit {date} · {count, plural, =1{1 Gerät} other{{count} Geräte}} mit Push",
+  "@usersSinceDevices": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usersTitle": "Benutzer"
 }

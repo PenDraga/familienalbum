@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../l10n/l10n.dart';
 import 'prepared_original.dart';
 
 /// Nativ (iOS/Android/Desktop): Original in eine Temp-Datei streamen, danach in die
@@ -58,7 +59,7 @@ class _IoOriginal implements PreparedOriginal {
       requestOption: const PermissionRequestOption(iosAccessLevel: IosAccessLevel.addOnly),
     );
     if (!permission.hasAccess) {
-      throw const OriginalSaveException('Kein Zugriff auf die Fotos-Mediathek. Bitte in den Einstellungen erlauben.');
+      throw OriginalSaveException(currentL10n().originalNoPhotosAccess);
     }
     final title = fileName;
     if (isVideo) {
@@ -74,7 +75,7 @@ class _IoOriginal implements PreparedOriginal {
   }
 
   @override
-  Future<void> download() => throw const OriginalSaveException('Nicht verfügbar.');
+  Future<void> download() => throw OriginalSaveException(currentL10n().originalNotAvailable);
 
   @override
   Future<void> dispose() async {

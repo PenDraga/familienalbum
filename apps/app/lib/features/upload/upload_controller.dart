@@ -8,6 +8,7 @@ import 'package:mime/mime.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import 'chunk_source.dart';
 import 'upload_service.dart';
 
@@ -28,7 +29,7 @@ class UploadTask {
 
   UploadStatus status = UploadStatus.queued;
   double progress = 0;
-  String phase = 'Wartet';
+  String phase = currentL10n().uploadPhaseWaiting;
   String? error;
   String? mediaId;
   int attempts = 0;
@@ -77,7 +78,7 @@ class UploadController extends Notifier<List<UploadTask>> {
     if (t.status == UploadStatus.running) {
       t.cancel.cancel('abgebrochen');
     } else if (t.status == UploadStatus.queued) {
-      _update(t..status = UploadStatus.cancelled..phase = 'Abgebrochen');
+      _update(t..status = UploadStatus.cancelled..phase = currentL10n().uploadPhaseCancelled);
     }
   }
 
@@ -87,7 +88,7 @@ class UploadController extends Notifier<List<UploadTask>> {
     if (t == null || (t.status != UploadStatus.failed && t.status != UploadStatus.cancelled)) return;
     t
       ..status = UploadStatus.queued
-      ..phase = 'Wartet'
+      ..phase = currentL10n().uploadPhaseWaiting
       ..error = null
       ..progress = 0
       ..attempts = 0
@@ -126,7 +127,8 @@ class UploadController extends Notifier<List<UploadTask>> {
   }
 
   Future<void> _run(UploadTask t) async {
-    _update(t..status = UploadStatus.running..phase = 'Vorbereiten');
+    final l10n = currentL10n();
+    _update(t..status = UploadStatus.running..phase = l10n.uploadPhasePreparing);
     ChunkSource? source;
     try {
       source = await _sourceFor(t);
@@ -164,32 +166,32 @@ class UploadController extends Notifier<List<UploadTask>> {
               ..progress = 1
               ..mediaId = result.mediaId
               ..status = result.duplicate ? UploadStatus.duplicate : UploadStatus.done
-              ..phase = result.duplicate ? 'Bereits vorhanden' : 'Hochgeladen',
+              ..phase = result.duplicate ? l10n.uploadPhaseDuplicate : l10n.uploadPhaseDone,
           );
           return;
         } on DioException catch (e) {
           if (CancelToken.isCancel(e)) {
-            _update(t..status = UploadStatus.cancelled..phase = 'Abgebrochen');
+            _update(t..status = UploadStatus.cancelled..phase = l10n.uploadPhaseCancelled);
             return;
           }
           final api = e.error is ApiException ? e.error! as ApiException : ApiException.fromDio(e);
           if (!_shouldRetry(api) || t.attempts >= maxAttempts) {
-            _update(t..status = UploadStatus.failed..error = api.detail..phase = 'Fehler');
+            _update(t..status = UploadStatus.failed..error = api.detail..phase = l10n.uploadPhaseError);
             return;
           }
-          _update(t..phase = 'Verbindung unterbrochen – neuer Versuch ${t.attempts + 1}/$maxAttempts');
+          _update(t..phase = l10n.uploadPhaseReconnect(t.attempts + 1, maxAttempts));
           await Future<void>.delayed(Duration(seconds: 2 * t.attempts));
         } on ApiException catch (e) {
           if (!_shouldRetry(e) || t.attempts >= maxAttempts) {
-            _update(t..status = UploadStatus.failed..error = e.detail..phase = 'Fehler');
+            _update(t..status = UploadStatus.failed..error = e.detail..phase = l10n.uploadPhaseError);
             return;
           }
-          _update(t..phase = 'Neuer Versuch ${t.attempts + 1}/$maxAttempts');
+          _update(t..phase = l10n.uploadPhaseRetry(t.attempts + 1, maxAttempts));
           await Future<void>.delayed(Duration(seconds: 2 * t.attempts));
         }
       }
     } catch (e) {
-      _update(t..status = UploadStatus.failed..error = errorMessage(e)..phase = 'Fehler');
+      _update(t..status = UploadStatus.failed..error = errorMessage(e)..phase = l10n.uploadPhaseError);
     } finally {
       await source?.close();
     }
