@@ -169,7 +169,10 @@ Optional. Ohne Konfiguration pollen die Clients jede Minute.
    `~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8` legen und Schlüssel- und Issuer-ID in `apps/app/ios/asc.env`
    eintragen (Vorlage `asc.env.example`, nicht im Git). Danach: `apps/app/tool/build.sh ipa && node apps/app/tool/testflight_upload.mjs --notes="…"`
    lädt hoch, wartet auf Apples Verarbeitung, setzt die Testhinweise und hängt den Build an die TestFlight-Gruppe
-   (`ASC_GROUP` in `asc.env`, `--group=…`). `ITSAppUsesNonExemptEncryption=false` in der Info.plist erspart die Verschlüsselungsfrage.
+   (`ASC_GROUP` in `asc.env`, `--group=…`).
+   Der IPA-Export braucht das Verteilungs-Zertifikat aus Apples Cloud: entweder ist Xcode mit der Apple-ID angemeldet,
+   oder ein zweiter API-Schlüssel mit Rolle «Admin» steht als `ASC_SIGNING_KEY_ID` in `asc.env`; dann exportiert
+   `tool/build.sh ipa` über die API, unabhängig vom Xcode-Konto. `ITSAppUsesNonExemptEncryption=false` in der Info.plist erspart die Verschlüsselungsfrage.
 7. **App-Store-Eintrag per Skript:** `node apps/app/tool/asc_listing.mjs --screenshots` setzt Untertitel, Kategorie,
    Datenschutz-URL, Beschreibung, Keywords, Support-URL, die TestFlight-Beschreibung und lädt die Screenshots aus
    `apps/app/store/ios/<DISPLAY_TYPE>/` hoch (6,7" und 6,5" für iPhone; die App ist nur für iPhone freigegeben).

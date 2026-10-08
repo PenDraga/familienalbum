@@ -49,7 +49,29 @@ ent=ios/Runner/Runner.release.entitlements
 
 
 # shellcheck disable=SC2086
-# IPA-Export mit eigenen Optionen: Build-Nummer aus der pubspec, kein Nachfragen bei Apple (braucht sonst ein Xcode-Konto)
-extra=""
-[ "$target" = "ipa" ] && extra="--export-options-plist=ios/ExportOptions.plist"
-exec flutter build "$target" --release $defines $extra "$@"
+# IPA: Archiv + Export. Der Export braucht das Verteilungs-Zertifikat aus Apples Cloud; ohne Apple-Konto in Xcode
+# scheitert er («No Accounts»). Mit ASC_SIGNING_KEY_ID (Admin-Schlüssel in ios/asc.env) exportieren wir dann selbst
+# über die App-Store-Connect-API – unabhängig vom Xcode-Konto.
+if [ "$target" = "ipa" ]; then
+  rm -rf build/ios/ipa
+  flutter build ipa --release $defines --export-options-plist=ios/ExportOptions.plist "$@" || true
+  if ! ls build/ios/ipa/*.ipa >/dev/null 2>&1; then
+    key_id=""; issuer=""
+    if [ -f ios/asc.env ]; then
+      key_id="$(grep '^ASC_SIGNING_KEY_ID=' ios/asc.env | cut -d= -f2 | tr -d ' \r')"
+      issuer="$(grep '^ASC_ISSUER_ID=' ios/asc.env | cut -d= -f2 | tr -d ' \r')"
+    fi
+    if [ -z "$key_id" ] || [ ! -d build/ios/archive/Runner.xcarchive ]; then
+      echo "IPA-Export fehlgeschlagen. Entweder in Xcode anmelden (Settings → Accounts) oder ASC_SIGNING_KEY_ID in ios/asc.env setzen." >&2
+      exit 1
+    fi
+    echo "Export über App-Store-Connect-API (Schlüssel $key_id) …"
+    xcodebuild -exportArchive -archivePath build/ios/archive/Runner.xcarchive -exportPath build/ios/ipa \
+      -exportOptionsPlist ios/ExportOptions.plist -allowProvisioningUpdates \
+      -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_$key_id.p8" \
+      -authenticationKeyID "$key_id" -authenticationKeyIssuerID "$issuer" | grep -E "error|EXPORT" || true
+    ls build/ios/ipa/*.ipa >/dev/null 2>&1 || exit 1
+  fi
+  exit 0
+fi
+exec flutter build "$target" --release $defines "$@"
