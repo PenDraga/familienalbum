@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n.dart';
 import '../auth/auth_models.dart';
 
 /// Vier Rechte-Schalter als Formularblock (für neue und bestehende Mitglieder).
@@ -12,15 +13,16 @@ class RightsEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _row(Icons.upload_outlined, 'Darf hochladen', value.canUpload, (v) => onChanged(_copy(canUpload: v))),
-        _row(Icons.download_outlined, 'Darf Originale herunterladen', value.canDownload, (v) => onChanged(_copy(canDownload: v))),
-        _row(Icons.chat_bubble_outline, 'Darf kommentieren', value.canComment, (v) => onChanged(_copy(canComment: v))),
+        _row(Icons.upload_outlined, l10n.rightsMayUpload, value.canUpload, (v) => onChanged(_copy(canUpload: v))),
+        _row(Icons.download_outlined, l10n.rightsMayDownload, value.canDownload, (v) => onChanged(_copy(canDownload: v))),
+        _row(Icons.chat_bubble_outline, l10n.rightsMayComment, value.canComment, (v) => onChanged(_copy(canComment: v))),
         if (allowAdminToggle)
-          _row(Icons.admin_panel_settings_outlined, 'Album-Admin', value.isFamilyAdmin, (v) => onChanged(_copy(isFamilyAdmin: v)),
-              subtitle: 'Verwaltet Mitglieder und Einladungen'),
+          _row(Icons.admin_panel_settings_outlined, l10n.rightsAlbumAdmin, value.isFamilyAdmin, (v) => onChanged(_copy(isFamilyAdmin: v)),
+              subtitle: l10n.rightsAlbumAdminSubtitle),
       ],
     );
   }
@@ -49,14 +51,14 @@ Map<String, dynamic> flagsToJson(MembershipFlags f) => {
   'canComment': f.canComment,
 };
 
-String describeRights(MembershipFlags m) {
+String describeRights(AppLocalizations l10n, MembershipFlags m) {
   final parts = <String>[
-    if (m.isFamilyAdmin) 'Album-Admin',
-    if (m.canUpload) 'Hochladen',
-    if (m.canDownload) 'Herunterladen',
-    if (m.canComment) 'Kommentieren',
+    if (m.isFamilyAdmin) l10n.rightsAlbumAdmin,
+    if (m.canUpload) l10n.rightsUpload,
+    if (m.canDownload) l10n.rightsDownload,
+    if (m.canComment) l10n.rightsComment,
   ];
-  return parts.isEmpty ? 'Nur ansehen' : parts.join(' · ');
+  return parts.isEmpty ? l10n.rightsViewOnly : parts.join(' · ');
 }
 
 /// Bottom-Sheet mit Rechte-Editor; liefert die neuen Rechte oder null.
@@ -76,7 +78,7 @@ Future<MembershipFlags?> showRightsSheet(BuildContext context, {required String 
             const SizedBox(height: 8),
             RightsEditor(value: current, allowAdminToggle: allowAdminToggle, onChanged: (v) => setState(() => current = v)),
             const SizedBox(height: 12),
-            FilledButton(onPressed: () => Navigator.pop(ctx, current), child: const Text('Speichern')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, current), child: Text(ctx.l10n.commonSave)),
           ],
         ),
       ),

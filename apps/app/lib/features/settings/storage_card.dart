@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_client.dart';
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 
 /// Antwort von GET /families/:id/storage. `disk` ist nur für Familien-/globale Admins gesetzt.
 class FamilyStorage {
@@ -63,6 +64,7 @@ class StorageCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final l10n = context.l10n;
     final storage = ref.watch(familyStorageProvider(familyId));
     return Card(
       child: storage.when(
@@ -89,9 +91,9 @@ class StorageCard extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Euer Album belegt ${formatBytes(s.totalBytes)}', style: text.titleMedium),
+                          Text(l10n.storageAlbumUses(formatBytes(s.totalBytes)), style: text.titleMedium),
                           Text(
-                            '${s.photoCount} ${s.photoCount == 1 ? 'Foto' : 'Fotos'} · ${s.videoCount} ${s.videoCount == 1 ? 'Video' : 'Videos'}',
+                            '${l10n.commonPhotoCount(s.photoCount)} · ${l10n.commonVideoCount(s.videoCount)}',
                             style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                           ),
                         ],
@@ -117,9 +119,9 @@ class StorageCard extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _Legend(color: scheme.primary, label: 'Fotos ${formatBytes(s.photoBytes)}'),
+                    _Legend(color: scheme.primary, label: l10n.storageLegendPhotos(formatBytes(s.photoBytes))),
                     const SizedBox(width: 16),
-                    _Legend(color: scheme.tertiary, label: 'Videos ${formatBytes(s.videoBytes)}'),
+                    _Legend(color: scheme.tertiary, label: l10n.storageLegendVideos(formatBytes(s.videoBytes))),
                   ],
                 ),
                 if (disk != null) ...[
@@ -130,8 +132,8 @@ class StorageCard extends ConsumerWidget {
                     children: [
                       Icon(Icons.dns_outlined, size: 18, color: scheme.onSurfaceVariant),
                       const SizedBox(width: 8),
-                      Expanded(child: Text('Server: ${formatBytes(disk.freeBytes)} frei von ${formatBytes(disk.totalBytes)}', style: text.bodyMedium)),
-                      Text('${(disk.usedFraction * 100).round()} % belegt', style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                      Expanded(child: Text(l10n.storageServerFree(formatBytes(disk.freeBytes), formatBytes(disk.totalBytes)), style: text.bodyMedium)),
+                      Text(l10n.storagePercentUsed((disk.usedFraction * 100).round()), style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -146,7 +148,7 @@ class StorageCard extends ConsumerWidget {
                   ),
                   if (disk.usedFraction > 0.9) ...[
                     const SizedBox(height: 8),
-                    Text('Der Speicher wird knapp. Zeit, den Server zu erweitern.', style: text.bodySmall?.copyWith(color: scheme.error)),
+                    Text(l10n.storageAlmostFull, style: text.bodySmall?.copyWith(color: scheme.error)),
                   ],
                 ],
               ],

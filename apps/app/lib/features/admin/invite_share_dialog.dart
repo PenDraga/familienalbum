@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../../theme/app_theme.dart';
 import '../auth/invite_screen.dart' show inviteLink;
 
@@ -12,7 +13,8 @@ import '../auth/invite_screen.dart' show inviteLink;
 Future<void> showInviteShareDialog(BuildContext context, WidgetRef ref, {required String familyName, required String code}) async {
   final baseUrl = ref.read(settingsProvider).baseUrl;
   final link = inviteLink(baseUrl, code);
-  final message = 'Du bist ins Album «$familyName» eingeladen.\n$link\n\nFalls der Link nicht geht: Server $baseUrl, Code $code. Gültig 7 Tage.';
+  final l10n = context.l10n;
+  final message = l10n.inviteShareMessage(familyName, link, baseUrl, code);
   final messenger = ScaffoldMessenger.of(context);
   await showDialog<void>(
     context: context,
@@ -20,7 +22,7 @@ Future<void> showInviteShareDialog(BuildContext context, WidgetRef ref, {require
       final text = Theme.of(ctx).textTheme;
       final scheme = Theme.of(ctx).colorScheme;
       return AlertDialog(
-        title: const Text('Einladung'),
+        title: Text(l10n.inviteTitle),
         content: SizedBox(
           width: 380,
           child: Column(
@@ -34,35 +36,35 @@ Future<void> showInviteShareDialog(BuildContext context, WidgetRef ref, {require
                 child: SelectableText(code, textAlign: TextAlign.center, style: text.headlineMedium?.copyWith(letterSpacing: 4)),
               ),
               const SizedBox(height: 8),
-              Text('7 Tage gültig, eine Nutzung.', style: text.bodySmall),
+              Text(l10n.inviteShareValidity, style: text.bodySmall),
               const SizedBox(height: 12),
               SelectableText(link, style: text.bodySmall),
               const SizedBox(height: 4),
               Text(
-                'Der Link öffnet die Einladung mit Server und Code, im Browser oder in der App. Am einfachsten per «Teilen» verschicken.',
+                l10n.inviteShareLinkHint,
                 style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Schliessen')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonClose)),
           TextButton.icon(
             onPressed: () {
               Clipboard.setData(ClipboardData(text: message));
               Navigator.pop(ctx);
-              messenger.showSnackBar(const SnackBar(content: Text('Einladung kopiert')));
+              messenger.showSnackBar(SnackBar(content: Text(l10n.inviteShareCopied)));
             },
             icon: const Icon(Icons.copy),
-            label: const Text('Kopieren'),
+            label: Text(l10n.inviteShareCopy),
           ),
           FilledButton.icon(
             onPressed: () {
               Navigator.pop(ctx);
-              SharePlus.instance.share(ShareParams(text: message, subject: 'Einladung ins Album «$familyName»'));
+              SharePlus.instance.share(ShareParams(text: message, subject: l10n.inviteShareSubject(familyName)));
             },
             icon: const Icon(Icons.ios_share),
-            label: const Text('Teilen'),
+            label: Text(l10n.inviteShareAction),
           ),
         ],
       );

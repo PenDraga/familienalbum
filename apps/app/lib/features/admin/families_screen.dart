@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_exception.dart';
+import '../../l10n/l10n.dart';
 import '../auth/auth_controller.dart';
 import 'admin_models.dart';
 import 'admin_repository.dart';
@@ -31,20 +32,21 @@ class _FamiliesScreenState extends ConsumerState<FamiliesScreen> {
   Future<void> _create() async {
     final name = TextEditingController();
     var joinAsAdmin = true;
+    final l10n = context.l10n;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          title: const Text('Neues Album'),
+          title: Text(l10n.familiesNewAlbum),
           content: SizedBox(
             width: 380,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: name, autofocus: true, decoration: const InputDecoration(labelText: 'Name', prefixIcon: Icon(Icons.photo_album_outlined))),
+                TextField(controller: name, autofocus: true, decoration: InputDecoration(labelText: l10n.familiesNameLabel, prefixIcon: const Icon(Icons.photo_album_outlined))),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Mich als Album-Admin eintragen'),
+                  title: Text(l10n.familiesJoinAsAdmin),
                   value: joinAsAdmin,
                   onChanged: (v) => setState(() => joinAsAdmin = v),
                 ),
@@ -52,8 +54,8 @@ class _FamiliesScreenState extends ConsumerState<FamiliesScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Anlegen')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.commonCancel)),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.commonCreate)),
           ],
         ),
       ),
@@ -81,17 +83,18 @@ class _FamiliesScreenState extends ConsumerState<FamiliesScreen> {
   }
 
   Future<void> _delete(AdminFamily f) async {
+    final l10n = context.l10n;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('„${f.name}“ löschen?'),
-        content: Text('${f.memberCount} Mitgliedschaften und ${f.mediaCount} Medien werden entfernt. Das lässt sich nicht rückgängig machen.'),
+        title: Text(l10n.familiesDeleteTitle(f.name)),
+        content: Text(l10n.familiesDeleteBody(f.memberCount, f.mediaCount)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.commonCancel)),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Löschen'),
+            child: Text(l10n.commonDelete),
           ),
         ],
       ),
@@ -111,20 +114,21 @@ class _FamiliesScreenState extends ConsumerState<FamiliesScreen> {
     final me = ref.watch(meProvider);
     final text = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Alben'),
+        title: Text(l10n.albumsTitle),
         leading: BackButton(onPressed: () => context.canPop() ? context.pop() : context.go('/settings')),
       ),
-      floatingActionButton: FloatingActionButton.extended(onPressed: _create, icon: const Icon(Icons.add), label: const Text('Neues Album')),
+      floatingActionButton: FloatingActionButton.extended(onPressed: _create, icon: const Icon(Icons.add), label: Text(l10n.familiesNewAlbum)),
       body: FutureBuilder<List<AdminFamily>>(
         future: _future,
         builder: (context, snap) {
           if (snap.hasError) return Center(child: Text(errorMessage(snap.error!)));
           if (!snap.hasData) return const Center(child: CircularProgressIndicator());
           final families = snap.data!;
-          if (families.isEmpty) return Center(child: Text('Noch keine Alben', style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)));
+          if (families.isEmpty) return Center(child: Text(l10n.familiesEmpty, style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)));
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
             itemCount: families.length,
@@ -137,8 +141,8 @@ class _FamiliesScreenState extends ConsumerState<FamiliesScreen> {
                   leading: CircleAvatar(backgroundColor: scheme.primaryContainer, foregroundColor: scheme.onPrimaryContainer, child: const Icon(Icons.photo_album_outlined)),
                   title: Text(f.name, style: text.titleMedium),
                   subtitle: Text(
-                    '${f.memberCount} ${f.memberCount == 1 ? 'Mitglied' : 'Mitglieder'} · ${f.photoCount} ${f.photoCount == 1 ? 'Foto' : 'Fotos'} · ${f.videoCount} ${f.videoCount == 1 ? 'Video' : 'Videos'} · ${formatBytes(f.totalBytes)}'
-                    '${mine == null ? '\nDu bist kein Mitglied' : (mine.membership.isFamilyAdmin ? '\nDu bist Album-Admin' : '\nDu bist Mitglied')}',
+                    '${l10n.familiesMemberCount(f.memberCount)} · ${l10n.commonPhotoCount(f.photoCount)} · ${l10n.commonVideoCount(f.videoCount)} · ${formatBytes(f.totalBytes)}'
+                    '\n${mine == null ? l10n.familiesNotMember : (mine.membership.isFamilyAdmin ? l10n.familiesYouAreAdmin : l10n.familiesYouAreMember)}',
                   ),
                   isThreeLine: true,
                   onTap: mine != null && mine.membership.isFamilyAdmin ? () => context.push('/settings/members/${f.id}') : null,
@@ -150,10 +154,10 @@ class _FamiliesScreenState extends ConsumerState<FamiliesScreen> {
                       if (v == 'delete') _delete(f);
                     },
                     itemBuilder: (_) => [
-                      if (mine != null && mine.membership.isFamilyAdmin) const PopupMenuItem(value: 'members', child: Text('Mitglieder verwalten')),
-                      if (mine != null && mine.membership.isFamilyAdmin) const PopupMenuItem(value: 'rename', child: Text('Umbenennen')),
-                      if (mine == null) const PopupMenuItem(value: 'join', child: Text('Mich als Album-Admin hinzufügen')),
-                      const PopupMenuItem(value: 'delete', child: Text('Album löschen')),
+                      if (mine != null && mine.membership.isFamilyAdmin) PopupMenuItem(value: 'members', child: Text(l10n.familiesManageMembers)),
+                      if (mine != null && mine.membership.isFamilyAdmin) PopupMenuItem(value: 'rename', child: Text(l10n.familiesRename)),
+                      if (mine == null) PopupMenuItem(value: 'join', child: Text(l10n.familiesJoinSelfAsAdmin)),
+                      PopupMenuItem(value: 'delete', child: Text(l10n.familiesDeleteAlbum)),
                     ],
                   ),
                 ),

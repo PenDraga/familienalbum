@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_models.dart';
 import '../timeline/timeline_controller.dart';
@@ -47,7 +48,8 @@ class AutoUploadController extends Notifier<AutoUploadState> with WidgetsBinding
     if (!s.enabled || me == null) return;
     final family = me.families.where((f) => f.id == s.familyId).firstOrNull;
     if (family != null && family.membership.canUpload) return;
-    final reason = family == null ? 'Ausgeschaltet: du bist nicht mehr Mitglied dieses Albums' : 'Ausgeschaltet: du darfst in «${family.name}» nicht hochladen';
+    final l10n = currentL10n();
+    final reason = family == null ? l10n.autoUploadOffNotMember : l10n.autoUploadOffNoRight(family.name);
     await _store.write(s.copyWith(enabled: false, lastRunAt: DateTime.now(), lastRunSummary: reason));
     await AutoUploadBackground.cancel();
     state = state.copyWith(settings: _store.read(), lastError: reason);

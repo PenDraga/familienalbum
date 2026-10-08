@@ -2,6 +2,7 @@ import 'package:familienalbum/core/providers.dart';
 import 'package:familienalbum/features/auth/auth_controller.dart';
 import 'package:familienalbum/features/auth/auth_models.dart';
 import 'package:familienalbum/features/autoupload/auto_upload_section.dart';
+import 'package:familienalbum/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,7 +24,12 @@ Future<void> pump(WidgetTester tester, Me user) async {
     ProviderScope(
       key: UniqueKey(),
       overrides: [sharedPreferencesProvider.overrideWithValue(prefs), meProvider.overrideWithValue(user)],
-      child: const MaterialApp(home: Scaffold(body: AutoUploadSection())),
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: Locale('de', 'CH'),
+        home: Scaffold(body: AutoUploadSection()),
+      ),
     ),
   );
   await tester.pumpAndSettle();

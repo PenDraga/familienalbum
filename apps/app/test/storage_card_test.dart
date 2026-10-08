@@ -1,4 +1,5 @@
 import 'package:familienalbum/features/settings/storage_card.dart';
+import 'package:familienalbum/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,7 +18,12 @@ void main() {
       ProviderScope(
         key: UniqueKey(), // neuer Container pro Aufruf, Overrides gelten sonst nur beim ersten Mal
         overrides: [familyStorageProvider.overrideWith((ref, familyId) async => storage)],
-        child: const MaterialApp(home: Scaffold(body: StorageCard(familyId: 'f1'))),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: Locale('de', 'CH'),
+          home: Scaffold(body: StorageCard(familyId: 'f1')),
+        ),
       ),
     );
     await tester.pumpAndSettle();

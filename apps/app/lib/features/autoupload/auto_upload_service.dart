@@ -12,6 +12,7 @@ import '../auth/auth_models.dart';
 import '../../core/api_client.dart';
 import '../../core/api_exception.dart';
 import '../../core/token_store.dart';
+import '../../l10n/l10n.dart';
 import '../upload/chunk_source.dart';
 import '../upload/upload_service.dart';
 import 'auto_upload_background.dart';
@@ -27,12 +28,13 @@ class SyncResult {
 
   String get summary {
     if (skippedReason != null) return skippedReason!;
+    final l10n = currentL10n();
     final parts = <String>[
-      if (uploaded > 0) '$uploaded hochgeladen',
-      if (duplicates > 0) '$duplicates bereits vorhanden',
-      if (failed > 0) '$failed fehlgeschlagen',
+      if (uploaded > 0) l10n.autoUploadSummaryUploaded(uploaded),
+      if (duplicates > 0) l10n.autoUploadSummaryDuplicates(duplicates),
+      if (failed > 0) l10n.autoUploadSummaryFailed(failed),
     ];
-    return parts.isEmpty ? 'Nichts Neues' : parts.join(', ');
+    return parts.isEmpty ? l10n.autoUploadSummaryNothingNew : parts.join(', ');
   }
 }
 
@@ -53,20 +55,21 @@ class AutoUploadService {
   Future<SyncResult> run() async {
     final store = AutoUploadStore(prefs);
     final settings = store.read();
-    if (!settings.enabled || settings.familyId == null) return const SyncResult(uploaded: 0, duplicates: 0, failed: 0, skippedReason: 'Auto-Upload ist aus');
-    if (!platformSupported) return const SyncResult(uploaded: 0, duplicates: 0, failed: 0, skippedReason: 'Nur auf Android und iOS');
+    final l10n = currentL10n();
+    if (!settings.enabled || settings.familyId == null) return SyncResult(uploaded: 0, duplicates: 0, failed: 0, skippedReason: l10n.autoUploadSkipOff);
+    if (!platformSupported) return SyncResult(uploaded: 0, duplicates: 0, failed: 0, skippedReason: l10n.autoUploadSkipPlatform);
 
     final tokens = TokenStore();
-    if (!await tokens.hasSession()) return const SyncResult(uploaded: 0, duplicates: 0, failed: 0, skippedReason: 'Nicht angemeldet');
+    if (!await tokens.hasSession()) return SyncResult(uploaded: 0, duplicates: 0, failed: 0, skippedReason: l10n.autoUploadSkipNotSignedIn);
 
     if (settings.wifiOnly) {
       final conn = await Connectivity().checkConnectivity();
       final onWifi = conn.contains(ConnectivityResult.wifi) || conn.contains(ConnectivityResult.ethernet);
-      if (!onWifi) return const SyncResult(uploaded: 0, duplicates: 0, failed: 0, skippedReason: 'Wartet auf WLAN');
+      if (!onWifi) return SyncResult(uploaded: 0, duplicates: 0, failed: 0, skippedReason: l10n.autoUploadSkipWaitingWifi);
     }
 
     final permission = await PhotoManager.requestPermissionExtend();
-    if (!permission.hasAccess) return const SyncResult(uploaded: 0, duplicates: 0, failed: 0, skippedReason: 'Kein Zugriff auf die Fotomediathek');
+    if (!permission.hasAccess) return SyncResult(uploaded: 0, duplicates: 0, failed: 0, skippedReason: l10n.autoUploadSkipNoPhotoAccess);
 
     // Upload-Recht kann jederzeit entzogen werden: vor jedem Lauf prüfen, sonst Auto-Upload abschalten.
     final rights = await _checkUploadRight(tokens, settings.familyId!);
@@ -143,16 +146,17 @@ class AutoUploadService {
   /// Netzfehler zählen nicht als Entzug (dann wird einfach dieser Lauf übersprungen).
   Future<String?> _checkUploadRight(TokenStore tokens, String familyId) async {
     final api = ApiClient(baseUrl: baseUrl, tokens: tokens, onSessionExpired: () {});
+    final l10n = currentL10n();
     try {
       final data = await api.dio.get<List<dynamic>>('/families').unwrap();
       final families = data.map((e) => Family.fromJson(e as Map<String, dynamic>)).toList();
       final family = families.where((f) => f.id == familyId).firstOrNull;
-      if (family == null) return 'Ausgeschaltet: du bist nicht mehr Mitglied dieses Albums';
-      if (!family.membership.canUpload) return 'Ausgeschaltet: du darfst in «${family.name}» nicht hochladen';
+      if (family == null) return l10n.autoUploadOffNotMember;
+      if (!family.membership.canUpload) return l10n.autoUploadOffNoRight(family.name);
       return null;
     } on ApiException catch (e) {
       // Recht lässt sich nicht prüfen (Server nicht erreichbar, Session abgelaufen): diesen Lauf auslassen
-      throw StateError('Upload-Recht nicht prüfbar: ${e.detail}');
+      throw StateError(l10n.autoUploadRightCheckFailed(e.detail));
     } finally {
       api.dispose();
     }
