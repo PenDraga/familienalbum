@@ -5,6 +5,11 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 
 ## [Unreleased]
 
+### 1.1 (in Arbeit): Deutsch und Englisch
+- Server: Fehlertexte nach `Accept-Language`, Push-Texte nach Sprache des Geräts (`POST /devices` mit `locale`),
+  Migration `m13_device_locale`
+- App: Texte in ARB-Dateien, Sprache folgt dem System (Deutsch Standard)
+
 ## [1.0.1] – 2026-10-07
 
 Erstes Update nach der App-Store-Freigabe von 1.0.0.

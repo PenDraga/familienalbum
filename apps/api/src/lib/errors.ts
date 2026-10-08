@@ -1,3 +1,4 @@
+import { MESSAGES_EN, requestLanguage } from './messages.en.js';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { Prisma } from '@prisma/client';
 import {
@@ -48,10 +49,12 @@ export interface ProblemJson {
 const PROBLEM_TYPE_BASE = 'https://familienalbum.local/problems/';
 
 function sendProblem(reply: FastifyReply, request: FastifyRequest, problem: ProblemJson) {
+  // Englische Clients bekommen den englischen Text zum Code; sonst bleibt der deutsche `detail`
+  const english = requestLanguage(request.headers['accept-language']) === 'en' && problem.code ? MESSAGES_EN[problem.code] : undefined;
   return reply
     .status(problem.status)
     .header('content-type', 'application/problem+json; charset=utf-8')
-    .send({ ...problem, instance: request.url });
+    .send({ ...problem, ...(english ? { detail: english } : {}), instance: request.url });
 }
 
 const HTTP_TITLES: Record<number, string> = {

@@ -48,12 +48,11 @@ export class NotificationService {
 
     const photos = fresh.filter((m) => m.type === 'PHOTO').length;
     const videos = fresh.length - photos;
-    const message: PushMessage = {
+    const sent = await this.sendToUsers(members.map((m) => m.userId), (lang) => ({
       title: family.name,
-      body: `${uploader.displayName} hat ${describeMedia(photos, videos)} hinzugefügt`,
+      body: lang === 'en' ? `${uploader.displayName} added ${describeMedia(photos, videos, 'en')}` : `${uploader.displayName} hat ${describeMedia(photos, videos)} hinzugefügt`,
       data: { type: 'media', familyId, count: String(fresh.length) },
-    };
-    const sent = await this.sendToUsers(members.map((m) => m.userId), message);
+    }));
     return { ...sent, count: fresh.length };
   }
 
@@ -74,12 +73,11 @@ export class NotificationService {
     });
 
     const excerpt = comment.body.length > 100 ? `${comment.body.slice(0, 97)}…` : comment.body;
-    const message: PushMessage = {
+    const sent = await this.sendToUsers(members.map((m) => m.userId), () => ({
       title: `${comment.author.displayName} · ${comment.media.family.name}`,
       body: excerpt,
       data: { type: 'comment', familyId: comment.media.familyId, mediaId: comment.mediaId, commentId },
-    };
-    const sent = await this.sendToUsers(members.map((m) => m.userId), message);
+    }));
     return { ...sent, count: 1 };
   }
 
@@ -88,35 +86,39 @@ export class NotificationService {
     const recap = await this.prisma.recap.findUnique({ where: { id: recapId }, include: { family: { select: { name: true } } } });
     if (!recap || recap.status !== 'READY') return NONE;
     const members = await this.prisma.familyMember.findMany({ where: { familyId: recap.familyId }, select: { userId: true } });
-    const message: PushMessage = {
-      title: `Rückblick ${recap.title}`,
-      body: `Euer Video ist da – ${recap.mediaCount} Momente aus ${recap.title} · ${recap.family.name}`,
+    const sent = await this.sendToUsers(members.map((m) => m.userId), (lang) => ({
+      title: lang === 'en' ? `Recap ${recap.title}` : `Rückblick ${recap.title}`,
+      body: lang === 'en' ? `Your video is ready – ${recap.mediaCount} moments from ${recap.title} · ${recap.family.name}` : `Euer Video ist da – ${recap.mediaCount} Momente aus ${recap.title} · ${recap.family.name}`,
       data: { type: 'recap', familyId: recap.familyId, recapId: recap.id },
-    };
-    const sent = await this.sendToUsers(members.map((m) => m.userId), message);
+    }));
     return { ...sent, count: 1 };
   }
 
-  private async sendToUsers(userIds: string[], message: PushMessage): Promise<Omit<NotifyOutcome, 'count'>> {
+  private async sendToUsers(userIds: string[], build: (lang: PushLang) => PushMessage): Promise<Omit<NotifyOutcome, 'count'>> {
+    const message = build('de');
     if (userIds.length === 0) return { recipients: 0, sent: 0 };
     if (!this.sender.enabled) {
       this.log.info({ recipients: userIds.length, title: message.title }, 'push disabled – clients poll');
       return { recipients: userIds.length, sent: 0 };
     }
-    const devices = await this.prisma.device.findMany({ where: { userId: { in: userIds } }, select: { fcmToken: true, userId: true } });
+    const devices = await this.prisma.device.findMany({ where: { userId: { in: userIds } }, select: { fcmToken: true, userId: true, locale: true } });
     if (devices.length === 0) return { recipients: userIds.length, sent: 0 };
 
-    // Badge = ungelesene Einträge des Empfängers über alle seine Alben; gleiche Zahl → ein Multicast
+    // Badge = ungelesene Einträge des Empfängers über alle seine Alben; gleiche Sprache und Zahl → ein Multicast
     const badges = await this.unreadTotals([...new Set(devices.map((d) => d.userId))]);
-    const groups = new Map<number, string[]>();
+    const groups = new Map<string, { lang: PushLang; badge: number; tokens: string[] }>();
     for (const d of devices) {
       const badge = badges.get(d.userId) ?? 0;
-      groups.set(badge, [...(groups.get(badge) ?? []), d.fcmToken]);
+      const lang: PushLang = d.locale?.startsWith('en') ? 'en' : 'de';
+      const key = `${lang}:${badge}`;
+      const g = groups.get(key) ?? { lang, badge, tokens: [] };
+      g.tokens.push(d.fcmToken);
+      groups.set(key, g);
     }
     let sent = 0;
     const invalid: string[] = [];
-    for (const [badge, tokens] of groups) {
-      const result = await this.sender.send(tokens, { ...message, badge });
+    for (const { lang, badge, tokens } of groups.values()) {
+      const result = await this.sender.send(tokens, { ...build(lang), badge });
       sent += result.sent;
       invalid.push(...result.invalidTokens);
     }
@@ -143,8 +145,15 @@ export class NotificationService {
   }
 }
 
-export function describeMedia(photos: number, videos: number): string {
+export type PushLang = 'de' | 'en';
+
+export function describeMedia(photos: number, videos: number, lang: PushLang = 'de'): string {
   const parts: string[] = [];
+  if (lang === 'en') {
+    if (photos > 0) parts.push(photos === 1 ? '1 new photo' : `${photos} new photos`);
+    if (videos > 0) parts.push(videos === 1 ? '1 new video' : `${videos} new videos`);
+    return parts.join(' and ');
+  }
   if (photos > 0) parts.push(photos === 1 ? '1 neues Foto' : `${photos} neue Fotos`);
   if (videos > 0) parts.push(videos === 1 ? '1 neues Video' : `${videos} neue Videos`);
   return parts.join(' und ');

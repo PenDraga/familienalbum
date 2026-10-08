@@ -83,6 +83,8 @@ Abgelaufen/aufgebraucht → 410 (`INVITE_EXPIRED` / `INVITE_USED_UP`), bereits M
   (`displayName`, `isAdmin`, `isDisabled`, `password`; Sperre/Passwortwechsel beendet alle Sitzungen;
   kein Selbst-Entzug/Selbst-Sperre)
 - `POST /admin/families/:id/members` `{ userId, flags… }`
+- Sprache: `Accept-Language: en…` liefert englische `detail`-Texte (Katalog `src/lib/messages.en.ts`, Schlüssel = `code`);
+  sonst Deutsch. `POST /devices` nimmt `locale` (de, en) für Push-Texte entgegen.
 - `GET /meta` → `{ name, version, operator: { name, email } }` (öffentlich; Betreiber aus `OPERATOR_NAME`/`OPERATOR_EMAIL`)
 - `GET /admin/stats` → Benutzer, Familien, Medien, Speicher
 

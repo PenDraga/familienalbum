@@ -27,6 +27,8 @@ export const updateCommentBodySchema = createCommentBodySchema;
 export const deviceBodySchema = z.object({
   fcmToken: z.string().min(20).max(4096),
   platform: z.enum(['ios', 'android', 'windows', 'web']),
+  /** Sprache des Geräts für Push-Texte (de, en); fehlt → de */
+  locale: z.string().trim().min(2).max(10).optional(),
 });
 
 export const deleteDeviceBodySchema = z.object({

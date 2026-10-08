@@ -196,6 +196,9 @@ Services: `api`, `worker` (gleiches Image, anderer Entrypoint), `postgres`, `red
 - Keine Business-Logik in Routen – Services unter `src/services/`.
 - Migrations nur via `prisma migrate`, nie manuell.
 - Fehler als RFC 7807 Problem-JSON.
-- Deutsch in UI-Texten, Englisch im Code. In der Oberfläche und in Fehlermeldungen heisst eine `Family` «Album»
-  («Album-Admin», «Alben»); im Code, in der API und in der Datenbank bleibt es `family`.
+- Zwei Sprachen: Deutsch (Vorlage, Rückfall) und Englisch. App-Texte liegen in `apps/app/lib/l10n/app_de.arb` und
+  `app_en.arb` (`context.l10n.key`, ohne Context `currentL10n()`); keine fest kodierten UI-Texte im Dart-Code. Server:
+  deutsche `detail`-Texte in den Services, englische im Katalog `src/lib/messages.en.ts` nach `code`; Push-Texte je
+  Geräte-Sprache (`Device.locale`). In der Oberfläche heisst eine `Family` «Album» («Album-Admin», «Alben»); im Code,
+  in der API und in der Datenbank bleibt es `family`.
 - Bevor grössere Entscheidungen abweichen: ADR unter `/docs/adr/` anlegen und Rücksprache.

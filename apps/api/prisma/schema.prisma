@@ -195,6 +195,7 @@ model Device {
   userId    String
   fcmToken  String   @unique
   platform  String // ios | android | windows | web
+  locale    String? // Sprache des Geräts (de, en) für Push-Texte
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   lastError String?

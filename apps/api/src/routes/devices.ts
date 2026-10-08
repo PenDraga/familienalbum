@@ -19,11 +19,12 @@ export const deviceRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request, reply) => {
-      const { fcmToken, platform } = request.body;
+      const { fcmToken, platform, locale } = request.body;
+      const lang = locale?.toLowerCase().startsWith('en') ? 'en' : 'de';
       await app.prisma.device.upsert({
         where: { fcmToken },
-        create: { fcmToken, platform, userId: request.user!.id },
-        update: { platform, userId: request.user!.id, lastError: null },
+        create: { fcmToken, platform, locale: lang, userId: request.user!.id },
+        update: { platform, locale: lang, userId: request.user!.id, lastError: null },
       });
       return reply.code(204).send(null);
     },
