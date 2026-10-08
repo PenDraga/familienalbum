@@ -80,8 +80,8 @@ class CommentsRepository {
         .unwrap(),
   );
 
-  Future<void> registerDevice(String fcmToken, String platform) =>
-      _api.dio.post<void>('/devices', data: {'fcmToken': fcmToken, 'platform': platform}).unwrap();
+  Future<void> registerDevice(String fcmToken, String platform, String locale) =>
+      _api.dio.post<void>('/devices', data: {'fcmToken': fcmToken, 'platform': platform, 'locale': locale}).unwrap();
 
   Future<void> unregisterDevice(String fcmToken) => _api.dio.delete<void>('/devices', data: {'fcmToken': fcmToken}).unwrap();
 }

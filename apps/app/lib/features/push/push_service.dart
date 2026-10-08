@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/auth_controller.dart';
 import '../comments/comments_repository.dart';
+import '../../l10n/l10n.dart';
 
 /// Firebase-Konfiguration per --dart-define (Werte aus der Firebase-Konsole, App-Einstellungen).
 /// Fehlt sie, bleibt Push aus und die App pollt (Web/Windows ohnehin).
@@ -112,7 +113,8 @@ class PushService {
     final t = _token;
     if (t == null) return;
     try {
-      await _ref.read(commentsRepositoryProvider).registerDevice(t, _platform);
+      // Sprache mitgeben, damit Push-Texte zur Oberfläche passen
+      await _ref.read(commentsRepositoryProvider).registerDevice(t, _platform, currentLocaleTag());
       debugPrint('Push-Token registriert ($_platform)');
     } catch (e) {
       debugPrint('Push-Token konnte nicht registriert werden: $e');

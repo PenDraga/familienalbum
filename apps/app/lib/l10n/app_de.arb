@@ -219,7 +219,7 @@
   },
   "commonCancel": "Abbrechen",
   "commonClose": "Schliessen",
-  "commonCreate": "Anlegen",
+  "commonCreate": "Erstellen",
   "commonDelete": "Löschen",
   "commonNameYou": "{name} (du)",
   "@commonNameYou": {
@@ -239,7 +239,7 @@
       }
     }
   },
-  "commonRetry": "Nochmals versuchen",
+  "commonRetry": "Erneut versuchen",
   "commonSave": "Speichern",
   "commonSaving": "Speichert …",
   "commonVideoCount": "{count, plural, =1{1 Video} other{{count} Videos}}",
