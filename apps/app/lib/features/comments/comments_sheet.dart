@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/api_exception.dart';
+import '../../l10n/l10n.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/emoji_text.dart';
 import '../../widgets/user_avatar.dart';
@@ -139,19 +140,20 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
   }
 
   Future<void> _delete(CommentItem c) async {
+    final l10n = context.l10n;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Kommentar löschen?'),
+        title: Text(l10n.commentsDeleteTitle),
         content: Text(c.body, maxLines: 4, overflow: TextOverflow.ellipsis),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Abbrechen'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Löschen'),
+            child: Text(l10n.commonDelete),
           ),
         ],
       ),
@@ -179,6 +181,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final l10n = context.l10n;
     final me = ref.watch(meProvider);
     final family = ref.watch(selectedFamilyProvider);
     final canComment = family?.membership.canComment ?? false;
@@ -204,7 +207,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
               padding: const EdgeInsets.fromLTRB(20, 0, 8, 4),
               child: Row(
                 children: [
-                  Text('Kommentare', style: text.titleLarge),
+                  Text(l10n.commentsTitle, style: text.titleLarge),
                   if (comments != null && comments.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     Text(
@@ -239,8 +242,8 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                         padding: const EdgeInsets.all(32),
                         child: Text(
                           canComment
-                              ? 'Noch keine Kommentare. Schreib den ersten!'
-                              : 'Noch keine Kommentare.',
+                              ? l10n.commentsEmptyWrite
+                              : l10n.commentsEmpty,
                           style: text.bodyMedium?.copyWith(
                             color: scheme.onSurfaceVariant,
                           ),
@@ -289,7 +292,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                'Kommentar von ${_editing!.authorName} bearbeiten',
+                                l10n.commentsEditing(_editing!.authorName),
                                 style: text.labelMedium?.copyWith(
                                   color: scheme.primary,
                                 ),
@@ -298,7 +301,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                             ),
                             TextButton(
                               onPressed: _sending ? null : _cancelEdit,
-                              child: const Text('Abbrechen'),
+                              child: Text(l10n.commonCancel),
                             ),
                           ],
                         ),
@@ -316,8 +319,8 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                             textCapitalization: TextCapitalization.sentences,
                             decoration: InputDecoration(
                               hintText: _editing != null
-                                  ? 'Neuer Text …'
-                                  : 'Kommentar schreiben …',
+                                  ? l10n.commentsNewTextHint
+                                  : l10n.commentsWriteHint,
                               counterText: '',
                               isDense: true,
                               fillColor: scheme.surfaceContainerLowest,
@@ -332,7 +335,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                         IconButton.filled(
                           onPressed: _sending ? null : _send,
                           style: IconButton.styleFrom(backgroundColor: scheme.secondary, foregroundColor: scheme.onSecondary, minimumSize: const Size(48, 48)),
-                          tooltip: _editing != null ? 'Speichern' : 'Senden',
+                          tooltip: _editing != null ? l10n.commonSave : l10n.commentsSend,
                           icon: _sending
                               ? const SizedBox(
                                   width: 18,
@@ -377,7 +380,7 @@ class _CommentBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final when = DateFormat.MMMd('de_CH')
+    final when = DateFormat.MMMd(context.localeTag)
         .add_Hm()
         .format(comment.createdAt.toLocal());
 
@@ -427,7 +430,7 @@ class _CommentBubble extends StatelessWidget {
                               ),
                               TextSpan(text: '  $when'),
                               if (comment.editedAt != null)
-                                const TextSpan(text: ' · bearbeitet'),
+                                TextSpan(text: ' · ${context.l10n.commentsEdited}'),
                             ],
                           ),
                         ),
@@ -439,7 +442,7 @@ class _CommentBubble extends StatelessWidget {
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             iconSize: 18,
-                            tooltip: 'Bearbeiten',
+                            tooltip: context.l10n.commentsEdit,
                             icon: const Icon(Icons.edit_outlined),
                             onPressed: onEdit,
                           ),
@@ -451,7 +454,7 @@ class _CommentBubble extends StatelessWidget {
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             iconSize: 18,
-                            tooltip: 'Löschen',
+                            tooltip: context.l10n.commonDelete,
                             icon: const Icon(Icons.delete_outline),
                             onPressed: onDelete,
                           ),

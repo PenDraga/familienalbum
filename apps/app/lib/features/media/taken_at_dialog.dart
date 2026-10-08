@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../l10n/l10n.dart';
 import 'media_info.dart';
 
 /// Dialog „Datum und Uhrzeit ändern“: entweder auf einen Zeitpunkt setzen oder um Tage/Stunden/Minuten verschieben.
@@ -28,10 +29,6 @@ class _TakenAtDialogState extends State<_TakenAtDialog> {
   final _days = TextEditingController(text: '0');
   final _hours = TextEditingController(text: '0');
   final _minutes = TextEditingController(text: '0');
-
-  static final _date = DateFormat.yMMMd('de_CH');
-  static final _time = DateFormat.Hm('de_CH');
-  static final _full = DateFormat('dd.MM.yyyy, HH:mm', 'de_CH');
 
   @override
   void dispose() {
@@ -63,7 +60,7 @@ class _TakenAtDialogState extends State<_TakenAtDialog> {
       initialDate: _value,
       firstDate: DateTime(1900),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      locale: const Locale('de', 'CH'),
+      locale: Localizations.localeOf(context),
     );
     if (picked == null) return;
     setState(() => _value = DateTime(picked.year, picked.month, picked.day, _value.hour, _value.minute, _value.second));
@@ -83,11 +80,16 @@ class _TakenAtDialogState extends State<_TakenAtDialog> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final l10n = context.l10n;
+    final locale = context.localeTag;
+    final date = DateFormat.yMMMd(locale);
+    final time = DateFormat.Hm(locale);
+    final full = DateFormat.yMd(locale).addPattern('Hm', ', ');
     final result = _result;
     final many = widget.count > 1;
 
     return AlertDialog(
-      title: Text(many ? 'Datum für ${widget.count} Medien' : 'Datum und Uhrzeit'),
+      title: Text(many ? l10n.takenAtTitleMany(widget.count) : l10n.takenAtTitle),
       content: SizedBox(
         width: 380,
         child: Column(
@@ -95,9 +97,9 @@ class _TakenAtDialogState extends State<_TakenAtDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(value: false, icon: Icon(Icons.event), label: Text('Setzen')),
-                ButtonSegment(value: true, icon: Icon(Icons.update), label: Text('Verschieben')),
+              segments: [
+                ButtonSegment(value: false, icon: const Icon(Icons.event), label: Text(l10n.takenAtSet)),
+                ButtonSegment(value: true, icon: const Icon(Icons.update), label: Text(l10n.takenAtShift)),
               ],
               selected: {_shift},
               onSelectionChanged: (s) => setState(() => _shift = s.first),
@@ -108,23 +110,23 @@ class _TakenAtDialogState extends State<_TakenAtDialog> {
               Row(
                 children: [
                   Expanded(
-                    child: _PickerField(icon: Icons.calendar_today_outlined, label: 'Datum', value: _date.format(_value), onTap: _pickDate),
+                    child: _PickerField(icon: Icons.calendar_today_outlined, label: l10n.takenAtDate, value: date.format(_value), onTap: _pickDate),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: _PickerField(icon: Icons.schedule_outlined, label: 'Uhrzeit', value: _time.format(_value), onTap: _pickTime),
+                    child: _PickerField(icon: Icons.schedule_outlined, label: l10n.takenAtTime, value: time.format(_value), onTap: _pickTime),
                   ),
                 ],
               ),
               if (many) ...[
                 const SizedBox(height: 10),
-                Text('Alle ausgewählten Medien erhalten denselben Zeitpunkt.', style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                Text(l10n.takenAtSameForAll, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               ],
             ] else ...[
               SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: false, icon: Icon(Icons.add), label: Text('Später')),
-                  ButtonSegment(value: true, icon: Icon(Icons.remove), label: Text('Früher')),
+                segments: [
+                  ButtonSegment(value: false, icon: const Icon(Icons.add), label: Text(l10n.takenAtLater)),
+                  ButtonSegment(value: true, icon: const Icon(Icons.remove), label: Text(l10n.takenAtEarlier)),
                 ],
                 selected: {_earlier},
                 onSelectionChanged: (s) => setState(() => _earlier = s.first),
@@ -134,11 +136,11 @@ class _TakenAtDialogState extends State<_TakenAtDialog> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _NumberField(controller: _days, label: 'Tage', onChanged: () => setState(() {}))),
+                  Expanded(child: _NumberField(controller: _days, label: l10n.takenAtDays, onChanged: () => setState(() {}))),
                   const SizedBox(width: 10),
-                  Expanded(child: _NumberField(controller: _hours, label: 'Stunden', onChanged: () => setState(() {}))),
+                  Expanded(child: _NumberField(controller: _hours, label: l10n.takenAtHours, onChanged: () => setState(() {}))),
                   const SizedBox(width: 10),
-                  Expanded(child: _NumberField(controller: _minutes, label: 'Minuten', onChanged: () => setState(() {}))),
+                  Expanded(child: _NumberField(controller: _minutes, label: l10n.takenAtMinutes, onChanged: () => setState(() {}))),
                 ],
               ),
               const SizedBox(height: 12),
@@ -149,11 +151,11 @@ class _TakenAtDialogState extends State<_TakenAtDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Vorschau', style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
+                      Text(l10n.takenAtPreview, style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
                       const SizedBox(height: 4),
                       for (final s in widget.samples.take(2))
                         Text(
-                          '${_full.format(s.toLocal())}  →  ${_full.format(s.toLocal().add(_shiftBy))}',
+                          '${full.format(s.toLocal())}  →  ${full.format(s.toLocal().add(_shiftBy))}',
                           style: text.bodySmall,
                         ),
                     ],
@@ -161,7 +163,7 @@ class _TakenAtDialogState extends State<_TakenAtDialog> {
                 ),
               const SizedBox(height: 6),
               Text(
-                'Praktisch bei falscher Zeitzone oder verstellter Kamera-Uhr: Die Abstände zwischen den Aufnahmen bleiben erhalten.',
+                l10n.takenAtShiftHint,
                 style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
               ),
             ],
@@ -169,12 +171,12 @@ class _TakenAtDialogState extends State<_TakenAtDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Abbrechen')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.commonCancel)),
         FilledButton(
           onPressed: result == null ? null : () => Navigator.pop(context, result),
           // Theme-Buttons sind volle Breite; im Dialog kompakt neben „Abbrechen“
           style: FilledButton.styleFrom(minimumSize: const Size(0, 40), padding: const EdgeInsets.symmetric(horizontal: 18)),
-          child: const Text('Übernehmen'),
+          child: Text(l10n.takenAtApply),
         ),
       ],
     );

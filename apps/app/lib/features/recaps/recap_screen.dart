@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../auth/auth_controller.dart';
 import '../media/original/original_saver.dart';
 import 'recap_models.dart';
@@ -48,7 +49,7 @@ class _RecapScreenState extends ConsumerState<RecapScreen> {
           c.play();
         })
         .catchError((Object e) {
-          if (mounted) setState(() => _error = 'Video konnte nicht geladen werden: $e');
+          if (mounted) setState(() => _error = context.l10n.mediaVideoLoadError('$e'));
         });
   }
 
@@ -83,14 +84,15 @@ class _RecapScreenState extends ConsumerState<RecapScreen> {
   }
 
   Future<void> _delete(RecapItem recap) async {
+    final l10n = context.l10n;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('«${recap.title}» löschen?'),
-        content: const Text('Das Video wird entfernt. Es lässt sich jederzeit neu erstellen.'),
+        title: Text(l10n.recapDeleteTitle(recap.title)),
+        content: Text(l10n.recapDeleteText),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Löschen')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.commonCancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.commonDelete)),
         ],
       ),
     );
@@ -108,6 +110,7 @@ class _RecapScreenState extends ConsumerState<RecapScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final l10n = context.l10n;
     final recaps = ref.watch(recapsProvider);
     final recap = recaps.value?.where((r) => r.id == widget.recapId).firstOrNull;
     final family = ref.watch(selectedFamilyProvider);
@@ -119,20 +122,20 @@ class _RecapScreenState extends ConsumerState<RecapScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: Text(recap?.title ?? 'Rückblick', style: text.titleLarge?.copyWith(color: Colors.white)),
+        title: Text(recap?.title ?? l10n.recapTitle, style: text.titleLarge?.copyWith(color: Colors.white)),
         actions: [
           if (recap != null && recap.isReady)
             IconButton(
-              tooltip: kIsWeb ? 'Herunterladen' : 'Teilen oder sichern',
+              tooltip: kIsWeb ? l10n.recapDownload : l10n.recapShareOrSave,
               onPressed: _busy ? null : () => _share(recap),
               icon: _busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Icon(kIsWeb ? Icons.download_outlined : Icons.ios_share),
             ),
           if (recap != null && (family?.membership.isFamilyAdmin ?? false))
-            IconButton(tooltip: 'Löschen', onPressed: () => _delete(recap), icon: const Icon(Icons.delete_outline)),
+            IconButton(tooltip: l10n.commonDelete, onPressed: () => _delete(recap), icon: const Icon(Icons.delete_outline)),
         ],
       ),
       body: recap == null
-          ? Center(child: recaps.isLoading ? const CircularProgressIndicator() : const Text('Rückblick nicht gefunden.', style: TextStyle(color: Colors.white)))
+          ? Center(child: recaps.isLoading ? const CircularProgressIndicator() : Text(l10n.recapNotFound, style: const TextStyle(color: Colors.white)))
           : !recap.isReady
           ? _Status(recap: recap)
           : _error != null
@@ -163,9 +166,9 @@ class _RecapScreenState extends ConsumerState<RecapScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                   child: Text(
                     [
-                      '${recap.mediaCount} Momente',
+                      l10n.recapMoments(recap.mediaCount),
                       if (recap.durationSec != null) '${Duration(seconds: recap.durationSec!.round()).inMinutes}:${(recap.durationSec!.round() % 60).toString().padLeft(2, '0')} min',
-                      if (recap.musicTrack != null) 'Musik: ${recap.musicTrack} – Kevin MacLeod (CC BY 4.0)',
+                      if (recap.musicTrack != null) l10n.recapMusic(recap.musicTrack!),
                     ].join(' · '),
                     textAlign: TextAlign.center,
                     style: text.bodySmall?.copyWith(color: Colors.white54),
@@ -192,10 +195,10 @@ class _Status extends StatelessWidget {
           children: [
             if (recap.isFailed) const Icon(Icons.error_outline, color: Colors.white70, size: 48) else const CircularProgressIndicator(),
             const SizedBox(height: 16),
-            Text(recap.isFailed ? 'Das Video konnte nicht erstellt werden.' : 'Das Video wird gerade erstellt …', style: text.titleMedium?.copyWith(color: Colors.white)),
+            Text(recap.isFailed ? context.l10n.recapFailedText : context.l10n.recapCreatingText, style: text.titleMedium?.copyWith(color: Colors.white)),
             const SizedBox(height: 6),
             Text(
-              recap.isFailed ? (recap.error ?? '') : 'Je nach Anzahl Fotos dauert das ein paar Minuten. Du bekommst eine Mitteilung.',
+              recap.isFailed ? (recap.error ?? '') : context.l10n.recapCreatingHint,
               textAlign: TextAlign.center,
               style: text.bodyMedium?.copyWith(color: Colors.white60),
             ),

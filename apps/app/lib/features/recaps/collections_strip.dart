@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/l10n.dart';
 import '../../theme/app_theme.dart';
 import '../auth/auth_models.dart';
 import 'create_recap_dialog.dart';
@@ -33,7 +34,7 @@ class CollectionsStrip extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Row(
               children: [
-                Text('Sammlungen', style: text.titleMedium),
+                Text(context.l10n.collectionsTitle, style: text.titleMedium),
                 if (memories.isNotEmpty) ...[
                   const SizedBox(width: 8),
                   Container(
@@ -83,8 +84,8 @@ class _MemoryCard extends StatelessWidget {
       background: thumb == null ? ColoredBox(color: scheme.secondaryContainer) : Image.network(thumb, fit: BoxFit.cover),
       badge: Icon(Icons.auto_awesome, color: scheme.onSecondary, size: 18),
       badgeColor: scheme.secondary,
-      title: 'An diesem Tag',
-      subtitle: count == 1 ? '${first.label} · 1 Foto' : '${first.label} · $count Medien',
+      title: context.l10n.onThisDayTitle,
+      subtitle: '${first.label} · ${context.l10n.collectionsItemCount(count)}',
       textStyle: text,
     );
   }
@@ -99,10 +100,10 @@ class _RecapCard extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final subtitle = recap.isReady
-        ? '${recap.kind.label} · ${_duration(recap.durationSec)}'
+        ? '${recap.kind.label(context.l10n)} · ${_duration(recap.durationSec)}'
         : recap.isFailed
-        ? 'Fehlgeschlagen'
-        : 'Wird erstellt …';
+        ? context.l10n.recapFailed
+        : context.l10n.recapCreating;
     return _Card(
       onTap: () => context.push('/recaps/${recap.id}'),
       background: recap.posterUrl != null
@@ -158,8 +159,8 @@ class _CreateCard extends StatelessWidget {
                   child: Icon(Icons.movie_creation_outlined, color: scheme.onTertiaryContainer),
                 ),
                 const SizedBox(height: 8),
-                Text('Rückblick erstellen', textAlign: TextAlign.center, style: text.labelLarge),
-                Text('Monat, Jahr oder Sekunden-Film', textAlign: TextAlign.center, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                Text(context.l10n.recapCreateTitle, textAlign: TextAlign.center, style: text.labelLarge),
+                Text(context.l10n.recapCreateSubtitle, textAlign: TextAlign.center, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               ],
             ),
           ),

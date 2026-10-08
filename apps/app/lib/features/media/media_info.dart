@@ -1,3 +1,5 @@
+import '../../l10n/l10n.dart';
+
 /// Aufnahme-Metadaten (Auszug aus EXIF bzw. Video-Tags) und Dateiinfos eines Mediums.
 class MediaInfo {
   const MediaInfo({
@@ -85,7 +87,9 @@ class ExifInfo {
   String? get focalLabel {
     if (focalLength == null) return null;
     final base = '${_trim(focalLength!)} mm';
-    if (focalLength35 != null && (focalLength35! - focalLength!).abs() > 0.5) return '$base (${_trim(focalLength35!)} mm KB)';
+    if (focalLength35 != null && (focalLength35! - focalLength!).abs() > 0.5) {
+      return currentL10n().mediaInfoFocalEquivalent(_trim(focalLength!), _trim(focalLength35!));
+    }
     return base;
   }
 

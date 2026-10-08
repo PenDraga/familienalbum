@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../../widgets/app_image.dart';
 import '../../widgets/glass.dart';
 import '../auth/auth_controller.dart';
@@ -93,19 +94,19 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
         const SizedBox(width: 8),
       ],
       if (family?.membership.isFamilyAdmin ?? false)
-        GlassIconButton(icon: Icons.person_add_alt_1_outlined, tooltip: 'Einladen', onPressed: () => _showInviteDialog(context, family!)),
+        GlassIconButton(icon: Icons.person_add_alt_1_outlined, tooltip: context.l10n.timelineInviteTooltip, onPressed: () => _showInviteDialog(context, family!)),
       const SizedBox(width: 8),
-      GlassIconButton(icon: Icons.settings_outlined, tooltip: 'Einstellungen', onPressed: () => context.go('/settings')),
+      GlassIconButton(icon: Icons.settings_outlined, tooltip: context.l10n.timelineSettingsTooltip, onPressed: () => context.go('/settings')),
       const SizedBox(width: 12),
     ];
 
     if (family == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Familienalbum'), actions: actions),
-        body: const EmptyHint(
+        appBar: AppBar(title: Text(context.l10n.appTitle), actions: actions),
+        body: EmptyHint(
           icon: Icons.photo_album_outlined,
-          title: 'Noch kein Album',
-          text: 'Du bist noch in keinem Album. Löse eine Einladung ein oder bitte einen Admin, dich hinzuzufügen.',
+          title: context.l10n.timelineNoAlbumTitle,
+          text: context.l10n.timelineNoAlbumText,
         ),
       );
     }
@@ -158,26 +159,27 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
   Future<void> _showInviteDialog(BuildContext context, Family family) async {
     var canUpload = true;
     var canDownload = false;
+    final l10n = context.l10n;
     final go = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          title: const Text('Einladung erstellen'),
+          title: Text(l10n.timelineInviteCreateTitle),
           content: SizedBox(
             width: 380,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Wer die Einladung annimmt, wird Mitglied von «${family.name}».', style: Theme.of(ctx).textTheme.bodyMedium),
+                Text(l10n.timelineInviteCreateText(family.name), style: Theme.of(ctx).textTheme.bodyMedium),
                 const SizedBox(height: 12),
-                SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Darf hochladen'), value: canUpload, onChanged: (v) => setState(() => canUpload = v)),
-                SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Darf Originale herunterladen'), value: canDownload, onChanged: (v) => setState(() => canDownload = v)),
+                SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(l10n.timelineInviteCanUpload), value: canUpload, onChanged: (v) => setState(() => canUpload = v)),
+                SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(l10n.timelineInviteCanDownload), value: canDownload, onChanged: (v) => setState(() => canDownload = v)),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Erstellen')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.commonCancel)),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.commonCreate)),
           ],
         ),
       ),
@@ -208,7 +210,7 @@ class _ImmersiveTimeline extends ConsumerWidget {
     final width = MediaQuery.sizeOf(context).width;
     final heroHeight = (MediaQuery.sizeOf(context).height * 0.42).clamp(240.0, 440.0);
     final newest = state.items.where((m) => m.isReady && m.urls.thumb1600 != null).firstOrNull;
-    final monthFormat = DateFormat.yMMMM('de_CH');
+    final monthFormat = DateFormat.yMMMM(context.localeTag);
     final targetHeight = targetRowHeightFor(width);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
@@ -243,10 +245,10 @@ class _ImmersiveTimeline extends ConsumerWidget {
             hasScrollBody: false,
             child: EmptyHint(
               icon: Icons.photo_outlined,
-              title: 'Noch keine Fotos',
+              title: context.l10n.timelineNoPhotosTitle,
               text: family.membership.canUpload
-                  ? 'Lade das erste Foto oder Video hoch – es erscheint hier nach Aufnahmedatum sortiert.'
-                  : 'Sobald jemand etwas hochlädt, erscheint es hier.',
+                  ? context.l10n.timelineNoPhotosUploadHint
+                  : context.l10n.timelineNoPhotosWaitHint,
             ),
           ),
         for (final (month, items) in state.groups)
@@ -273,7 +275,7 @@ class _ImmersiveTimeline extends ConsumerWidget {
                   ? Text(state.loadMoreError!, style: TextStyle(color: scheme.error))
                   : state.hasMore || state.items.isEmpty
                   ? const SizedBox.shrink()
-                  : Text('${state.items.length} Medien', style: text.bodySmall?.copyWith(color: scheme.outline)),
+                  : Text(context.l10n.timelineMediaCount(state.items.length), style: text.bodySmall?.copyWith(color: scheme.outline)),
             ),
           ),
         ),
@@ -294,7 +296,7 @@ class _CollapsedTitle extends ConsumerWidget {
     final child = me.families.length == 1
         ? Text(family.name)
         : PopupMenuButton<String>(
-            tooltip: 'Album wechseln',
+            tooltip: context.l10n.timelineSwitchAlbum,
             onSelected: (id) => ref.read(settingsProvider.notifier).selectFamily(id),
             itemBuilder: (_) => [
               for (final f in me.families)
@@ -339,10 +341,10 @@ class _HeroHeader extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final blur = Curves.easeIn.transform(t) * 24;
-    final fmt = DateFormat.yMMM('de_CH');
+    final fmt = DateFormat.yMMM(context.localeTag);
     final subtitle = [
-      count == 1 ? '1 Medium' : '$count${hasMore ? '+' : ''} Medien',
-      if (oldestMonth != null) 'seit ${fmt.format(DateTime.utc(int.parse(oldestMonth!.substring(0, 4)), int.parse(oldestMonth!.substring(5))))}',
+      hasMore ? context.l10n.timelineMediaCountMore(count) : context.l10n.timelineMediaCount(count),
+      if (oldestMonth != null) context.l10n.timelineSince(fmt.format(DateTime.utc(int.parse(oldestMonth!.substring(0, 4)), int.parse(oldestMonth!.substring(5))))),
     ].join(' · ');
 
     return ClipRect(
@@ -602,27 +604,27 @@ class _SelectionBar extends ConsumerWidget {
         padding: EdgeInsets.fromLTRB(8, padding.top + 8, 8, 8),
         child: Row(
           children: [
-            IconButton(tooltip: 'Auswahl aufheben', icon: const Icon(Icons.close), onPressed: () => ref.read(selectionProvider.notifier).clear()),
+            IconButton(tooltip: context.l10n.timelineClearSelection, icon: const Icon(Icons.close), onPressed: () => ref.read(selectionProvider.notifier).clear()),
             const SizedBox(width: 4),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${selection.length} ausgewählt', style: text.titleMedium),
+                  Text(context.l10n.timelineSelectedCount(selection.length), style: text.titleMedium),
                   if (deletable < selectedItems.length)
-                    Text('${selectedItems.length - deletable} davon nicht von dir', style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
+                    Text(context.l10n.timelineNotYoursCount(selectedItems.length - deletable), style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
                 ],
               ),
             ),
             IconButton(
-              tooltip: 'Datum anpassen',
+              tooltip: context.l10n.timelineAdjustDate,
               onPressed: deletable == 0 ? null : () => _changeDates(context, ref, selectedItems.where((m) => m.canEdit).toList()),
               icon: const Icon(Icons.edit_calendar_outlined),
             ),
             TextButton.icon(
               onPressed: deletable == 0 ? null : () => _deleteSelected(context, ref, selectedItems.where((m) => m.canEdit).toList()),
               icon: const Icon(Icons.delete_outline),
-              label: Text(deletable == 0 ? 'Löschen' : 'Löschen ($deletable)'),
+              label: Text(deletable == 0 ? context.l10n.commonDelete : context.l10n.timelineDeleteCount(deletable)),
               style: TextButton.styleFrom(foregroundColor: scheme.error),
             ),
           ],
@@ -638,6 +640,7 @@ class _SelectionBar extends ConsumerWidget {
     if (change == null || !context.mounted) return;
     // Die Leiste verschwindet mit dem Leeren der Auswahl – Messenger vorher greifen
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     try {
       final result = await ref
           .read(timelineRepositoryProvider)
@@ -645,8 +648,8 @@ class _SelectionBar extends ConsumerWidget {
       ref.read(selectionProvider.notifier).clear();
       await ref.read(timelineControllerProvider.notifier).refresh();
       final msg = result.skipped.isEmpty
-          ? (result.updated == 1 ? 'Datum von 1 Medium angepasst' : 'Datum von ${result.updated} Medien angepasst')
-          : '${result.updated} angepasst, ${result.skipped.length} übersprungen';
+          ? l10n.timelineDateAdjusted(result.updated)
+          : l10n.timelineDateAdjustedSkipped(result.updated, result.skipped.length);
       messenger.showSnackBar(SnackBar(content: Text(msg)));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(errorMessage(e))));
@@ -654,17 +657,18 @@ class _SelectionBar extends ConsumerWidget {
   }
 
   Future<void> _deleteSelected(BuildContext context, WidgetRef ref, List<MediaItem> targets) async {
+    final l10n = context.l10n;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(targets.length == 1 ? 'Ein Medium löschen?' : '${targets.length} Medien löschen?'),
-        content: const Text('Die Dateien werden aus dem Album entfernt. Das lässt sich nicht rückgängig machen.'),
+        title: Text(l10n.timelineDeleteConfirmTitle(targets.length)),
+        content: Text(l10n.timelineDeleteConfirmText),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.commonCancel)),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Löschen'),
+            child: Text(l10n.commonDelete),
           ),
         ],
       ),
@@ -687,8 +691,8 @@ class _SelectionBar extends ConsumerWidget {
     }
     ref.read(selectionProvider.notifier).clear();
     final msg = firstError == null
-        ? (deleted == 1 ? '1 Medium gelöscht' : '$deleted Medien gelöscht')
-        : '$deleted gelöscht, Fehler: $firstError';
+        ? l10n.timelineDeleted(deleted)
+        : l10n.timelineDeletedWithError(deleted, firstError);
     messenger.showSnackBar(SnackBar(content: Text(msg)));
   }
 }
@@ -737,7 +741,7 @@ class _PendingTile extends StatelessWidget {
             const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
           const SizedBox(height: 8),
           Text(
-            failed ? 'Fehlgeschlagen' : 'Wird verarbeitet',
+            failed ? context.l10n.timelineProcessingFailed : context.l10n.timelineProcessing,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(color: failed ? scheme.error : scheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
@@ -760,7 +764,7 @@ class _GlassFab extends StatelessWidget {
       backgroundColor: scheme.primary,
       foregroundColor: scheme.onPrimary,
       icon: const Icon(Icons.add_photo_alternate_outlined),
-      label: const Text('Hochladen'),
+      label: Text(context.l10n.timelineUpload),
     );
   }
 }
@@ -824,7 +828,7 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            FilledButton.tonal(onPressed: onRetry, child: const Text('Nochmals versuchen')),
+            FilledButton.tonal(onPressed: onRetry, child: Text(context.l10n.timelineRetry)),
           ],
         ),
       ),
@@ -846,7 +850,7 @@ class _BellButton extends StatelessWidget {
       children: [
         GlassIconButton(
           icon: unread > 0 ? Icons.notifications_active_outlined : Icons.notifications_none_outlined,
-          tooltip: 'Aktivität',
+          tooltip: context.l10n.timelineActivityTooltip,
           onPressed: onPressed,
         ),
         if (unread > 0)
@@ -890,7 +894,7 @@ class _FilterChips extends ConsumerWidget {
         children: [
           for (final f in TimelineFilter.values) ...[
             ChoiceChip(
-              label: Text(f.label),
+              label: Text(f.label(context.l10n)),
               selected: f == current,
               showCheckmark: false,
               selectedColor: scheme.primary,

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../auth/auth_controller.dart';
 import 'media_model.dart';
 import 'timeline_repository.dart';
@@ -43,15 +44,21 @@ final timelineRepositoryProvider = Provider<TimelineRepository>((ref) => Timelin
 
 /// Filter über der Timeline: Alle · Fotos · Videos · Mit Kommentar.
 enum TimelineFilter {
-  all('Alle', null, false),
-  photos('Fotos', 'PHOTO', false),
-  videos('Videos', 'VIDEO', false),
-  withComments('Mit Kommentar', null, true);
+  all(null, false),
+  photos('PHOTO', false),
+  videos('VIDEO', false),
+  withComments(null, true);
 
-  const TimelineFilter(this.label, this.type, this.onlyCommented);
-  final String label;
+  const TimelineFilter(this.type, this.onlyCommented);
   final String? type;
   final bool onlyCommented;
+
+  String label(AppLocalizations l10n) => switch (this) {
+    TimelineFilter.all => l10n.timelineFilterAll,
+    TimelineFilter.photos => l10n.timelineFilterPhotos,
+    TimelineFilter.videos => l10n.timelineFilterVideos,
+    TimelineFilter.withComments => l10n.timelineFilterWithComments,
+  };
 }
 
 final timelineFilterProvider = NotifierProvider<TimelineFilterController, TimelineFilter>(TimelineFilterController.new);

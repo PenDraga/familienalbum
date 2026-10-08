@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api_exception.dart';
+import '../../l10n/l10n.dart';
 import '../timeline/media_model.dart';
 import '../timeline/timeline_controller.dart';
 import '../timeline/timeline_screen.dart' show formatDuration;
@@ -37,10 +38,6 @@ class _MediaInfoSheetState extends ConsumerState<_MediaInfoSheet> {
   String? _error;
   bool _saving = false;
   bool _changed = false;
-
-  static final _date = DateFormat.yMMMMEEEEd('de_CH');
-  static final _time = DateFormat.Hm('de_CH');
-  static final _full = DateFormat('dd.MM.yyyy, HH:mm', 'de_CH');
 
   @override
   void initState() {
@@ -81,6 +78,11 @@ class _MediaInfoSheetState extends ConsumerState<_MediaInfoSheet> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final l10n = context.l10n;
+    final locale = context.localeTag;
+    final date = DateFormat.yMMMMEEEEd(locale);
+    final time = DateFormat.Hm(locale);
+    final full = DateFormat.yMd(locale).addPattern('Hm', ', ');
     final item = _item;
     final info = _info;
     final exif = info?.exif;
@@ -110,14 +112,14 @@ class _MediaInfoSheetState extends ConsumerState<_MediaInfoSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_date.format(local), style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                      Text(date.format(local), style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
                       const SizedBox(height: 2),
-                      Text(_time.format(local), style: text.titleMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                      Text(time.format(local), style: text.titleMedium?.copyWith(color: scheme.onSurfaceVariant)),
                       if (originalDiffers)
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(
-                            'Laut Datei: ${_full.format(exif.originalDateTime!.toLocal())}',
+                            l10n.mediaInfoFromFile(full.format(exif.originalDateTime!.toLocal())),
                             style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                           ),
                         ),
@@ -132,14 +134,14 @@ class _MediaInfoSheetState extends ConsumerState<_MediaInfoSheet> {
                           // Das Theme macht FilledButtons volle Breite; hier kompakt neben dem Datum
                           style: FilledButton.styleFrom(minimumSize: const Size(0, 40), padding: const EdgeInsets.symmetric(horizontal: 14)),
                           icon: const Icon(Icons.edit_calendar_outlined),
-                          label: const Text('Ändern'),
+                          label: Text(l10n.mediaInfoChange),
                         ),
               ],
             ),
             if (item.canEdit)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text('Das Aufnahmedatum bestimmt die Einordnung im Album.', style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                child: Text(l10n.mediaInfoDateHint, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               ),
             const SizedBox(height: 20),
 
@@ -150,7 +152,7 @@ class _MediaInfoSheetState extends ConsumerState<_MediaInfoSheet> {
               if (exif.hasCamera || exif.lens != null || exif.hasExposure) ...[
                 _Section(
                   icon: item.isVideo ? Icons.videocam_outlined : Icons.photo_camera_outlined,
-                  title: exif.cameraName ?? 'Kamera',
+                  title: exif.cameraName ?? l10n.mediaInfoCamera,
                   subtitle: exif.lens,
                   children: [
                     if (exif.hasExposure)
@@ -164,7 +166,7 @@ class _MediaInfoSheetState extends ConsumerState<_MediaInfoSheet> {
                           if (exif.focalLabel != null) _Chip(label: exif.focalLabel!),
                         ],
                       ),
-                    if (exif.software != null) _Row(label: 'Software', value: exif.software!),
+                    if (exif.software != null) _Row(label: l10n.mediaInfoSoftware, value: exif.software!),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -172,18 +174,18 @@ class _MediaInfoSheetState extends ConsumerState<_MediaInfoSheet> {
               if (exif.hasGps) ...[
                 _Section(
                   icon: Icons.place_outlined,
-                  title: 'Aufnahmeort',
+                  title: l10n.mediaInfoLocation,
                   subtitle:
                       '${exif.gpsLat!.toStringAsFixed(5)}, ${exif.gpsLon!.toStringAsFixed(5)}'
-                      '${exif.gpsAlt != null ? ' · ${exif.gpsAlt!.round()} m ü. M.' : ''}',
-                  trailing: TextButton.icon(onPressed: () => _openMap(exif), icon: const Icon(Icons.map_outlined), label: const Text('Karte')),
+                      '${exif.gpsAlt != null ? ' · ${l10n.mediaInfoAltitude(exif.gpsAlt!.round())}' : ''}',
+                  trailing: TextButton.icon(onPressed: () => _openMap(exif), icon: const Icon(Icons.map_outlined), label: Text(l10n.mediaInfoMap)),
                 ),
                 const SizedBox(height: 16),
               ],
               if (exif.isEmpty)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
-                  child: Text('Die Datei enthält keine Kamera-Metadaten.', style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                  child: Text(l10n.mediaInfoNoMetadata, style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
                 ),
             ],
 
@@ -193,28 +195,28 @@ class _MediaInfoSheetState extends ConsumerState<_MediaInfoSheet> {
               title: item.originalName,
               children: [
                 _Row(
-                  label: 'Typ',
+                  label: l10n.mediaInfoType,
                   value: [
-                    item.isVideo ? 'Video' : 'Foto',
+                    item.isVideo ? l10n.mediaInfoVideo : l10n.mediaInfoPhoto,
                     ?info?.mimeType,
                   ].join(' · '),
                 ),
                 _Row(
-                  label: 'Grösse',
+                  label: l10n.mediaInfoSize,
                   value: [
                     formatBytes(item.sizeBytes),
                     if (item.width != null) '${item.width} × ${item.height} px',
                     if (item.durationSec != null) formatDuration(item.durationSec!),
                   ].join(' · '),
                 ),
-                _Row(label: 'Hochgeladen', value: '${_full.format(item.uploadedAt.toLocal())} von ${item.uploaderName}'),
+                _Row(label: l10n.mediaInfoUploaded, value: l10n.mediaInfoUploadedBy(full.format(item.uploadedAt.toLocal()), item.uploaderName)),
                 if (info != null)
                   _Row(
                     label: 'SHA-256',
                     value: '${info.sha256.substring(0, 16)}…',
                     onTap: () {
                       Clipboard.setData(ClipboardData(text: info.sha256));
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Prüfsumme kopiert')));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.mediaInfoChecksumCopied)));
                     },
                   ),
               ],

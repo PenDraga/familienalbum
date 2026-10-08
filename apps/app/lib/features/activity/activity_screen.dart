@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/api_exception.dart';
+import '../../l10n/l10n.dart';
 import '../../widgets/app_image.dart';
 import 'activity_controller.dart';
 import 'activity_models.dart';
@@ -53,7 +54,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Aktivität'),
+        title: Text(context.l10n.activityTitle),
         leading: BackButton(onPressed: () => context.canPop() ? context.pop() : context.go('/')),
       ),
       body: feed.when(
@@ -61,9 +62,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         error: (e, _) => _Message(icon: Icons.cloud_off_outlined, text: errorMessage(e), onRetry: () => ref.invalidate(feedProvider)),
         data: (state) {
           if (state.items.isEmpty) {
-            return const _Message(icon: Icons.notifications_none_outlined, text: 'Noch keine Aktivität.\nSobald jemand hochlädt oder kommentiert, steht es hier.');
+            return _Message(icon: Icons.notifications_none_outlined, text: context.l10n.activityEmpty);
           }
-          final sections = _groupByDay(state.items);
+          final sections = _groupByDay(context, state.items);
           return RefreshIndicator(
             onRefresh: () => ref.read(feedProvider.notifier).refresh(),
             child: ListView.builder(
@@ -76,7 +77,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                   if (state.error != null) {
                     return Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Center(child: TextButton(onPressed: () => ref.read(feedProvider.notifier).loadMore(), child: Text('Erneut laden – ${state.error}'))),
+                      child: Center(child: TextButton(onPressed: () => ref.read(feedProvider.notifier).loadMore(), child: Text(context.l10n.activityLoadMoreError(state.error!)))),
                     );
                   }
                   return const SizedBox(height: 8);
@@ -100,10 +101,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     );
   }
 
-  static List<(String, List<FeedItem>)> _groupByDay(List<FeedItem> items) {
+  static List<(String, List<FeedItem>)> _groupByDay(BuildContext context, List<FeedItem> items) {
     final out = <(String, List<FeedItem>)>[];
     for (final item in items) {
-      final label = dayLabel(item.at);
+      final label = dayLabel(context, item.at);
       if (out.isEmpty || out.last.$1 != label) {
         out.add((label, [item]));
       } else {
@@ -115,15 +116,16 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
 }
 
 /// „Heute“, „Gestern“, sonst „Montag, 1. September“ (mit Jahr, wenn nicht aktuell).
-String dayLabel(DateTime at) {
+String dayLabel(BuildContext context, DateTime at) {
   final d = at.toLocal();
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final day = DateTime(d.year, d.month, d.day);
   final diff = today.difference(day).inDays;
-  if (diff == 0) return 'Heute';
-  if (diff == 1) return 'Gestern';
-  return (d.year == now.year ? DateFormat.MMMMEEEEd('de_CH') : DateFormat.yMMMMEEEEd('de_CH')).format(d);
+  if (diff == 0) return context.l10n.activityToday;
+  if (diff == 1) return context.l10n.activityYesterday;
+  final locale = context.localeTag;
+  return (d.year == now.year ? DateFormat.MMMMEEEEd(locale) : DateFormat.yMMMMEEEEd(locale)).format(d);
 }
 
 class _FeedTile extends StatelessWidget {
@@ -131,14 +133,14 @@ class _FeedTile extends StatelessWidget {
   final FeedItem item;
   final VoidCallback onTap;
 
-  static final _time = DateFormat.Hm('de_CH');
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final who = item.mine ? 'Du' : item.actorName;
-    final verb = item.mine ? 'hast' : 'hat';
+    final l10n = context.l10n;
+    final time = DateFormat.Hm(context.localeTag);
+    final who = item.mine ? l10n.activityYou : item.actorName;
+    final mine = item.mine ? 'true' : 'false';
     final isComment = item.type == FeedType.comment;
 
     return InkWell(
@@ -158,13 +160,13 @@ class _FeedTile extends StatelessWidget {
                     TextSpan(
                       children: [
                         TextSpan(text: who, style: const TextStyle(fontWeight: FontWeight.w700)),
-                        TextSpan(text: isComment ? ' $verb kommentiert' : ' $verb ${item.mediaLabel} hinzugefügt'),
+                        TextSpan(text: ' ${isComment ? l10n.activityCommented(mine) : l10n.activityAdded(mine, item.mediaLabel(l10n))}'),
                       ],
                     ),
                     style: text.bodyMedium,
                   ),
                   const SizedBox(height: 2),
-                  Text(_time.format(item.at.toLocal()), style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                  Text(time.format(item.at.toLocal()), style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
                   const SizedBox(height: 8),
                   if (isComment)
                     Row(
@@ -304,7 +306,7 @@ class _Message extends StatelessWidget {
             Icon(icon, size: 56, color: scheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(text, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant)),
-            if (onRetry != null) ...[const SizedBox(height: 16), FilledButton.tonal(onPressed: onRetry, child: const Text('Erneut versuchen'))],
+            if (onRetry != null) ...[const SizedBox(height: 16), FilledButton.tonal(onPressed: onRetry, child: Text(context.l10n.commonRetry))],
           ],
         ),
       ),

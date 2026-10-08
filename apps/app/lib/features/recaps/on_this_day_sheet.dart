@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
+import '../../l10n/l10n.dart';
 import '../../theme/app_theme.dart';
 import '../timeline/media_model.dart';
 import 'recap_models.dart';
@@ -29,7 +31,7 @@ Future<void> showOnThisDaySheet(BuildContext context, List<OnThisDayGroup> group
                   children: [
                     Icon(Icons.auto_awesome, color: scheme.secondary),
                     const SizedBox(width: 8),
-                    Text('An diesem Tag', style: text.titleLarge),
+                    Text(ctx.l10n.onThisDayTitle, style: text.titleLarge),
                     const Spacer(),
                     IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(ctx).pop()),
                   ],
@@ -44,7 +46,7 @@ Future<void> showOnThisDaySheet(BuildContext context, List<OnThisDayGroup> group
                     children: [
                       Text(g.label, style: text.titleMedium),
                       const SizedBox(width: 8),
-                      Text(_formatDate(g.date), style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                      Text(_formatDate(g.date, ctx.localeTag), style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
                     ],
                   ),
                 ),
@@ -68,9 +70,9 @@ Future<void> showOnThisDaySheet(BuildContext context, List<OnThisDayGroup> group
   );
 }
 
-String _formatDate(String iso) {
-  final parts = iso.split('-');
-  return parts.length == 3 ? '${int.parse(parts[2])}.${int.parse(parts[1])}.${parts[0]}' : iso;
+String _formatDate(String iso, String locale) {
+  final parsed = DateTime.tryParse(iso);
+  return parsed == null ? iso : DateFormat.yMd(locale).format(parsed);
 }
 
 class _Thumb extends StatelessWidget {

@@ -217,7 +217,7 @@ class _StartupSplashState extends ConsumerState<_StartupSplash> {
                 children: [
                   const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
                   const SizedBox(height: 12),
-                  Text('Verbinde mit $host …', style: TextStyle(color: scheme.onSurfaceVariant)),
+                  Text(context.l10n.appConnectingTo(host), style: TextStyle(color: scheme.onSurfaceVariant)),
                 ],
               ),
             ),
@@ -228,7 +228,7 @@ class _StartupSplashState extends ConsumerState<_StartupSplash> {
               child: TextButton.icon(
                 onPressed: _showEscape ? () => ref.read(authControllerProvider.notifier).abortStartup() : null,
                 icon: const Icon(Icons.dns_outlined, size: 18),
-                label: const Text('Server ändern oder neu anmelden'),
+                label: Text(context.l10n.appChangeServerOrLogin),
               ),
             ),
           ],

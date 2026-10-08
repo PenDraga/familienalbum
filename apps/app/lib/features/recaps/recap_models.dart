@@ -1,3 +1,4 @@
+import '../../l10n/l10n.dart';
 import '../timeline/media_model.dart';
 
 enum RecapKind { month, year, seconds }
@@ -15,10 +16,10 @@ extension RecapKindLabel on RecapKind {
     RecapKind.seconds => 'SECONDS',
   };
 
-  String get label => switch (this) {
-    RecapKind.month => 'Monats-Rückblick',
-    RecapKind.year => 'Jahres-Rückblick',
-    RecapKind.seconds => 'Sekunden-Film',
+  String label(AppLocalizations l10n) => switch (this) {
+    RecapKind.month => l10n.recapKindMonth,
+    RecapKind.year => l10n.recapKindYear,
+    RecapKind.seconds => l10n.recapKindSeconds,
   };
 }
 
