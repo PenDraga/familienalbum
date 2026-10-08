@@ -1,0 +1,10 @@
+{
+  "@@locale": "de",
+  "appTitle": "Familienalbum",
+  "@appTitle": {"description": "Name der App, bleibt in allen Sprachen gleich"},
+  "commonCancel": "Abbrechen",
+  "commonSave": "Speichern",
+  "commonClose": "Schliessen",
+  "commonDelete": "Löschen",
+  "commonOk": "OK"
+}

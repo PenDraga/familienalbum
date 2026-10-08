@@ -16,6 +16,7 @@ Future<void> main() async {
   // Pfad samt Query, damit z.B. /invite?code=… beim Start erhalten bleibt.
   if (kIsWeb) initialDeepLink = Uri.base.hasQuery ? '${Uri.base.path}?${Uri.base.query}' : Uri.base.path;
   await initializeDateFormatting('de_CH');
+  await initializeDateFormatting('en');
   final prefs = await SharedPreferences.getInstance();
   await AutoUploadBackground.initialize();
 

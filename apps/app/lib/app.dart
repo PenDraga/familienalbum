@@ -15,6 +15,7 @@ import 'features/auth/auth_controller.dart';
 import 'features/autoupload/auto_upload_controller.dart';
 import 'features/autoupload/auto_upload_service.dart';
 import 'features/auth/invite_screen.dart';
+import 'l10n/l10n.dart';
 import 'features/auth/login_screen.dart';
 import 'features/media/media_detail_screen.dart';
 import 'features/push/push_service.dart';
@@ -35,6 +36,9 @@ class _AuthRefresh extends ChangeNotifier {
 
 /// Pfad aus der Adresszeile beim Start (nur Web), gesetzt in main().
 String? initialDeepLink;
+
+/// go_router/MaterialApp: Sprache aus der Systemliste wählen (siehe l10n.dart).
+Locale resolveLocale(List<Locale>? preferred, Iterable<Locale> supported) => resolveAppLocale(preferred);
 
 /// Für Snackbars aus Diensten ohne BuildContext (Push).
 final rootMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -126,8 +130,10 @@ class FamilienalbumApp extends ConsumerWidget {
       }
     });
 
-    const locales = [Locale('de', 'CH'), Locale('de')];
+    // Deutsch (Vorlage, Rückfall) und Englisch; die App folgt der Systemsprache des Geräts
+    const locales = [Locale('de', 'CH'), Locale('de'), Locale('en')];
     const delegates = [
+      AppLocalizations.delegate,
       GlobalMaterialLocalizations.delegate,
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
@@ -140,8 +146,8 @@ class FamilienalbumApp extends ConsumerWidget {
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
         themeMode: themeMode,
-        locale: locales.first,
         supportedLocales: locales,
+        localeListResolutionCallback: resolveLocale,
         localizationsDelegates: delegates,
         home: const _StartupSplash(),
       );
@@ -153,8 +159,8 @@ class FamilienalbumApp extends ConsumerWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
-      locale: locales.first,
       supportedLocales: locales,
+      localeListResolutionCallback: resolveLocale,
       localizationsDelegates: delegates,
       routerConfig: ref.watch(routerProvider),
     );

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:dio/dio.dart';
 
 import 'api_exception.dart';
@@ -15,7 +17,8 @@ class ApiClient {
         baseUrl: baseUrl.isEmpty ? 'http://server-nicht-konfiguriert.invalid/api/v1' : '$baseUrl/api/v1',
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(minutes: 2),
-        headers: {'accept': 'application/json'},
+        // Sprache des Geräts, damit der Server Fehlermeldungen passend liefert
+        headers: {'accept': 'application/json', 'accept-language': PlatformDispatcher.instance.locale.languageCode},
       ),
     );
     dio.interceptors.add(QueuedInterceptorsWrapper(onRequest: _onRequest, onError: _onError));

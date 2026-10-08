@@ -61,3 +61,6 @@ ios/Runner/Runner.release.entitlements
 
 # Gradle-Ausgabe bei direktem Aufruf im android-Ordner
 android/build/
+
+# Von flutter gen-l10n erzeugt (flutter pub get / build erzeugen sie neu)
+lib/l10n/generated/
