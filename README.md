@@ -19,6 +19,17 @@ Web-App im Browser. Oberfläche auf Deutsch und Englisch, je nach Systemsprache.
 
 *Beispielfotos von picsum.photos, Demo-Familie.*
 
+## Apps installieren
+
+Die Apps sind generisch: Beim ersten Start wird die Adresse des eigenen Servers eingegeben (oder sie kommt über den
+Einladungslink mit). Ein Album-Admin verschickt dazu einen Einladungslink, siehe [Einladungen](#einladungen).
+
+| Plattform | Bezug |
+|---|---|
+| iOS | [FamilienAlbum Privat im App Store](https://apps.apple.com/app/id6808945047) |
+| Android (Google Play) | Zurzeit als geschlossener Test. Google verlangt dafür eine Tester-Liste: die Gmail-Adresse des Play-Store-Kontos dem Betreiber melden (z. B. per [Issue](https://github.com/PenDraga/familienalbum/issues)), danach den [Test-Link](https://play.google.com/apps/testing/ch.familienalbum.familienalbum) öffnen, «Tester werden» wählen und die App aus dem Play Store laden. |
+| Web | `https://<domain>` des eigenen Servers im Browser. |
+
 ## Funktionen
 
 - **Familien und Rechte:** mehrere Familien pro Server, Beitritt nur per Einladungslink, Rechte pro Mitglied

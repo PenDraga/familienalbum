@@ -19,6 +19,17 @@ follows the device language. Changes: [CHANGELOG.md](./CHANGELOG.md) (German). L
 
 *Sample photos from picsum.photos, demo family.*
 
+## Installing the apps
+
+The apps are generic: on first launch you enter the address of your own server (or it arrives with the invitation
+link). An album admin sends an invitation link for that, see [Invitations](#invitations).
+
+| Platform | How to get it |
+|---|---|
+| iOS | [FamilienAlbum Privat on the App Store](https://apps.apple.com/app/id6808945047) |
+| Android (Google Play) | Currently a closed test. Google requires a tester list: send the Gmail address of your Play Store account to the maintainer (e.g. via an [issue](https://github.com/PenDraga/familienalbum/issues)), then open the [test link](https://play.google.com/apps/testing/ch.familienalbum.familienalbum), choose "Become a tester" and install the app from the Play Store. |
+| Web | `https://<domain>` of your own server in the browser. |
+
 ## Features
 
 - **Albums and permissions:** several albums (families) per server, membership by invitation only, per-member rights
