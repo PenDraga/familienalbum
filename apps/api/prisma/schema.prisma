@@ -55,7 +55,7 @@ model PhotoBook {
   pages       Json
   pageCount   Int          @default(0)
   mediaCount  Int          @default(0)
-  status      MediaStatus  @default(PROCESSING)
+  status      BookStatus   @default(DRAFT)
   error       String?
   pdfBytes    Int?
   createdAt   DateTime     @default(now())
@@ -77,6 +77,14 @@ enum BookTextMode {
   NONE
   CAPTIONS
   COMMENTS
+}
+
+/// Entwurf (prüfen und bearbeiten) → PDF wird erstellt → PDF fertig; jede Änderung macht wieder einen Entwurf
+enum BookStatus {
+  DRAFT
+  RENDERING
+  READY
+  FAILED
 }
 
 /// Anordnung: ein Foto pro Seite, gemischt (1–4), Collage (bis 6)
@@ -230,6 +238,7 @@ model UploadSession {
   chunkSize      Int
   receivedChunks Int[]    @default([])
   takenAtHint    DateTime?
+  caption        String? // Beschreibung aus dem Upload-Assistenten, wird beim Abschluss aufs Foto gesetzt
   createdAt      DateTime @default(now())
   expiresAt      DateTime
   family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)

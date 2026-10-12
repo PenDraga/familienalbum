@@ -44,11 +44,12 @@ describe('Fotobuch', () => {
       format: 'SQUARE_21',
       textMode: 'COMMENTS',
       months: ['2026-03', '2026-04'],
-      status: 'PROCESSING',
+      status: 'DRAFT',
       mediaCount: 4,
       canEdit: true,
       urls: { pdf: null, cover: null },
     });
+    expect(book.urls.coverPhoto).toMatch(/\/thumb\/400\?exp=/);
     const types = book.pages.map((p: { page: { type: string; template?: string } }) => p.page.template ?? p.page.type);
     // Umschlag, März: das Foto mit kurzem Text bleibt mit dem Hochformat-Paar vom selben Tag in der Collage, April
     expect(types).toEqual(['cover', 'chapter', 'auto', 'chapter', 'auto']);
@@ -57,7 +58,8 @@ describe('Fotobuch', () => {
     expect(book.pages[0].page.mediaId).toBe(a.id); // meistkommentiertes Foto als Titelbild
     expect(book.pages[2].page.items[0]).toMatchObject({ mediaId: a.id, caption: 'Erster Schneetag', comments: [{ author: 'Gast', body: 'So schön!' }] });
     expect(book.pages[2].thumbs).toHaveLength(3);
-    expect(ctx.queue.books).toEqual([book.id]);
+    // Entwurf: noch kein Rendern
+    expect(ctx.queue.books).toEqual([]);
 
     // Liste und Detail für alle Mitglieder; Ändern/Löschen nur Ersteller oder Album-Admin
     const list = (await (await ctx.as(viewer)).get(`/families/${family.id}/books`)).json();
@@ -70,7 +72,17 @@ describe('Fotobuch', () => {
     expect(renamed.statusCode, renamed.body).toBe(202);
     expect(renamed.json().title).toBe('Frühling');
     expect(renamed.json().pages[0].page.title).toBe('Frühling');
-    expect(ctx.queue.books).toEqual([book.id, book.id]);
+    expect(ctx.queue.books).toEqual([]);
+
+    // «PDF erstellen»: nur Ersteller oder Album-Admin; zweimal hintereinander reiht nur einmal ein
+    expectProblem(await (await ctx.as(viewer)).post(`/books/${book.id}/render`), 403, 'BOOK_NOT_OWNER');
+    const rendering = await (await ctx.as(maker)).post(`/books/${book.id}/render`);
+    expect(rendering.statusCode, rendering.body).toBe(202);
+    expect(rendering.json().status).toBe('RENDERING');
+    expect((await (await ctx.as(maker)).post(`/books/${book.id}/render`)).json().status).toBe('RENDERING');
+    expect(ctx.queue.books).toEqual([book.id]);
+    // Änderung während des Renderns macht wieder einen Entwurf
+    expect((await (await ctx.as(admin)).patch(`/books/${book.id}`, { title: 'Sommer' })).json().status).toBe('DRAFT');
 
     // Seiten ersetzen: fremdes Foto → 400
     const foreign = await ctx.createFamilyWithAdmin();
@@ -101,6 +113,9 @@ describe('Fotobuch', () => {
     const created = (await (await ctx.as(admin)).post(`/families/${family.id}/books`, { months: ['2026-05'], format: 'A4_LANDSCAPE', title: 'Mai' })).json();
 
     const svc = new BookService(ctx.prisma, ctx.app.storage, ctx.app.signer, ctx.queue);
+    // Entwurf wird nicht gerendert, erst nach «PDF erstellen»
+    expect((await svc.render(created.id, { dpi: 60, previewWidth: 200, log: silentLog })).status).toBe('DRAFT');
+    expect((await (await ctx.as(admin)).post(`/books/${created.id}/render`)).statusCode).toBe(202);
     const rendered = await svc.render(created.id, { dpi: 60, previewWidth: 200, log: silentLog });
     expect(rendered.status, rendered.error ?? '').toBe('READY');
     expect(rendered.pageCount).toBe(3); // Umschlag, Kapitel, eine Seite mit beiden Fotos
@@ -277,6 +292,7 @@ describe('Fotobuch', () => {
 
     // und beim Rendern des ganzen Buchs verwendet
     const svc = new BookService(ctx.prisma, ctx.app.storage, ctx.app.signer, ctx.queue);
+    expect((await (await ctx.as(admin)).post(`/books/${book.id}/render`)).statusCode).toBe(202);
     const rendered = await svc.render(book.id, { dpi: 60, previewWidth: 200, log: silentLog });
     expect(rendered.status, rendered.error ?? '').toBe('READY');
   });

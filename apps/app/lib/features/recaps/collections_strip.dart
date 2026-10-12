@@ -152,11 +152,14 @@ class _BookCard extends StatelessWidget {
         ? '${l10n.bookPages(book.pageCount)} · ${book.format.label(l10n)}'
         : book.isFailed
         ? l10n.bookFailed
+        : book.isDraft
+        ? '${l10n.bookDraft} · ${l10n.bookPages(book.pageCount)}'
         : l10n.bookRendering;
+    final background = book.coverUrl ?? book.coverPhotoUrl;
     return _Card(
       onTap: () => context.push('/books/${book.id}'),
-      background: book.coverUrl != null
-          ? Image.network(book.coverUrl!, fit: BoxFit.cover)
+      background: background != null
+          ? Image.network(background, fit: BoxFit.cover)
           : ColoredBox(
               color: book.isFailed ? scheme.errorContainer : scheme.secondaryContainer,
               child: Center(

@@ -69,6 +69,8 @@ export class BookService {
       canEdit: this.canEdit(b, membership),
       urls: {
         pdf: ready ? this.signer.sign(`${base}/pdf`, LINK_TTL) : null,
+        /** Thumbnail des Umschlagfotos – für Karten, solange es noch keine gerenderte Vorschau gibt */
+        coverPhoto: coverMediaId(b) ? this.signer.sign(mediaPaths(coverMediaId(b)!).thumb400, LINK_TTL) : null,
         cover: ready ? `${this.signer.sign(`${base}/pages/1`, LINK_TTL)}&v=${b.renderedAt?.getTime() ?? 0}` : null,
       },
     };
@@ -176,17 +178,17 @@ export class BookService {
         pages: pages as unknown as Prisma.InputJsonValue,
         pageCount: pages.length,
         mediaCount: countMedia(pages),
-        status: 'PROCESSING',
+        // Entwurf: erst prüfen, dann «PDF erstellen» (requestRender)
+        status: 'DRAFT',
       },
       include,
     });
-    await this.queue.enqueueRenderBook(book.id);
     return book;
   }
 
-  /** Titel oder Seitenliste ändern; danach wird neu gerendert. */
+  /** Titel oder Seitenliste ändern. Das Buch wird wieder zum Entwurf; ein vorhandenes PDF ist damit veraltet und wird entfernt. */
   async update(book: BookRow, input: UpdateBookInput) {
-    const data: Prisma.PhotoBookUpdateInput = { status: 'PROCESSING', error: null };
+    const data: Prisma.PhotoBookUpdateInput = { status: 'DRAFT', error: null, pdfBytes: null };
     if (input.title !== undefined) {
       data.title = input.title;
       // Umschlagtitel folgt dem Buchtitel, solange die Seiten nicht mitgeschickt werden
@@ -203,8 +205,8 @@ export class BookService {
       data.mediaCount = countMedia(pages);
     }
     const updated = await this.prisma.photoBook.update({ where: { id: book.id }, data, include });
+    // Veraltetes PDF und alte Seitenvorschauen weg; neu erst über «PDF erstellen»
     await this.storage.removeQuietly(this.storage.bookDir(book.familyId, book.id));
-    await this.queue.enqueueRenderBook(book.id);
     return updated;
   }
 
@@ -231,9 +233,10 @@ export class BookService {
     return renderPagePreview(checked!, book.format, env);
   }
 
-  /** Fehlgeschlagenes Buch nochmals rendern. */
-  async rerender(book: BookRow) {
-    const updated = await this.prisma.photoBook.update({ where: { id: book.id }, data: { status: 'PROCESSING', error: null }, include });
+  /** «PDF erstellen»: Druck-PDF und Seitenvorschauen im Worker rendern (auch nach einem Fehler). */
+  async requestRender(book: BookRow) {
+    if (book.status === 'RENDERING') return book;
+    const updated = await this.prisma.photoBook.update({ where: { id: book.id }, data: { status: 'RENDERING', error: null }, include });
     await this.queue.enqueueRenderBook(book.id);
     return updated;
   }
@@ -281,22 +284,31 @@ export class BookService {
   /** Vom Worker: Seiten rastern, PDF und Vorschauen schreiben, Status setzen. */
   async render(bookId: string, env: BookRenderEnv): Promise<PhotoBook> {
     const book = await this.get(bookId);
+    // Veralteter Auftrag (Buch inzwischen geändert oder schon fertig)
+    if (book.status !== 'RENDERING') return book;
     const pages = book.pages as unknown as BookPage[];
     const dir = this.storage.bookDir(book.familyId, book.id);
     await this.storage.ensureDir(dir);
     const renderEnv = await this.renderEnv(book, env);
     try {
       const result = await renderBook(pages, book.format, renderEnv, { pdfPath: this.pdfPath(book), pageDir: dir });
-      const updated = await this.prisma.photoBook.update({
-        where: { id: book.id },
+      // Nur übernehmen, wenn niemand das Buch inzwischen geändert hat (dann ist es wieder ein Entwurf)
+      const done = await this.prisma.photoBook.updateMany({
+        where: { id: book.id, status: 'RENDERING', updatedAt: book.updatedAt },
         data: { status: 'READY', error: null, pageCount: result.pageCount, pdfBytes: result.pdfBytes, renderedAt: new Date() },
       });
-      env.log.info({ bookId, pages: result.pageCount, bytes: result.pdfBytes }, 'book ready');
-      return updated;
+      if (done.count === 0) {
+        env.log.info({ bookId }, 'book changed while rendering – result discarded');
+        await this.storage.removeQuietly(dir);
+      } else {
+        env.log.info({ bookId, pages: result.pageCount, bytes: result.pdfBytes }, 'book ready');
+      }
+      return this.prisma.photoBook.findUniqueOrThrow({ where: { id: book.id } });
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       env.log.warn({ bookId, reason }, 'book failed');
-      return this.prisma.photoBook.update({ where: { id: book.id }, data: { status: 'FAILED', error: reason.slice(0, 1000) } });
+      await this.prisma.photoBook.updateMany({ where: { id: book.id, status: 'RENDERING' }, data: { status: 'FAILED', error: reason.slice(0, 1000) } });
+      return this.prisma.photoBook.findUniqueOrThrow({ where: { id: book.id } });
     }
   }
 
@@ -339,4 +351,9 @@ export function pageMediaIds(page: BookPage): string[] {
   if (page.type === 'cover') return page.mediaId ? [page.mediaId] : [];
   if (page.type === 'photos') return page.items.map((i) => i.mediaId);
   return [];
+}
+
+function coverMediaId(b: Pick<PhotoBook, 'pages'>): string | null {
+  const first = (b.pages as unknown as BookPage[])[0];
+  return first?.type === 'cover' ? first.mediaId : null;
 }

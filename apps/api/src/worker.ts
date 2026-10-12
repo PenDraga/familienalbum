@@ -59,8 +59,9 @@ async function main() {
       }
       if (job.name === 'render-book') {
         const { bookId } = job.data as { bookId: string };
+        // Kein Wiederholen bei Fehler: der Status steht auf FAILED, «PDF erstellen» startet neu
         const book = await books.render(bookId, { log });
-        if (book.status === 'FAILED') throw new Error(book.error ?? 'book failed');
+        if (book.status !== 'READY') return;
         const outcome = await notifications.notifyBook(bookId);
         log.info({ bookId, ...outcome }, 'book push');
         return;

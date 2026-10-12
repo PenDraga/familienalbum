@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import { uuidSchema } from './common.js';
-import { mediaStatusSchema } from './media.js';
 import { userBriefSchema } from './user.js';
 
 export const bookFormatSchema = z.enum(['SQUARE_21', 'A4_LANDSCAPE', 'SQUARE_30']);
 export const bookTextModeSchema = z.enum(['NONE', 'CAPTIONS', 'COMMENTS']);
 export const bookLayoutSchema = z.enum(['SINGLE', 'MIXED', 'COLLAGE']);
+/** Entwurf → PDF wird erstellt → PDF fertig (oder Fehler); jede Änderung macht wieder einen Entwurf */
+export const bookStatusSchema = z.enum(['DRAFT', 'RENDERING', 'READY', 'FAILED']);
 export const pageTemplateSchema = z.enum(['one', 'two', 'two_stacked', 'four', 'one_text', 'auto']);
 export const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'JJJJ-MM');
 
@@ -44,7 +45,7 @@ export const bookSchema = z
     /** `JJJJ-MM`, sortiert */
     months: z.array(monthSchema),
     onlyCommented: z.boolean(),
-    status: mediaStatusSchema,
+    status: bookStatusSchema,
     error: z.string().nullable(),
     pageCount: z.number().int(),
     mediaCount: z.number().int(),
@@ -56,6 +57,7 @@ export const bookSchema = z
     canEdit: z.boolean(),
     urls: z.object({
       pdf: z.string().nullable(),
+      coverPhoto: z.string().nullable(),
       /** Vorschau der ersten Seite (Umschlag) */
       cover: z.string().nullable(),
     }),

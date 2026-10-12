@@ -1242,8 +1242,8 @@
           "status": {
             "type": "string",
             "enum": [
-              "UPLOADING",
-              "PROCESSING",
+              "DRAFT",
+              "RENDERING",
               "READY",
               "FAILED"
             ]
@@ -1310,6 +1310,12 @@
                   "null"
                 ]
               },
+              "coverPhoto": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "cover": {
                 "type": [
                   "string",
@@ -1319,6 +1325,7 @@
             },
             "required": [
               "pdf",
+              "coverPhoto",
               "cover"
             ]
           }
@@ -1401,8 +1408,8 @@
           "status": {
             "type": "string",
             "enum": [
-              "UPLOADING",
-              "PROCESSING",
+              "DRAFT",
+              "RENDERING",
               "READY",
               "FAILED"
             ]
@@ -1469,6 +1476,12 @@
                   "null"
                 ]
               },
+              "coverPhoto": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "cover": {
                 "type": [
                   "string",
@@ -1478,6 +1491,7 @@
             },
             "required": [
               "pdf",
+              "coverPhoto",
               "cover"
             ]
           },
@@ -3500,8 +3514,8 @@
           "status": {
             "type": "string",
             "enum": [
-              "UPLOADING",
-              "PROCESSING",
+              "DRAFT",
+              "RENDERING",
               "READY",
               "FAILED"
             ]
@@ -3568,6 +3582,12 @@
                   "null"
                 ]
               },
+              "coverPhoto": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "cover": {
                 "type": [
                   "string",
@@ -3577,6 +3597,7 @@
             },
             "required": [
               "pdf",
+              "coverPhoto",
               "cover"
             ],
             "additionalProperties": false
@@ -3661,8 +3682,8 @@
           "status": {
             "type": "string",
             "enum": [
-              "UPLOADING",
-              "PROCESSING",
+              "DRAFT",
+              "RENDERING",
               "READY",
               "FAILED"
             ]
@@ -3729,6 +3750,12 @@
                   "null"
                 ]
               },
+              "coverPhoto": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "cover": {
                 "type": [
                   "string",
@@ -3738,6 +3765,7 @@
             },
             "required": [
               "pdf",
+              "coverPhoto",
               "cover"
             ],
             "additionalProperties": false
@@ -6588,6 +6616,10 @@
                     "type": "string",
                     "format": "date-time",
                     "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                  },
+                  "caption": {
+                    "type": "string",
+                    "maxLength": 2000
                   }
                 },
                 "required": [
@@ -8283,7 +8315,7 @@
         }
       },
       "post": {
-        "summary": "Fotobuch anlegen (canCreateBooks): Layoutvorschlag sofort, PDF im Hintergrund",
+        "summary": "Fotobuch als Entwurf anlegen (canCreateBooks): Layoutvorschlag sofort, PDF erst über /render",
         "tags": [
           "books"
         ],
@@ -8805,7 +8837,7 @@
         }
       },
       "patch": {
-        "summary": "Titel oder Seiten ändern (Ersteller oder Album-Admin); wird danach neu gerendert",
+        "summary": "Titel oder Seiten ändern (Ersteller oder Album-Admin); das Buch wird wieder zum Entwurf",
         "tags": [
           "books"
         ],
@@ -9013,7 +9045,7 @@
     },
     "/books/{id}/render": {
       "post": {
-        "summary": "Nochmals rendern (nach Fehler)",
+        "summary": "PDF erstellen (Ersteller oder Album-Admin): Druck-PDF und Seitenvorschauen im Hintergrund",
         "tags": [
           "books"
         ],

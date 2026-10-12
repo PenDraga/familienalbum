@@ -95,7 +95,7 @@ export const bookRoutes: FastifyPluginAsyncZod = async (app) => {
       preHandler: requireFamilyPermission('canCreateBooks'),
       schema: {
         tags: ['books'],
-        summary: 'Fotobuch anlegen (canCreateBooks): Layoutvorschlag sofort, PDF im Hintergrund',
+        summary: 'Fotobuch als Entwurf anlegen (canCreateBooks): Layoutvorschlag sofort, PDF erst über /render',
         description: '409 BOOK_EMPTY ohne Fotos im Zeitraum, 409 BOOK_TOO_LARGE über 200 Seiten.',
         security: bearer,
         params: idParamsSchema,
@@ -124,7 +124,7 @@ export const bookRoutes: FastifyPluginAsyncZod = async (app) => {
       preHandler: requireFamilyPermission('member', bookFamilyResolver),
       schema: {
         tags: ['books'],
-        summary: 'Titel oder Seiten ändern (Ersteller oder Album-Admin); wird danach neu gerendert',
+        summary: 'Titel oder Seiten ändern (Ersteller oder Album-Admin); das Buch wird wieder zum Entwurf',
         security: bearer,
         params: idParamsSchema,
         body: updateBookBodySchema,
@@ -164,12 +164,12 @@ export const bookRoutes: FastifyPluginAsyncZod = async (app) => {
     '/books/:id/render',
     {
       preHandler: requireFamilyPermission('member', bookFamilyResolver),
-      schema: { tags: ['books'], summary: 'Nochmals rendern (nach Fehler)', security: bearer, params: idParamsSchema, response: { 202: bookSchema, ...errorResponses(401, 403, 404) } },
+      schema: { tags: ['books'], summary: 'PDF erstellen (Ersteller oder Album-Admin): Druck-PDF und Seitenvorschauen im Hintergrund', security: bearer, params: idParamsSchema, response: { 202: bookSchema, ...errorResponses(401, 403, 404) } },
     },
     async (request, reply) => {
       const book = await books.get(request.params.id);
       requireEdit(book, request);
-      return reply.code(202).send(books.toDto(await books.rerender(book), request.membership!));
+      return reply.code(202).send(books.toDto(await books.requestRender(book), request.membership!));
     },
   );
 

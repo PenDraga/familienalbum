@@ -206,7 +206,7 @@
   "bookEditorPage": "Seite {current} von {total}",
   "@bookEditorPage": {"placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}},
   "bookEditorSave": "Speichern",
-  "bookEditorSaved": "Gespeichert – das Buch wird neu erstellt.",
+  "bookEditorSaved": "Gespeichert. Erstelle das PDF, wenn alle Seiten passen.",
   "bookMoveNext": "Auf nächste Seite",
   "bookMovePrev": "Auf vorige Seite",
   "bookRemovePhoto": "Aus dem Buch nehmen",
@@ -214,8 +214,13 @@
   "bookReviewHint": "Jede Seite ansehen, Ausschnitt und Zoom anpassen, Fotos verschieben oder entfernen. Auch per Tipp auf eine Seite.",
   "bookShowText": "Text auf dieser Seite zeigen",
   "bookZoom": "Zoom",
+  "bookCreatePdf": "PDF erstellen",
+  "bookDraft": "Entwurf",
+  "bookDraftChanged": "Seit dem letzten PDF geändert. Erstelle das PDF neu, bevor du bestellst.",
+  "bookDraftText": "Prüfe die Seiten und erstelle dann das PDF zum Bestellen.",
+  "bookPdfRequested": "Das PDF wird erstellt – du bekommst eine Mitteilung, sobald es fertig ist.",
   "bookCreateHint": "Der Server schlägt die Seiten vor und rendert das PDF. Höchstens 200 Seiten; nur Fotos, keine Videos.",
-  "bookCreateStarted": "«{title}» wird erstellt – {count} Seiten. Du bekommst eine Mitteilung, sobald das PDF fertig ist.",
+  "bookCreateStarted": "«{title}» ist als Entwurf angelegt ({count} Seiten). Prüfe jetzt die Seiten.",
   "@bookCreateStarted": {
     "placeholders": {
       "title": {
@@ -292,8 +297,7 @@
   "bookRendering": "Wird erstellt …",
   "bookRenderingHint": "Je nach Anzahl Fotos dauert das ein paar Minuten. Du bekommst eine Mitteilung.",
   "bookRenderingText": "Das PDF wird gerade erstellt …",
-  "bookRerender": "Nochmals rendern",
-  "bookRerendering": "Das Buch wird neu gerendert …",
+  "bookRerender": "PDF neu erstellen",
   "bookSelectAll": "Alle",
   "bookSelectCommented": "Nur kommentierte",
   "bookSelectedCount": "{selected} von {total} Fotos im Buch",
@@ -1132,6 +1136,13 @@
   },
   "timelineSwitchAlbum": "Album wechseln",
   "timelineUpload": "Hochladen",
+  "uploadCaptionAll": "Gleiche Beschreibung für alle",
+  "uploadCaptionApply": "Übernehmen",
+  "uploadCaptionLabel": "Beschreibung (optional)",
+  "uploadReviewHint": "Die Beschreibung ist freiwillig. Sie erscheint beim Foto und im Fotobuch und lässt sich später ändern.",
+  "uploadReviewTitle": "Hochladen",
+  "uploadStart": "{count, plural, =1{1 Datei hochladen} other{{count} Dateien hochladen}}",
+  "@uploadStart": {"placeholders": {"count": {"type": "int"}}},
   "uploadFailedCount": "{count, plural, =1{1 Upload fehlgeschlagen} other{{count} Uploads fehlgeschlagen}}",
   "@uploadFailedCount": {
     "placeholders": {

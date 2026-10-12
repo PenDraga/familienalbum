@@ -11,6 +11,8 @@ export const createUploadBodySchema = z.object({
   mimeType: z.string().trim().min(3).max(100).transform((v) => v.toLowerCase()),
   /** Aufnahmezeit laut Gerät (Fallback, falls die Datei kein EXIF hat) */
   takenAt: z.iso.datetime().optional(),
+  /** Beschreibung aus dem Upload-Assistenten; wird beim Abschluss aufs Foto gesetzt */
+  caption: z.string().trim().max(2000).optional(),
 });
 
 export const uploadSessionSchema = z

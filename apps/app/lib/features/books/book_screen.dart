@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +26,26 @@ class BookScreen extends ConsumerStatefulWidget {
 
 class _BookScreenState extends ConsumerState<BookScreen> {
   bool _busy = false;
+  /// Solange das PDF entsteht, regelmässig nachfragen (Web und Windows bekommen keine Push-Mitteilung)
+  Timer? _poll;
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
+  }
+
+  void _pollWhileRendering(BookItem? book) {
+    if (book != null && book.isRendering) {
+      _poll ??= Timer(const Duration(seconds: 4), () {
+        _poll = null;
+        if (mounted) _refresh();
+      });
+    } else {
+      _poll?.cancel();
+      _poll = null;
+    }
+  }
 
   void _refresh() {
     ref.invalidate(bookDetailProvider(widget.bookId));
@@ -64,10 +86,10 @@ class _BookScreenState extends ConsumerState<BookScreen> {
     final l10n = context.l10n;
     final title = await showDialog<String>(context: context, builder: (_) => _RenameDialog(initial: book.title));
     if (title == null || title.isEmpty || title == book.title || !mounted) return;
-    await _run(() => ref.read(booksRepositoryProvider).rename(book.id, title), l10n.bookRerendering);
+    await _run(() => ref.read(booksRepositoryProvider).rename(book.id, title), l10n.bookEditorSaved);
   }
 
-  Future<void> _rerender(BookItem book) => _run(() => ref.read(booksRepositoryProvider).rerender(book.id), context.l10n.bookRerendering);
+  Future<void> _requestPdf(BookItem book) => _run(() => ref.read(booksRepositoryProvider).requestPdf(book.id), context.l10n.bookPdfRequested);
 
   Future<void> _run(Future<void> Function() action, String message) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -109,6 +131,7 @@ class _BookScreenState extends ConsumerState<BookScreen> {
     final scheme = Theme.of(context).colorScheme;
     final detail = ref.watch(bookDetailProvider(widget.bookId));
     final book = detail.value;
+    _pollWhileRendering(book);
 
     return Scaffold(
       appBar: AppBar(
@@ -124,12 +147,12 @@ class _BookScreenState extends ConsumerState<BookScreen> {
             PopupMenuButton<String>(
               onSelected: (v) => switch (v) {
                 'rename' => _rename(book),
-                'rerender' => _rerender(book),
+                'rerender' => _requestPdf(book),
                 _ => _delete(book),
               },
               itemBuilder: (_) => [
                 PopupMenuItem(value: 'rename', child: Text(l10n.bookRenameTitle)),
-                if (book.isFailed) PopupMenuItem(value: 'rerender', child: Text(l10n.bookRerender)),
+                if (book.isReady) PopupMenuItem(value: 'rerender', child: Text(l10n.bookRerender)),
                 PopupMenuItem(value: 'delete', child: Text(l10n.commonDelete)),
               ],
             ),
@@ -152,12 +175,41 @@ class _BookScreenState extends ConsumerState<BookScreen> {
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                         child: Card(
-                          color: book.isFailed ? scheme.errorContainer : scheme.surfaceContainerHigh,
-                          child: ListTile(
-                            leading: book.isFailed ? Icon(Icons.error_outline, color: scheme.onErrorContainer) : const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5)),
-                            title: Text(book.isFailed ? l10n.bookFailedText : l10n.bookRenderingText),
-                            subtitle: Text(book.isFailed ? (book.error ?? '') : l10n.bookRenderingHint),
-                            trailing: book.isFailed && book.canEdit ? TextButton(onPressed: () => _rerender(book), child: Text(l10n.commonRetry)) : null,
+                          key: const ValueKey('book-status'),
+                          color: book.isFailed ? scheme.errorContainer : (book.isDraft ? scheme.secondaryContainer : scheme.surfaceContainerHigh),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                ListTile(
+                                  leading: book.isRendering
+                                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5))
+                                      : Icon(book.isFailed ? Icons.error_outline : Icons.edit_note, color: book.isFailed ? scheme.onErrorContainer : scheme.onSecondaryContainer),
+                                  title: Text(switch (book) {
+                                    _ when book.isFailed => l10n.bookFailedText,
+                                    _ when book.isRendering => l10n.bookRenderingText,
+                                    _ => l10n.bookDraft,
+                                  }),
+                                  subtitle: Text(switch (book) {
+                                    _ when book.isFailed => book.error ?? '',
+                                    _ when book.isRendering => l10n.bookRenderingHint,
+                                    _ when book.renderedAt != null => l10n.bookDraftChanged,
+                                    _ => l10n.bookDraftText,
+                                  }),
+                                ),
+                                if (book.canEdit && !book.isRendering)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: FilledButton.icon(
+                                      key: const ValueKey('book-create-pdf'),
+                                      onPressed: () => _requestPdf(book),
+                                      icon: const Icon(Icons.picture_as_pdf_outlined),
+                                      label: Text(book.isFailed ? l10n.commonRetry : l10n.bookCreatePdf),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ),

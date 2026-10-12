@@ -1,5 +1,7 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:mime/mime.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app.dart' show rootMessengerKey;
@@ -7,6 +9,7 @@ import '../../l10n/l10n.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass.dart';
 import 'upload_controller.dart';
+import 'upload_review_screen.dart';
 import 'upload_service.dart';
 
 /// Dateien wählen und in die Upload-Warteschlange stellen.
@@ -17,7 +20,21 @@ Future<void> pickAndUpload(BuildContext context, WidgetRef ref, String familyId)
   final l10n = context.l10n;
   final files = await FilePicker.pickFiles(dialogTitle: l10n.uploadPickTitle, type: FileType.media);
   if (files.isEmpty) return;
-  ref.read(uploadControllerProvider.notifier).enqueue(familyId, files);
+  // Web: sofort lesen – Safari entzieht den Zugriff auf gewählte Dateien nach kurzer Zeit, und der Assistent
+  // kann dauern. Nativ: nur Bilder bis 30 MB für die Vorschaubilder lesen (Upload liest später von der Platte).
+  final bytes = <Future<Uint8List>?>[
+    for (final f in files)
+      kIsWeb
+          ? f.readAsBytes()
+          : ((lookupMimeType(f.name) ?? '').startsWith('image/') && (f.lengthSync() ?? 0) < 30 * 1024 * 1024 ? f.readAsBytes() : null),
+  ];
+  if (!context.mounted) return;
+  // Upload-Assistent: Beschreibung pro Foto (freiwillig); Abbrechen lädt nichts hoch
+  final captions = await Navigator.of(context).push<Map<int, String>>(
+    MaterialPageRoute(fullscreenDialog: true, builder: (_) => UploadReviewScreen(files: files, bytes: bytes)),
+  );
+  if (captions == null) return;
+  ref.read(uploadControllerProvider.notifier).enqueue(familyId, files, captions: captions, preloaded: kIsWeb ? bytes : null);
   // Sofortige Rückmeldung – auf iOS Safari kommt die Seite manchmal erst verzögert zurück,
   // dann ist der ursprüngliche Kontext nicht mehr gültig und das Sheet bliebe aus.
   rootMessengerKey.currentState?.showSnackBar(

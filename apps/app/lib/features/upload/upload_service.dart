@@ -51,6 +51,7 @@ class UploadService {
     required String fileName,
     required String mimeType,
     DateTime? takenAt,
+    String? caption,
     required void Function(double progress, String phase) onProgress,
     CancelToken? cancel,
   }) async {
@@ -70,6 +71,7 @@ class UploadService {
                 'originalName': fileName,
                 'mimeType': mimeType,
                 if (takenAt != null) 'takenAt': takenAt.toUtc().toIso8601String(),
+                if (caption != null && caption.trim().isNotEmpty) 'caption': caption.trim(),
               },
               cancelToken: cancel,
             )

@@ -27,6 +27,9 @@ Zahlungsabwicklung in die App holen.
   Seitenschätzung des Servers. **Kontroll-Assistent** danach: jede Seite mit Server-Vorschau (`preview-page`),
   Ausschnitt pro Foto als Fokuspunkt und Zoom (`crop`), Fotos entfernen oder verschieben, Text pro Seite ausblenden,
   Umschlagfoto und Titel; ohne gesetzten Ausschnitt schneidet der Server auf den bildwichtigsten Bereich.
+- **Entwurf zuerst:** Anlegen und jede Änderung ergeben einen Entwurf (`DRAFT`) ohne Rendern; geprüft wird mit
+  schnellen Einzelseiten-Vorschauen. Das Druck-PDF entsteht erst über «PDF erstellen» (`RENDERING` → `READY`), damit
+  nie ein ungeprüftes PDF bereitliegt und der Server nicht doppelt rechnet.
 - **Texte** werden beim Erzeugen gewählt: keine, Bildunterschriften, Bildunterschriften mit Kommentaren. Der Schalter
   bestimmt das Layout; in der Bearbeitung können Texte pro Seite ausgeblendet und einzelne Kommentare entfernt werden.
 - **Gespeichert** wird ein `PhotoBook` pro Album (Titel, Format, Optionen, Seitenliste als JSON, Status, PDF-Pfad).

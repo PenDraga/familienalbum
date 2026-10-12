@@ -77,7 +77,8 @@ class _BookWizardScreenState extends ConsumerState<BookWizardScreen> {
       final book = await ref.read(booksRepositoryProvider).create(widget.familyId, _request);
       ref.invalidate(booksProvider);
       messenger.showSnackBar(SnackBar(content: Text(l10n.bookCreateStarted(book.title, book.pageCount))));
-      if (mounted) context.pushReplacement('/books/${book.id}');
+      // Entwurf: direkt in die Seitenprüfung; das PDF entsteht erst dort über «PDF erstellen»
+      if (mounted) context.pushReplacement('/books/${book.id}/edit');
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(errorMessage(e))));
       if (mounted) setState(() => _creating = false);

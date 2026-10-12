@@ -6,6 +6,11 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 ## [Unreleased]
 
 ### Server
+- Fotobuch als Entwurf: Status `DRAFT` → `RENDERING` → `READY` (oder `FAILED`); Anlegen und jede Änderung ergeben einen
+  Entwurf ohne Rendern, das Druck-PDF entsteht erst über `POST /books/:id/render` («PDF erstellen»); ein Rendern,
+  während dem das Buch geändert wurde, wird verworfen; `urls.coverPhoto` für Karten im Entwurf; Migration
+  `m17_book_draft_upload_caption` (bestehende Bücher behalten ihren Stand)
+- Upload mit Beschreibung: `caption` in `POST /families/:id/uploads`, wird beim Abschluss aufs Foto gesetzt
 - Fotobuch als druckfertiges PDF (ADR-0004): `POST /families/:id/books` mit Format (21 × 21, A4 quer, 30 × 30),
   Textmodus (keine, Beschreibungen, Beschreibungen + Kommentare) und Monaten; automatischer Layoutvorschlag (Umschlag,
   Kapitel pro Monat, Vorlagen eins/zwei/vier/Bild mit Text), Rendern im Worker (`render-book`), Seitenvorschauen,
@@ -27,6 +32,10 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
   Migration `m14_password_reset`
 
 ### App
+- Upload-Assistent: nach der Auswahl eine Übersicht mit Vorschaubild und Beschreibung pro Datei, «Gleiche
+  Beschreibung für alle»; Web liest die Dateien sofort (Safari)
+- Fotobuch: nach «Erstellen» direkt «Seiten prüfen»; «PDF erstellen» im Editor und im Buch; Hinweis «Entwurf» bzw.
+  «seit dem letzten PDF geändert»; das Buch fragt nach, solange das PDF entsteht
 - Fotobuch: Karte «Fotobuch erstellen» in den Sammlungen und in den Einstellungen; Assistent in drei Schritten:
   Zeitraum (nur Jahre und Monate mit Fotos), Fotos abwählen (auch «nur kommentierte»), Gestaltung mit Anordnung,
   Format, Texten, Titel und Seitenschätzung; Kontroll-Assistent «Seiten prüfen»: jede Seite mit Vorschau,

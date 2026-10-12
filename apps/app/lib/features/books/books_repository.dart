@@ -60,7 +60,8 @@ class BooksRepository {
     return BookItem.fromJson(data, _api.absolute);
   }
 
-  Future<BookItem> rerender(String bookId) async {
+  /// «PDF erstellen» (auch nach einem Fehler)
+  Future<BookItem> requestPdf(String bookId) async {
     final data = await _api.dio.post<Map<String, dynamic>>('/books/$bookId/render').unwrap();
     return BookItem.fromJson(data, _api.absolute);
   }

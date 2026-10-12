@@ -166,14 +166,14 @@ GET    /families/:id/recaps | POST /families/:id/recaps {kind, period}   Rückbl
 GET    /recaps/:id/video | /poster        signiert oder Mitglied
 GET    /families/:id/books | POST /families/:id/books {format, textMode, layout, months[], excludeMediaIds[]}   Fotobuch (canCreateBooks); Layoutvorschlag sofort, PDF im Worker
 GET    /families/:id/books/months | /books/photos?months= | POST /families/:id/books/preview   Assistent (canCreateBooks)
-GET    /books/:id (Seitenliste) | PATCH /books/:id {title, pages} | POST /books/:id/preview-page {page} | POST /books/:id/render | DELETE /books/:id   Ersteller oder isFamilyAdmin
+GET    /books/:id (Seitenliste) | PATCH /books/:id {title, pages} (→ Entwurf) | POST /books/:id/preview-page {page} | POST /books/:id/render («PDF erstellen») | DELETE /books/:id   Ersteller oder isFamilyAdmin
 GET    /books/:id/pdf | /pages/:n          signiert oder Mitglied
 GET    /families/:id/on-this-day         «An diesem Tag» (gleicher Kalendertag vor 1–12 Monaten, 1–10 Jahren)
 GET    /families/:id/export-link/:scope  signierter Link (canDownload); scope = alle | JJJJ-MM
 GET    /families/:id/export/:scope       ZIP-Stream: Originale JJJJ/MM/, index.json, kommentare.md
 PATCH  /media/:id                        caption
 DELETE /media/:id
-POST   /families/:id/uploads             UploadSession anlegen (sha256, size, name) → 409 wenn Hash existiert
+POST   /families/:id/uploads             UploadSession anlegen (sha256, size, name, caption?) → 409 wenn Hash existiert
 PUT    /uploads/:id/chunks/:index        Chunk ≤ 50 MB (Cloudflare-Limit 100 MB beachten)
 POST   /uploads/:id/complete             → Media mit status PROCESSING, Job enqueuen
 GET/POST /media/:id/comments

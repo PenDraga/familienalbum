@@ -15,7 +15,7 @@ import 'upload_service.dart';
 enum UploadStatus { queued, running, done, duplicate, failed, cancelled }
 
 class UploadTask {
-  UploadTask({required this.id, required this.fileName, required this.sizeBytes, required this.familyId, required this.file, this.preloaded});
+  UploadTask({required this.id, required this.fileName, required this.sizeBytes, required this.familyId, required this.file, this.preloaded, this.caption});
 
   final String id;
   final String fileName;
@@ -25,6 +25,8 @@ class UploadTask {
   /// Web: Dateiinhalt wird sofort bei der Auswahl gelesen – Safari entzieht der Seite sonst nach kurzer Zeit
   /// den Zugriff auf gewählte Dateien, und spätere Uploads einer Mehrfachauswahl scheitern.
   final Future<Uint8List>? preloaded;
+  /// Beschreibung aus dem Upload-Assistenten (optional)
+  final String? caption;
   CancelToken cancel = CancelToken();
 
   UploadStatus status = UploadStatus.queued;
@@ -34,7 +36,7 @@ class UploadTask {
   String? mediaId;
   int attempts = 0;
 
-  UploadTask copy() => UploadTask(id: id, fileName: fileName, sizeBytes: sizeBytes, familyId: familyId, file: file, preloaded: preloaded)
+  UploadTask copy() => UploadTask(id: id, fileName: fileName, sizeBytes: sizeBytes, familyId: familyId, file: file, preloaded: preloaded, caption: caption)
     ..cancel = cancel
     ..status = status
     ..progress = progress
@@ -56,16 +58,18 @@ class UploadController extends Notifier<List<UploadTask>> {
 
   UploadService get _service => UploadService(ref.read(apiClientProvider));
 
-  void enqueue(String familyId, List<PlatformFile> files) {
+  /// [captions]: Beschreibung je Index; [preloaded]: bereits gestartete Lesevorgänge (Web) je Index.
+  void enqueue(String familyId, List<PlatformFile> files, {Map<int, String> captions = const {}, List<Future<Uint8List>?>? preloaded}) {
     final tasks = [
-      for (final f in files)
+      for (final (i, f) in files.indexed)
         UploadTask(
           id: '${DateTime.now().microsecondsSinceEpoch}-${_seq++}',
           fileName: f.name,
           sizeBytes: f.lengthSync() ?? 0,
           familyId: familyId,
           file: f,
-          preloaded: kIsWeb ? f.readAsBytes() : null,
+          preloaded: preloaded?[i] ?? (kIsWeb ? f.readAsBytes() : null),
+          caption: captions[i],
         ),
     ];
     state = [...state, ...tasks];
@@ -153,6 +157,7 @@ class UploadController extends Notifier<List<UploadTask>> {
             fileName: t.fileName,
             mimeType: mime,
             takenAt: takenAtHint,
+            caption: t.caption,
             cancel: t.cancel,
             onProgress: (p, phase) {
               final now = DateTime.now();

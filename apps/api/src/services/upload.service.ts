@@ -27,6 +27,7 @@ export interface CreateUploadInput {
   originalName: string;
   mimeType: string;
   takenAt?: string;
+  caption?: string;
 }
 
 export function toUploadSessionDto(s: UploadSession) {
@@ -85,7 +86,13 @@ export class UploadService {
     const resumable = await this.prisma.uploadSession.findFirst({
       where: { familyId, uploaderId, sha256: input.sha256, expiresAt: { gt: new Date() } },
     });
-    if (resumable) return toUploadSessionDto(resumable);
+    if (resumable) {
+      // Beschreibung kann sich beim erneuten Versuch geändert haben
+      if (input.caption !== undefined && (input.caption || null) !== resumable.caption) {
+        await this.prisma.uploadSession.update({ where: { id: resumable.id }, data: { caption: input.caption || null } });
+      }
+      return toUploadSessionDto(resumable);
+    }
 
     const session = await this.prisma.uploadSession.create({
       data: {
@@ -97,6 +104,7 @@ export class UploadService {
         sizeBytes: input.sizeBytes,
         chunkSize: this.config.chunkSize,
         takenAtHint: plausibleDate(input.takenAt),
+        caption: input.caption || null,
         expiresAt: new Date(Date.now() + SESSION_TTL_MS),
       },
     });
@@ -172,6 +180,7 @@ export class UploadService {
       mimeType: session.mimeType,
       sizeBytes: bytes,
       takenAt: session.takenAtHint ?? new Date(),
+      caption: session.caption,
     };
 
     let media;

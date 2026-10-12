@@ -96,6 +96,8 @@ class BookItem {
     this.pdfBytes,
     this.pdfUrl,
     this.coverUrl,
+    this.coverPhotoUrl,
+    this.renderedAt,
     this.pages = const [],
   });
 
@@ -116,9 +118,16 @@ class BookItem {
   final DateTime createdAt;
   final String? pdfUrl;
   final String? coverUrl;
+  /// Thumbnail des Umschlagfotos (auch im Entwurf vorhanden)
+  final String? coverPhotoUrl;
+  /// Zeitpunkt des letzten fertigen PDFs (null = noch nie)
+  final DateTime? renderedAt;
   /// Nur im Detail gefüllt
   final List<BookPageView> pages;
 
+  // DRAFT → RENDERING → READY (oder FAILED); jede Änderung macht wieder einen Entwurf
+  bool get isDraft => status == 'DRAFT';
+  bool get isRendering => status == 'RENDERING';
   bool get isReady => status == 'READY';
   bool get isFailed => status == 'FAILED';
 
@@ -143,6 +152,8 @@ class BookItem {
       createdAt: DateTime.parse(j['createdAt'] as String),
       pdfUrl: urls['pdf'] == null ? null : absolute(urls['pdf'] as String),
       coverUrl: urls['cover'] == null ? null : absolute(urls['cover'] as String),
+      coverPhotoUrl: urls['coverPhoto'] == null ? null : absolute(urls['coverPhoto'] as String),
+      renderedAt: j['renderedAt'] == null ? null : DateTime.parse(j['renderedAt'] as String),
       pages: ((j['pages'] as List<dynamic>?) ?? const []).map((e) => BookPageView.fromJson(e as Map<String, dynamic>, absolute)).toList(),
     );
   }

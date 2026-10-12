@@ -38,6 +38,26 @@ describe('POST /families/:id/uploads', () => {
     expect(s.totalChunks).toBeGreaterThan(1);
   });
 
+  it('übernimmt die Beschreibung aus dem Upload-Assistenten aufs Foto, auch nach einem neuen Anlauf', async () => {
+    const { family, admin } = await ctx.createFamilyWithAdmin();
+    const buf = await makeJpeg({ width: 300, height: 200 });
+    const as = await ctx.as(admin);
+    const first = await as.post(`/families/${family.id}/uploads`, okBody(buf, { caption: '  Erster Versuch  ' }));
+    expect(first.statusCode, first.body).toBe(201);
+    // neuer Anlauf (Resume) mit geänderter Beschreibung → dieselbe Session, neue Beschreibung
+    const again = await as.post(`/families/${family.id}/uploads`, okBody(buf, { caption: 'Gipfel erreicht ⛰️' }));
+    expect(again.json().id).toBe(first.json().id);
+    await as.put(`/uploads/${first.json().id}/chunks/0`, buf);
+    const done = await as.post(`/uploads/${first.json().id}/complete`);
+    expect(done.statusCode, done.body).toBe(201);
+    expect(done.json().caption).toBe('Gipfel erreicht ⛰️');
+    // ohne Beschreibung bleibt sie leer; zu lang wird abgelehnt
+    const other = await makeJpeg({ width: 310, height: 200 });
+    expectProblem(await as.post(`/families/${family.id}/uploads`, okBody(other, { caption: 'x'.repeat(2001) })), 400);
+    const media = await ctx.uploadAndProcess(admin, family, other);
+    expect(media.caption).toBeNull();
+  });
+
   it('verlangt canUpload', async () => {
     const { family } = await ctx.createFamilyWithAdmin();
     const viewer = await ctx.createUser();

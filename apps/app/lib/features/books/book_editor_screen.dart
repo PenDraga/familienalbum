@@ -89,18 +89,22 @@ class _BookEditorScreenState extends ConsumerState<BookEditorScreen> {
     _schedulePreview(immediate: true);
   }
 
-  Future<void> _save() async {
+  /// Speichern (falls geändert) und – mit [pdf] – gleich das PDF anfordern; danach zum Buch.
+  Future<void> _save({bool pdf = false}) async {
     final l10n = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _saving = true);
     try {
-      await ref.read(booksRepositoryProvider).savePages(widget.bookId, _pages!);
+      final repo = ref.read(booksRepositoryProvider);
+      if (_dirty) await repo.savePages(widget.bookId, _pages!);
+      if (pdf) await repo.requestPdf(widget.bookId);
       ref.invalidate(bookDetailProvider(widget.bookId));
       ref.invalidate(booksProvider);
-      messenger.showSnackBar(SnackBar(content: Text(l10n.bookEditorSaved)));
+      messenger.showSnackBar(SnackBar(content: Text(pdf ? l10n.bookPdfRequested : l10n.bookEditorSaved)));
       if (mounted) {
         setState(() => _dirty = false);
-        context.pop();
+        // Zum Buch – auch wenn der Editor direkt aus dem Assistenten kam
+        context.go('/books/${widget.bookId}');
       }
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(errorMessage(e))));
@@ -177,6 +181,19 @@ class _BookEditorScreenState extends ConsumerState<BookEditorScreen> {
                   const SizedBox(height: 12),
                   ..._controls(context, pages),
                 ],
+              ),
+        bottomNavigationBar: pages == null
+            ? null
+            : SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: FilledButton.icon(
+                    key: const ValueKey('book-editor-pdf'),
+                    onPressed: _saving ? null : () => _save(pdf: true),
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    label: Text(l10n.bookCreatePdf),
+                  ),
+                ),
               ),
       ),
     );

@@ -107,7 +107,7 @@ Die komplette Rechtematrix ist in `test/permissions.test.ts` als Tabelle abgesic
 ### Upload-Flow
 
 ```
-POST /families/:id/uploads   { sha256, sizeBytes, originalName, mimeType, takenAt? }   (canUpload)
+POST /families/:id/uploads   { sha256, sizeBytes, originalName, mimeType, takenAt?, caption? }   (canUpload; caption = Beschreibung aus dem Upload-Assistenten, wird beim Abschluss gesetzt)
   → 201 UploadSession { id, chunkSize, totalChunks, receivedChunks[] }
   → 409 DUPLICATE_MEDIA { mediaId }       Datei existiert in dieser Familie schon
   → 415 UNSUPPORTED_MEDIA_TYPE            unbekannter Typ (HEIC/HEIF wird akzeptiert und im Worker gewandelt)
@@ -268,14 +268,16 @@ Druckfertiges PDF statt Druckerei-API. Alle Mitglieder sehen Bücher und laden d
 - Assistent (alle `canCreateBooks`): `GET /families/:id/books/months` – Monate mit fertigen Fotos `[{ month, count }]`;
   `GET /families/:id/books/photos?months=JJJJ-MM,…` – Fotos zum Abwählen mit signiertem Thumbnail;
   `POST /families/:id/books/preview` (Body wie beim Anlegen) – `{ pageCount, mediaCount, maxPages }`, ohne zu speichern.
-- `POST /families/:id/books` `{ title?, format, textMode, layout, months[], onlyCommented, excludeMediaIds[] }` → 202 `PhotoBookDetail`.
+- `POST /families/:id/books` `{ title?, format, textMode, layout, months[], onlyCommented, excludeMediaIds[] }` → 202 `PhotoBookDetail`
+  als **Entwurf** (`status: DRAFT`, kein Rendern). Status danach: `RENDERING` → `READY` oder `FAILED`; jede Änderung
+  (`PATCH`) macht wieder einen Entwurf und entfernt ein vorhandenes PDF.
   `format`: `SQUARE_21` (21 × 21 cm), `A4_LANDSCAPE`, `SQUARE_30`; `textMode`: `NONE` | `CAPTIONS` | `COMMENTS`;
   `layout`: `SINGLE` (ein Foto pro Seite, gerahmt), `MIXED` (Standard: 1–4 pro Seite, Fotos eines Tages bleiben
   zusammen, ein ganzseitiges Highlight pro Monat), `COLLAGE` (bis 6); `months`: `JJJJ-MM` (1–36). Der Server
   berechnet den Layoutvorschlag sofort (Umschlag, Kapitel pro Monat, Vorlagen `auto` = 1–6 Fotos in Reihen oder
   Spalten nach ihrem Seitenverhältnis ohne Beschnitt, mit Beschreibung und kurzen Kommentaren unter jedem Foto,
   `one` = randabfallend, `one_text` = ein Foto mit viel Text bzw. bei «ein Foto pro Seite»; ältere Bücher auch `two`,
-  `two_stacked`, `four`) und rendert PDF und Seitenvorschauen im Worker (`render-book`).
+  `two_stacked`, `four`). PDF und Seitenvorschauen rendert der Worker (`render-book`) erst nach `POST /books/:id/render`.
   Fehler: `BOOK_EMPTY` (409), `BOOK_TOO_LARGE` (409, über 200 Seiten).
 - `GET /books/:id` – Detail mit `pages[]`: `{ index, page, previewUrl, thumbs[] }`; `page` ist die gespeicherte Seite
   (`cover` | `chapter` | `photos` mit `template`, `items[{ mediaId, caption, comments[] }]`, `hideText`).
