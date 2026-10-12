@@ -17,6 +17,7 @@ import 'features/autoupload/auto_upload_service.dart';
 import 'features/auth/invite_screen.dart';
 import 'l10n/l10n.dart';
 import 'features/auth/login_screen.dart';
+import 'features/auth/reset_password_screen.dart';
 import 'features/media/media_detail_screen.dart';
 import 'features/push/push_service.dart';
 import 'features/timeline/timeline_controller.dart';
@@ -59,12 +60,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       final loc = state.matchedLocation;
       final isLogin = loc == '/login';
       final isInvite = loc.startsWith('/invite');
-      if (!authed && !isLogin && !isInvite) return '/login';
+      final isReset = loc.startsWith('/reset');
+      if (!authed && !isLogin && !isInvite && !isReset) return '/login';
       if (authed && isLogin) return '/';
       return null;
     },
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+      GoRoute(path: '/reset', builder: (_, state) => ResetPasswordScreen(token: state.uri.queryParameters['token'])),
       GoRoute(
         path: '/invite',
         builder: (_, state) => InviteScreen(initialCode: state.uri.queryParameters['code'], initialServer: state.uri.queryParameters['server']),

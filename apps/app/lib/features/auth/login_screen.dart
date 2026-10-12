@@ -7,6 +7,7 @@ import '../../core/providers.dart';
 import '../../l10n/l10n.dart';
 import '../../widgets/auth_shell.dart';
 import 'auth_controller.dart';
+import 'auth_repository.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -53,6 +54,57 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // Router leitet über redirect auf "/" weiter.
     } catch (e) {
       setState(() => _error = errorMessage(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Passwort vergessen: E-Mail abfragen, Server schickt den Link. Antwort ist bewusst immer gleich.
+  Future<void> _forgotPassword() async {
+    final l10n = context.l10n;
+    final controller = TextEditingController(text: _email.text.trim());
+    final email = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.resetRequestTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(l10n.resetRequestBody),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              keyboardType: TextInputType.emailAddress,
+              autocorrect: false,
+              decoration: InputDecoration(labelText: l10n.authEmailLabel, prefixIcon: const Icon(Icons.mail_outline)),
+              onSubmitted: (v) => Navigator.pop(ctx, v),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            style: FilledButton.styleFrom(minimumSize: const Size(0, 40), padding: const EdgeInsets.symmetric(horizontal: 18)),
+            child: Text(l10n.resetRequestSend),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    final trimmed = email?.trim() ?? '';
+    if (trimmed.isEmpty || !trimmed.contains('@') || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      if (_form.currentState != null && _server.text.trim().isNotEmpty) await ref.read(settingsProvider.notifier).setBaseUrl(_server.text);
+      await AuthRepository(ref.read(apiClientProvider)).requestPasswordReset(trimmed);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.resetRequestSent), duration: const Duration(seconds: 8)));
+    } catch (e) {
+      if (mounted) setState(() => _error = errorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -145,6 +197,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               TextButton(
                 onPressed: _busy ? null : () => context.go('/invite'),
                 child: Text(l10n.loginHaveInviteCode),
+              ),
+              TextButton(
+                onPressed: _busy ? null : _forgotPassword,
+                child: Text(l10n.loginForgotPassword, style: TextStyle(color: scheme.onSurfaceVariant)),
               ),
             ],
           ),

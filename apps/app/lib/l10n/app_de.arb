@@ -1102,5 +1102,16 @@
       }
     }
   },
-  "usersTitle": "Benutzer"
+  "usersTitle": "Benutzer",
+  "loginForgotPassword": "Passwort vergessen?",
+  "resetRequestTitle": "Passwort zurücksetzen",
+  "resetRequestBody": "Wir schicken dir einen Link an deine E-Mail-Adresse. Damit kannst du ein neues Passwort setzen.",
+  "resetRequestSend": "Link senden",
+  "resetRequestSent": "Falls die Adresse bekannt ist, ist der Link unterwegs. Bitte auch den Spam-Ordner prüfen.",
+  "resetTitle": "Neues Passwort",
+  "resetSubtitle": "Wähle ein neues Passwort für dein Konto.",
+  "resetSubmit": "Passwort setzen",
+  "resetDone": "Dein Passwort ist gesetzt. Du kannst dich jetzt anmelden – andere Geräte müssen sich neu anmelden.",
+  "resetLinkInvalid": "Dieser Link ist unvollständig oder abgelaufen. Bitte fordere im Login einen neuen an.",
+  "resetBackToLogin": "Zur Anmeldung"
 }

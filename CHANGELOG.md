@@ -10,6 +10,10 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
   Sitzungen enden; SMTP über `SMTP_*`/`MAIL_FROM`/`PUBLIC_URL`, `GET /meta` meldet `features.passwordReset`;
   Migration `m14_password_reset`
 
+### App
+- «Passwort vergessen?» im Login (E-Mail eingeben, Link kommt per Mail); Screen `/reset?token=…` zum Setzen des neuen
+  Passworts, deutsch und englisch
+
 ## [1.1.0] – 2026-10-08
 
 Die App spricht Deutsch und Englisch und folgt der Systemsprache des Geräts; Deutsch bleibt Standard.

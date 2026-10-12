@@ -34,6 +34,13 @@ class AuthRepository {
 
   Future<void> deleteAvatar() => _api.dio.delete<void>('/me/avatar').unwrap();
 
+  /// Passwort vergessen: Server schickt einen Link per Mail (antwortet immer 204; 503 wenn kein Mail-Versand eingerichtet).
+  Future<void> requestPasswordReset(String email) => _api.dio.post<void>('/auth/password-reset', data: {'email': email}).unwrap();
+
+  /// Neues Passwort mit dem Token aus dem Mail-Link setzen.
+  Future<void> confirmPasswordReset(String token, String password) =>
+      _api.dio.post<void>('/auth/password-reset/confirm', data: {'token': token, 'password': password}).unwrap();
+
   Future<void> logout(String refreshToken) async {
     await _api.dio.post<void>('/auth/logout', data: {'refreshToken': refreshToken}).unwrap();
   }

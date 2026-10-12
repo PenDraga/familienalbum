@@ -401,5 +401,16 @@
   "usersRightsIn": "Permissions in {name}",
   "usersSearchHint": "Search by name or email",
   "usersSinceDevices": "Since {date} · {count, plural, =1{1 device} other{{count} devices}} with push",
-  "usersTitle": "Users"
+  "usersTitle": "Users",
+  "loginForgotPassword": "Forgot password?",
+  "resetRequestTitle": "Reset password",
+  "resetRequestBody": "We will send a link to your e-mail address. Use it to choose a new password.",
+  "resetRequestSend": "Send link",
+  "resetRequestSent": "If the address is known, the link is on its way. Please also check your spam folder.",
+  "resetTitle": "New password",
+  "resetSubtitle": "Choose a new password for your account.",
+  "resetSubmit": "Set password",
+  "resetDone": "Your password is set. You can sign in now – other devices will need to sign in again.",
+  "resetLinkInvalid": "This link is incomplete or has expired. Please request a new one from the login screen.",
+  "resetBackToLogin": "Back to sign-in"
 }
