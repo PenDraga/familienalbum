@@ -141,6 +141,7 @@ automatisch – sie müssen sich selbst als Mitglied hinzufügen.
 
 ```
 POST   /auth/login | /auth/refresh | /auth/logout
+POST   /auth/password-reset {email} → 204 | /auth/password-reset/confirm {token,password}   nur mit SMTP_*/PUBLIC_URL; GET /meta → features.passwordReset
 GET    /me
 PUT    /me/avatar | DELETE /me/avatar   Profilbild (Rohdaten JPEG/PNG/WebP → 512×512 WebP)
 GET    /users/:id/avatar                 signierter Link (in UserBrief.avatarUrl) oder Bearer
