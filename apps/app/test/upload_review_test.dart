@@ -89,6 +89,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(result, {0: 'Ferien im Tessin', 1: 'Gipfel erreicht ⛰️', 2: 'Ferien im Tessin'});
 
+    // Mit offener Tastatur (halber Bildschirm) bleibt «Hochladen» sichtbar; «Fertig» schliesst die Tastatur
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('upload-caption-0')));
+    tester.view.viewInsets = const FakeViewPadding(bottom: 1200);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpAndSettle();
+    final button = tester.getRect(find.byKey(const ValueKey('upload-start')));
+    expect(button.bottom, lessThanOrEqualTo(tester.view.physicalSize.height / tester.view.devicePixelRatio - 1200 / tester.view.devicePixelRatio + 1));
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(FocusManager.instance.primaryFocus?.context?.widget is EditableText, isFalse);
+    tester.view.resetViewInsets();
+    await tester.tap(find.byKey(const ValueKey('upload-start-top')));
+    await tester.pumpAndSettle();
+    expect(result, isEmpty);
+
     // Abbrechen: nichts hochladen
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();

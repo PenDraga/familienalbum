@@ -43,6 +43,8 @@ direkt beim Hochladen, «Passwort vergessen» per E-Mail.
   Ausschnitt als Symbol
 - Upload-Assistent: nach der Auswahl eine Übersicht mit Vorschaubild und Beschreibung pro Datei, «Gleiche
   Beschreibung für alle»; Web liest die Dateien sofort (Safari)
+- Upload-Assistent (Build 38): «Hochladen» rückt über die Tastatur und steht auch oben; die Eingabetaste heisst «Fertig»
+  und schliesst die Tastatur (in Build 37 blieb man mit offener Tastatur hängen)
 - Fotobuch: nach «Erstellen» direkt «Seiten prüfen»; «PDF erstellen» im Editor und im Buch; Hinweis «Entwurf» bzw.
   «seit dem letzten PDF geändert»; das Buch fragt nach, solange das PDF entsteht
 - Fotobuch: Karte «Fotobuch erstellen» in den Sammlungen und in den Einstellungen; Assistent in drei Schritten:

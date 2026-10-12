@@ -57,8 +57,21 @@ class _UploadReviewScreenState extends State<UploadReviewScreen> {
       appBar: AppBar(
         title: Text(l10n.uploadReviewTitle),
         leading: IconButton(icon: const Icon(Icons.close), tooltip: l10n.commonCancel, onPressed: () => Navigator.pop(context)),
+        // Auch oben erreichbar, wenn die Tastatur den unteren Knopf verdeckt
+        actions: [
+          TextButton(key: const ValueKey('upload-start-top'), onPressed: () => Navigator.pop(context, _captions()), child: Text(l10n.uploadReviewTitle)),
+          const SizedBox(width: 8),
+        ],
       ),
-      body: ListView(
+      // Knopf im Body statt als bottomNavigationBar: so rückt er mit der Tastatur nach oben
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           Text(l10n.uploadReviewHint, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
@@ -73,6 +86,7 @@ class _UploadReviewScreenState extends State<UploadReviewScreen> {
                     controller: _all,
                     textCapitalization: TextCapitalization.sentences,
                     maxLength: 2000,
+                    textInputAction: TextInputAction.done,
                     decoration: InputDecoration(labelText: l10n.uploadCaptionAll, counterText: ''),
                     onSubmitted: (_) => _applyAll(),
                   ),
@@ -111,6 +125,10 @@ class _UploadReviewScreenState extends State<UploadReviewScreen> {
                           minLines: 1,
                           maxLines: 3,
                           maxLength: 2000,
+                          // Eingabetaste schliesst die Tastatur (sonst Zeilenumbruch ohne Ausweg)
+                          keyboardType: TextInputType.text,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => FocusScope.of(context).unfocus(),
                           decoration: InputDecoration(hintText: l10n.uploadCaptionLabel, counterText: ''),
                         ),
                       ],
@@ -120,16 +138,21 @@ class _UploadReviewScreenState extends State<UploadReviewScreen> {
               ),
             ),
         ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: FilledButton.icon(
-            key: const ValueKey('upload-start'),
-            onPressed: () => Navigator.pop(context, _captions()),
-            icon: const Icon(Icons.cloud_upload_outlined),
-            label: Text(l10n.uploadStart(widget.files.length)),
-          ),
+              ),
+            ),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: FilledButton.icon(
+                  key: const ValueKey('upload-start'),
+                  onPressed: () => Navigator.pop(context, _captions()),
+                  icon: const Icon(Icons.cloud_upload_outlined),
+                  label: Text(l10n.uploadStart(widget.files.length)),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
