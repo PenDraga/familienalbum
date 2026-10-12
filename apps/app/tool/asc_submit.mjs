@@ -45,7 +45,8 @@ for (const l of locs.data) {
   if (!l.attributes.whatsNew) throw new Error(`«Was ist neu» fehlt für ${l.attributes.locale}`);
 }
 
-if (!['PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'METADATA_REJECTED'].includes(v.attributes.appStoreState)) {
+// READY_FOR_REVIEW: Version liegt in einer vorbereiteten, noch nicht abgeschickten Einreichung (z. B. nach einem 500 von Apple)
+if (!['PREPARE_FOR_SUBMISSION', 'READY_FOR_REVIEW', 'DEVELOPER_REJECTED', 'REJECTED', 'METADATA_REJECTED'].includes(v.attributes.appStoreState)) {
   console.log(`\nNichts einzureichen (Status ${v.attributes.appStoreState}).`);
   process.exit(0);
 }
