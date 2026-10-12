@@ -187,6 +187,8 @@ Optional. Without it the clients poll once a minute.
 7. **App Store listing by script:** `node apps/app/tool/asc_listing.mjs --screenshots` sets subtitle, category, privacy
    URL, description, keywords, support URL, review information and uploads the screenshots from
    `apps/app/store/ios/<DISPLAY_TYPE>/` (6.7" and 6.5"; the app targets iPhone only). Personal values live in `ios/asc.env`.
+   Then `node apps/app/tool/asc_submit.mjs` submits the version from `pubspec.yaml` for review (checks build and
+   "What's new" first; `--dry-run` only shows).
 8. **Android APK:** create the release key once (`apps/app/android/key.properties.example`), then
    `apps/app/tool/build.sh apk`. The key must stay the same for all future versions, back it up.
 

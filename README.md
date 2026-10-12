@@ -198,7 +198,9 @@ Optional. Ohne Konfiguration pollen die Clients jede Minute.
    Datenschutz-URL, Beschreibung, Keywords, Support-URL, die TestFlight-Beschreibung und lädt die Screenshots aus
    `apps/app/store/ios/<DISPLAY_TYPE>/` hoch (6,7" und 6,5" für iPhone; die App ist nur für iPhone freigegeben).
    Texte stehen im Skript, persönliche Angaben (Server, Kontakt, Copyright, Demo-Konto) in `ios/asc.env`. Das Passwort
-   des Demo-Kontos für Apples Prüfer wird in App Store Connect von Hand eingetragen.
+   des Demo-Kontos für Apples Prüfer wird in App Store Connect von Hand eingetragen. Danach reicht
+   `node apps/app/tool/asc_submit.mjs` die Version aus der `pubspec.yaml` zur Prüfung ein (prüft vorher Build und «Was
+   ist neu»; `--dry-run` zeigt nur an).
 8. **Android-APK:** Release-Schlüssel einmalig anlegen (siehe `apps/app/android/key.properties.example`), dann
    `apps/app/tool/build.sh apk` → `build/app/outputs/flutter-apk/app-release.apk` zum direkten Verteilen. Der Schlüssel
    muss für alle künftigen Versionen derselbe bleiben (Backup!). Hinweis SDK 2026: `flutter_secure_storage` verlangt
