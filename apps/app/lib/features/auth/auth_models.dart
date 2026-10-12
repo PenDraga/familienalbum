@@ -4,18 +4,22 @@ class MembershipFlags {
     required this.canUpload,
     required this.canDownload,
     required this.canComment,
+    this.canCreateBooks = false,
   });
 
   final bool isFamilyAdmin;
   final bool canUpload;
   final bool canDownload;
   final bool canComment;
+  /// Fotobuch (PDF) erstellen, ADR-0004
+  final bool canCreateBooks;
 
   factory MembershipFlags.fromJson(Map<String, dynamic> j) => MembershipFlags(
     isFamilyAdmin: j['isFamilyAdmin'] as bool,
     canUpload: j['canUpload'] as bool,
     canDownload: j['canDownload'] as bool,
     canComment: j['canComment'] as bool,
+    canCreateBooks: j['canCreateBooks'] as bool? ?? false,
   );
 }
 
@@ -72,6 +76,7 @@ class InvitePreview {
       canUpload: j['canUpload'] as bool,
       canDownload: j['canDownload'] as bool,
       canComment: j['canComment'] as bool,
+      canCreateBooks: j['canCreateBooks'] as bool? ?? false,
     ),
   );
 }

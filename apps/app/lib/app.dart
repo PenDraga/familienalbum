@@ -23,6 +23,8 @@ import 'features/push/push_service.dart';
 import 'features/timeline/timeline_controller.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/timeline/timeline_screen.dart';
+import 'features/books/book_screen.dart';
+import 'features/books/books_repository.dart';
 import 'features/recaps/recap_screen.dart';
 import 'features/recaps/recaps_repository.dart';
 import 'theme/app_theme.dart';
@@ -90,6 +92,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(path: 'activity', builder: (_, _) => const ActivityScreen()),
           GoRoute(path: 'recaps/:id', builder: (_, state) => RecapScreen(recapId: state.pathParameters['id']!)),
+          GoRoute(path: 'books/:id', builder: (_, state) => BookScreen(bookId: state.pathParameters['id']!)),
           GoRoute(
             path: 'settings',
             builder: (_, _) => const SettingsScreen(),
@@ -122,8 +125,14 @@ class FamilienalbumApp extends ConsumerWidget {
       ref.read(timelineControllerProvider.notifier).refresh();
       ref.read(unreadProvider.notifier).refresh();
       if (event.type == 'recap') ref.invalidate(recapsProvider);
+      if (event.type == 'book') {
+        ref.invalidate(booksProvider);
+        if (event.bookId != null) ref.invalidate(bookDetailProvider(event.bookId!));
+      }
       if (event.openedFromNotification && event.recapId != null) {
         ref.read(routerProvider).go('/recaps/${event.recapId}');
+      } else if (event.openedFromNotification && event.bookId != null) {
+        ref.read(routerProvider).go('/books/${event.bookId}');
       } else if (event.openedFromNotification && event.mediaId != null) {
         ref.read(routerProvider).go('/media/${event.mediaId}');
       } else if (event.openedFromNotification) {

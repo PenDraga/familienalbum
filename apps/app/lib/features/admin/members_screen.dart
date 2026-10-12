@@ -107,7 +107,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
   }
 
   Future<void> _createInvite() async {
-    var flags = const MembershipFlags(isFamilyAdmin: false, canUpload: true, canDownload: false, canComment: true);
+    var flags = const MembershipFlags(isFamilyAdmin: false, canUpload: true, canDownload: false, canComment: true, canCreateBooks: false);
     final l10n = context.l10n;
     final go = await showDialog<bool>(
       context: context,
@@ -239,7 +239,7 @@ class _CreateAccountDialogState extends ConsumerState<_CreateAccountDialog> {
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
-  var _flags = const MembershipFlags(isFamilyAdmin: false, canUpload: true, canDownload: false, canComment: true);
+  var _flags = const MembershipFlags(isFamilyAdmin: false, canUpload: true, canDownload: false, canComment: true, canCreateBooks: false);
   bool _busy = false;
   String? _error;
 

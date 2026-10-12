@@ -221,6 +221,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                         if (preview.flags.canUpload) Chip(avatar: const Icon(Icons.upload_outlined, size: 16), label: Text(l10n.rightsUpload)),
                         if (preview.flags.canDownload) Chip(avatar: const Icon(Icons.download_outlined, size: 16), label: Text(l10n.rightsDownload)),
                         if (preview.flags.canComment) Chip(avatar: const Icon(Icons.chat_bubble_outline, size: 16), label: Text(l10n.rightsComment)),
+                        if (preview.flags.canCreateBooks) Chip(avatar: const Icon(Icons.auto_stories_outlined, size: 16), label: Text(l10n.rightsCreateBooks)),
                       ],
                     ),
                   ],

@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../l10n/l10n.dart';
 import '../../theme/app_theme.dart';
 import '../auth/auth_models.dart';
+import '../books/book_models.dart';
+import '../books/books_repository.dart';
+import '../books/create_book_dialog.dart';
 import 'create_recap_dialog.dart';
 import 'on_this_day_sheet.dart';
 import 'recap_models.dart';
@@ -20,8 +23,10 @@ class CollectionsStrip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final recaps = ref.watch(recapsProvider).value ?? const <RecapItem>[];
     final memories = ref.watch(onThisDayProvider).value ?? const <OnThisDayGroup>[];
+    final books = ref.watch(booksProvider).value ?? const <BookItem>[];
     final canCreate = family.membership.canUpload;
-    if (recaps.isEmpty && memories.isEmpty && !canCreate) return const SizedBox.shrink();
+    final canCreateBook = family.membership.canCreateBooks;
+    if (recaps.isEmpty && memories.isEmpty && books.isEmpty && !canCreate && !canCreateBook) return const SizedBox.shrink();
 
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
@@ -57,7 +62,10 @@ class CollectionsStrip extends ConsumerWidget {
                   const SizedBox(width: 10),
                 ],
                 for (final r in recaps) ...[_RecapCard(recap: r), const SizedBox(width: 10)],
-                if (canCreate) _CreateCard(onTap: () => showCreateRecapDialog(context, ref, family.id)),
+                for (final b in books) ...[_BookCard(book: b), const SizedBox(width: 10)],
+                if (canCreate) ...[_CreateCard(onTap: () => showCreateRecapDialog(context, ref, family.id)), const SizedBox(width: 10)],
+                if (canCreateBook)
+                  _CreateCard(icon: Icons.auto_stories_outlined, title: context.l10n.bookCreateTitle, subtitle: context.l10n.bookCreateSubtitle, onTap: () => showCreateBookDialog(context, ref, family.id)),
               ],
             ),
           ),
@@ -131,9 +139,47 @@ class _RecapCard extends ConsumerWidget {
   }
 }
 
+class _BookCard extends StatelessWidget {
+  const _BookCard({required this.book});
+  final BookItem book;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final l10n = context.l10n;
+    final subtitle = book.isReady
+        ? '${l10n.bookPages(book.pageCount)} · ${book.format.label(l10n)}'
+        : book.isFailed
+        ? l10n.bookFailed
+        : l10n.bookRendering;
+    return _Card(
+      onTap: () => context.push('/books/${book.id}'),
+      background: book.coverUrl != null
+          ? Image.network(book.coverUrl!, fit: BoxFit.cover)
+          : ColoredBox(
+              color: book.isFailed ? scheme.errorContainer : scheme.secondaryContainer,
+              child: Center(
+                child: book.isReady || book.isFailed
+                    ? Icon(book.isFailed ? Icons.error_outline : Icons.auto_stories_outlined, color: scheme.onSecondaryContainer, size: 36)
+                    : const SizedBox(width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 2.5)),
+              ),
+            ),
+      badge: Icon(Icons.auto_stories_outlined, color: scheme.onSecondary, size: 20),
+      badgeColor: scheme.secondary,
+      title: book.title,
+      subtitle: subtitle,
+      textStyle: text,
+    );
+  }
+}
+
 class _CreateCard extends StatelessWidget {
-  const _CreateCard({required this.onTap});
+  const _CreateCard({required this.onTap, this.icon = Icons.movie_creation_outlined, this.title, this.subtitle});
   final VoidCallback onTap;
+  final IconData icon;
+  final String? title;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -156,11 +202,11 @@ class _CreateCard extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(color: scheme.tertiaryContainer, borderRadius: BorderRadius.circular(16)),
-                  child: Icon(Icons.movie_creation_outlined, color: scheme.onTertiaryContainer),
+                  child: Icon(icon, color: scheme.onTertiaryContainer),
                 ),
                 const SizedBox(height: 8),
-                Text(context.l10n.recapCreateTitle, textAlign: TextAlign.center, style: text.labelLarge),
-                Text(context.l10n.recapCreateSubtitle, textAlign: TextAlign.center, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                Text(title ?? context.l10n.recapCreateTitle, textAlign: TextAlign.center, style: text.labelLarge),
+                Text(subtitle ?? context.l10n.recapCreateSubtitle, textAlign: TextAlign.center, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               ],
             ),
           ),
@@ -223,5 +269,6 @@ class _Card extends StatelessWidget {
 /// Provider neu laden, z.B. nach Push «Rückblick fertig».
 void refreshCollections(WidgetRef ref) {
   ref.invalidate(recapsProvider);
+  ref.invalidate(booksProvider);
   ref.invalidate(onThisDayProvider);
 }

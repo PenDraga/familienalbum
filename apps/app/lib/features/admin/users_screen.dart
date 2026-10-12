@@ -354,7 +354,7 @@ class _UserDetailSheetState extends ConsumerState<_UserDetailSheet> {
     final flags = await showRightsSheet(
       context,
       title: l10n.usersRightsIn(picked.name),
-      initial: const MembershipFlags(isFamilyAdmin: false, canUpload: true, canDownload: false, canComment: true),
+      initial: const MembershipFlags(isFamilyAdmin: false, canUpload: true, canDownload: false, canComment: true, canCreateBooks: false),
     );
     if (flags == null) return;
     try {

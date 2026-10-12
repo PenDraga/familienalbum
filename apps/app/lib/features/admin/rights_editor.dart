@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/l10n.dart';
 import '../auth/auth_models.dart';
 
-/// Vier Rechte-Schalter als Formularblock (für neue und bestehende Mitglieder).
+/// Rechte-Schalter als Formularblock (für neue und bestehende Mitglieder).
 class RightsEditor extends StatelessWidget {
   const RightsEditor({super.key, required this.value, required this.onChanged, this.allowAdminToggle = true});
 
@@ -20,6 +20,7 @@ class RightsEditor extends StatelessWidget {
         _row(Icons.upload_outlined, l10n.rightsMayUpload, value.canUpload, (v) => onChanged(_copy(canUpload: v))),
         _row(Icons.download_outlined, l10n.rightsMayDownload, value.canDownload, (v) => onChanged(_copy(canDownload: v))),
         _row(Icons.chat_bubble_outline, l10n.rightsMayComment, value.canComment, (v) => onChanged(_copy(canComment: v))),
+        _row(Icons.auto_stories_outlined, l10n.rightsMayCreateBooks, value.canCreateBooks, (v) => onChanged(_copy(canCreateBooks: v))),
         if (allowAdminToggle)
           _row(Icons.admin_panel_settings_outlined, l10n.rightsAlbumAdmin, value.isFamilyAdmin, (v) => onChanged(_copy(isFamilyAdmin: v)),
               subtitle: l10n.rightsAlbumAdminSubtitle),
@@ -36,11 +37,12 @@ class RightsEditor extends StatelessWidget {
     onChanged: onChanged,
   );
 
-  MembershipFlags _copy({bool? isFamilyAdmin, bool? canUpload, bool? canDownload, bool? canComment}) => MembershipFlags(
+  MembershipFlags _copy({bool? isFamilyAdmin, bool? canUpload, bool? canDownload, bool? canComment, bool? canCreateBooks}) => MembershipFlags(
     isFamilyAdmin: isFamilyAdmin ?? value.isFamilyAdmin,
     canUpload: canUpload ?? value.canUpload,
     canDownload: canDownload ?? value.canDownload,
     canComment: canComment ?? value.canComment,
+    canCreateBooks: canCreateBooks ?? value.canCreateBooks,
   );
 }
 
@@ -49,6 +51,7 @@ Map<String, dynamic> flagsToJson(MembershipFlags f) => {
   'canUpload': f.canUpload,
   'canDownload': f.canDownload,
   'canComment': f.canComment,
+  'canCreateBooks': f.canCreateBooks,
 };
 
 String describeRights(AppLocalizations l10n, MembershipFlags m) {
@@ -57,6 +60,7 @@ String describeRights(AppLocalizations l10n, MembershipFlags m) {
     if (m.canUpload) l10n.rightsUpload,
     if (m.canDownload) l10n.rightsDownload,
     if (m.canComment) l10n.rightsComment,
+    if (m.canCreateBooks) l10n.rightsCreateBooks,
   ];
   return parts.isEmpty ? l10n.rightsViewOnly : parts.join(' · ');
 }

@@ -112,9 +112,10 @@ class AdminFamily {
 }
 
 /// Rechte als Map für PATCH-Bodies.
-Map<String, dynamic> flagsJson({bool? isFamilyAdmin, bool? canUpload, bool? canDownload, bool? canComment}) => {
+Map<String, dynamic> flagsJson({bool? isFamilyAdmin, bool? canUpload, bool? canDownload, bool? canComment, bool? canCreateBooks}) => {
   'isFamilyAdmin': ?isFamilyAdmin,
   'canUpload': ?canUpload,
   'canDownload': ?canDownload,
   'canComment': ?canComment,
+  'canCreateBooks': ?canCreateBooks,
 };

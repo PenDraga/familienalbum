@@ -39,6 +39,15 @@
         "0.0.0.0"
       ],
       "port": 8090
+    },
+    {
+      "name": "app-web-mac",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd apps/app && $HOME/flutter/bin/flutter run -d web-server --web-port 8090 --web-hostname localhost --dart-define=API_BASE_URL=http://localhost:3000"
+      ],
+      "port": 8090
     }
   ]
 }

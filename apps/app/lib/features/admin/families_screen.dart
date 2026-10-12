@@ -74,7 +74,7 @@ class _FamiliesScreenState extends ConsumerState<FamiliesScreen> {
     final me = ref.read(meProvider);
     if (me == null) return;
     try {
-      await ref.read(adminRepositoryProvider).addUserToFamily(f.id, me.id, {'isFamilyAdmin': true, 'canUpload': true, 'canDownload': true, 'canComment': true});
+      await ref.read(adminRepositoryProvider).addUserToFamily(f.id, me.id, {'isFamilyAdmin': true, 'canUpload': true, 'canDownload': true, 'canComment': true, 'canCreateBooks': true});
       await ref.read(authControllerProvider.notifier).refreshMe();
       _refresh();
     } catch (e) {

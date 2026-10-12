@@ -15,6 +15,10 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
   Migration `m14_password_reset`
 
 ### App
+- Fotobuch: Karte «Fotobuch erstellen» in den Sammlungen und in den Einstellungen; Dialog mit Jahr und Monaten,
+  Format, Texten (ohne, Bildunterschriften, mit Kommentaren), optionalem Titel; Buchbildschirm mit Seitenvorschau,
+  PDF teilen oder laden, umbenennen, nochmals rendern, löschen; neues Recht «Darf Fotobücher erstellen» im
+  Rechte-Editor, in Einladungen und auf der Einladungsseite; Push «Fotobuch fertig» öffnet das Buch
 - «Passwort vergessen?» im Login (E-Mail eingeben, Link kommt per Mail); Screen `/reset?token=…` zum Setzen des neuen
   Passworts, deutsch und englisch
 

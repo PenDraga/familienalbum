@@ -21,6 +21,7 @@ import '../admin/admin_repository.dart';
 import '../autoupload/auto_upload_section.dart';
 import 'avatar_sheet.dart';
 import 'export_download.dart';
+import '../books/create_book_dialog.dart';
 import '../recaps/create_recap_dialog.dart';
 import 'profile_dialogs.dart';
 import 'storage_card.dart';
@@ -182,6 +183,19 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           ],
+          if (selected != null && selected.membership.canCreateBooks) ...[
+            const SizedBox(height: 24),
+            _SectionTitle(l10n.settingsSectionBooks),
+            Card(
+              child: ListTile(
+                leading: _IconBadge(Icons.auto_stories_outlined, scheme.secondaryContainer),
+                title: Text(l10n.settingsCreateBook),
+                subtitle: Text(l10n.settingsCreateBookSubtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => showCreateBookDialog(context, ref, selected.id),
+              ),
+            ),
+          ],
           if (selected != null && selected.membership.canDownload) ...[
             const SizedBox(height: 24),
             _SectionTitle(l10n.settingsSectionExport),
@@ -250,6 +264,7 @@ class SettingsScreen extends ConsumerWidget {
       if (m.canUpload) l10n.rightsUpload,
       if (m.canDownload) l10n.rightsDownload,
       if (m.canComment) l10n.rightsComment,
+      if (m.canCreateBooks) l10n.rightsCreateBooks,
     ];
     return parts.isEmpty ? l10n.rightsViewOnly : parts.join(' · ');
   }
