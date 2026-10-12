@@ -7,7 +7,7 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 
 ### Server
 - Fotobuch als druckfertiges PDF (ADR-0004): `POST /families/:id/books` mit Format (21 × 21, A4 quer, 30 × 30),
-  Textmodus (ohne, Bildunterschriften, mit Kommentaren) und Monaten; automatischer Layoutvorschlag (Umschlag,
+  Textmodus (keine, Beschreibungen, Beschreibungen + Kommentare) und Monaten; automatischer Layoutvorschlag (Umschlag,
   Kapitel pro Monat, Vorlagen eins/zwei/vier/Bild mit Text), Rendern im Worker (`render-book`), Seitenvorschauen,
   Push an den Ersteller; neues Mitglieder- und Einladungs-Flag `canCreateBooks`; Migration `m15_photo_books`
 - Fotobuch-Anordnung wählbar (`layout`: ein Foto pro Seite, gemischt, Collage) und neue Vorlage `auto`: 1–6 Fotos in
