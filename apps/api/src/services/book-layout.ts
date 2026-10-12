@@ -52,16 +52,25 @@ export interface BookPhoto {
   comments: BookComment[];
 }
 
+/** Bildausschnitt: Fokuspunkt (0–1, relativ zum ganzen Foto) und Zoom (1 = grösstmöglicher Ausschnitt). */
+export interface Crop {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
 export interface PageItem {
   mediaId: string;
   caption: string | null;
   comments: BookComment[];
   /** Breite / Höhe (nach EXIF-Drehung); für `auto`-Seiten */
   aspect?: number;
+  /** Im Kontroll-Assistenten gesetzt; ohne Angabe wählt der Server den bildwichtigsten Bereich */
+  crop?: Crop;
 }
 
 export type BookPage =
-  | { type: 'cover'; mediaId: string | null; title: string; subtitle: string }
+  | { type: 'cover'; mediaId: string | null; title: string; subtitle: string; crop?: Crop }
   | { type: 'chapter'; title: string; subtitle: string }
   | { type: 'photos'; template: PageTemplate; items: PageItem[]; hideText?: boolean };
 

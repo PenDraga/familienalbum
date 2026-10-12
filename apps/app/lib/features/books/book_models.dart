@@ -150,7 +150,7 @@ class BookItem {
 
 /// Eine Seite im Detail: gespeicherte Seite plus Vorschau und Foto-Thumbnails.
 class BookPageView {
-  const BookPageView({required this.index, required this.type, required this.template, required this.title, required this.mediaCount, required this.previewUrl, required this.thumbs});
+  const BookPageView({required this.index, required this.type, required this.template, required this.title, required this.mediaCount, required this.previewUrl, required this.thumbs, this.raw = const {}});
 
   final int index;
   final String type; // cover | chapter | photos
@@ -159,6 +159,8 @@ class BookPageView {
   final int mediaCount;
   final String? previewUrl;
   final List<String> thumbs;
+  /// Die gespeicherte Seite, wie der Server sie liefert (für den Kontroll-Assistenten)
+  final Map<String, dynamic> raw;
 
   factory BookPageView.fromJson(Map<String, dynamic> j, String Function(String) absolute) {
     final page = j['page'] as Map<String, dynamic>;
@@ -171,6 +173,7 @@ class BookPageView {
       mediaCount: items?.length ?? (page['mediaId'] == null ? 0 : 1),
       previewUrl: j['previewUrl'] == null ? null : absolute(j['previewUrl'] as String),
       thumbs: ((j['thumbs'] as List<dynamic>?) ?? const []).map((e) => absolute(e as String)).toList(),
+      raw: page,
     );
   }
 }

@@ -19,6 +19,9 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 - Fotobuch «Bild mit Text» neu gestaltet: Text direkt unter dem Foto in Fotobreite (Querformat) oder daneben an der
   Unterkante (Hochformat), Kommentare als Zitate mit Akzentlinie; Fotos mit kurzem Text bleiben in Collagen, der Text
   steht unter jedem Foto und die Reihen machen ihm Platz (Seiten mit Text höchstens 3 bzw. 4 Fotos)
+- Fotobuch-Ausschnitt: `crop` {x, y, zoom} pro Foto und für das Umschlagfoto; ohne Angabe schneidet der Server auf
+  den bildwichtigsten Bereich (sharp «attention») statt auf die Mitte; Hochformat auf dem Umschlag gerahmt statt
+  beschnitten; `POST /books/:id/preview-page` rendert eine bearbeitete Seite als WebP, ohne zu speichern
 - Passwort vergessen per E-Mail: `POST /auth/password-reset` und `…/confirm`, Token 30 Minuten, einmalig, alle
   Sitzungen enden; SMTP über `SMTP_*`/`MAIL_FROM`/`PUBLIC_URL`, `GET /meta` meldet `features.passwordReset`;
   Migration `m14_password_reset`
@@ -26,7 +29,9 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 ### App
 - Fotobuch: Karte «Fotobuch erstellen» in den Sammlungen und in den Einstellungen; Assistent in drei Schritten:
   Zeitraum (nur Jahre und Monate mit Fotos), Fotos abwählen (auch «nur kommentierte»), Gestaltung mit Anordnung,
-  Format, Texten, Titel und Seitenschätzung; Buchbildschirm mit Seitenvorschau,
+  Format, Texten, Titel und Seitenschätzung; Kontroll-Assistent «Seiten prüfen»: jede Seite mit Vorschau,
+  Ausschnitt per Tipp auf den wichtigen Bildteil und Zoom, Fotos entfernen oder auf die Nachbarseite schieben,
+  Text pro Seite ausblenden, Umschlagfoto und Titel wählen; Buchbildschirm mit Seitenvorschau,
   PDF teilen oder laden, umbenennen, nochmals rendern, löschen; neues Recht «Darf Fotobücher erstellen» im
   Rechte-Editor, in Einladungen und auf der Einladungsseite; Push «Fotobuch fertig» öffnet das Buch
 - «Passwort vergessen?» im Login (E-Mail eingeben, Link kommt per Mail); Screen `/reset?token=…` zum Setzen des neuen

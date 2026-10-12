@@ -166,7 +166,7 @@ class _BookScreenState extends ConsumerState<BookScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                     sliver: SliverGrid(
                       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 180, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: book.format.aspectRatio / 1.18),
-                      delegate: SliverChildBuilderDelegate((context, i) => _PageTile(page: book.pages[i], format: book.format), childCount: book.pages.length),
+                      delegate: SliverChildBuilderDelegate((context, i) => _PageTile(page: book.pages[i], format: book.format, onTap: book.canEdit ? () => context.push('/books/${book.id}/edit?page=$i') : null), childCount: book.pages.length),
                     ),
                   ),
                 ],
@@ -207,15 +207,28 @@ class _Header extends StatelessWidget {
           const SizedBox(height: 6),
           Text(l10n.bookOrderHint, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
         ],
+        if (book.canEdit) ...[
+          const SizedBox(height: 10),
+          FilledButton.tonalIcon(
+            key: const ValueKey('book-review'),
+            onPressed: () => context.push('/books/${book.id}/edit'),
+            icon: const Icon(Icons.fact_check_outlined),
+            label: Text(l10n.bookReview),
+          ),
+          const SizedBox(height: 4),
+          Text(l10n.bookReviewHint, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+        ],
       ],
     );
   }
 }
 
 class _PageTile extends StatelessWidget {
-  const _PageTile({required this.page, required this.format});
+  const _PageTile({required this.page, required this.format, this.onTap});
   final BookPageView page;
   final BookFormat format;
+  /// Öffnet den Kontroll-Assistenten auf dieser Seite (nur wer das Buch ändern darf)
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +240,10 @@ class _PageTile extends StatelessWidget {
       'chapter' => page.title ?? l10n.bookPageChapter,
       _ => l10n.bookPhotos(page.mediaCount),
     };
-    return Column(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
@@ -244,6 +260,7 @@ class _PageTile extends StatelessWidget {
         const SizedBox(height: 4),
         Text('${page.index + 1} · $label', maxLines: 1, overflow: TextOverflow.ellipsis, style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
       ],
+    ),
     );
   }
 }

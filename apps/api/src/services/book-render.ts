@@ -10,8 +10,8 @@ import { mkdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import PDFDocument from 'pdfkit';
-import sharp, { type OverlayOptions } from 'sharp';
-import { coverRects, FORMATS, hasText, inner, justifiedRects, pageSize, photoRects, type BookFormat, type BookPage, type FormatSpec, type PageItem, type Rect } from './book-layout.js';
+import sharp, { type OverlayOptions, type Sharp } from 'sharp';
+import { coverRects, FORMATS, hasText, inner, justifiedRects, pageSize, photoRects, type BookFormat, type BookPage, type Crop, type FormatSpec, type PageItem, type Rect } from './book-layout.js';
 
 export interface RenderEnv {
   /** Auflösung der Druckseiten (Produktion 300) */
@@ -48,6 +48,15 @@ export function previewFileName(index: number) {
 }
 
 /** Rendert alle Seiten; liefert Seitenzahl und PDF-Grösse. */
+/** Eine einzelne Seite als WebP (Kontroll-Assistent): gleicher Zeichenweg wie das Buch, nur kleinere Auflösung. */
+export async function renderPagePreview(page: BookPage, format: BookFormat, env: RenderEnv): Promise<Buffer> {
+  const spec = FORMATS[format];
+  const size = pageSize(spec);
+  const px = (mm: number) => Math.round((mm / 25.4) * env.dpi);
+  const jpeg = await renderPage(page, spec, { W: px(size.w), H: px(size.h), px, env });
+  return sharp(jpeg).resize({ width: env.previewWidth }).webp({ quality: 82 }).toBuffer();
+}
+
 export async function renderBook(pages: BookPage[], format: BookFormat, env: RenderEnv, out: RenderOutput): Promise<{ pageCount: number; pdfBytes: number }> {
   const spec = FORMATS[format];
   const size = pageSize(spec);
@@ -94,7 +103,16 @@ async function renderPage(page: BookPage, spec: FormatSpec, c: Canvas): Promise<
     background = COLORS.cream;
     const { photo, band } = coverRects(spec);
     if (page.mediaId) {
-      const layer = await photoLayer(page.mediaId, photo, 'cover', c);
+      const area = toPx(photo, c.px);
+      const aspect = await photoAspect(page.mediaId, c);
+      let rect = area;
+      if (aspect !== null && aspect < 1.05) {
+        // Hochformat nicht ins breite Band schneiden, sondern gerahmt auf den Umschlag stellen
+        const margin = c.px(spec.bleed + spec.margin);
+        const h = area.h - margin * 1.5;
+        rect = { x: area.x + (area.w - h * aspect) / 2, y: area.y + margin, w: h * aspect, h };
+      }
+      const layer = await photoLayerPx(page.mediaId, rect, 'cover', c, page.crop);
       if (layer) layers.push(layer);
     }
     layers.push(...(await coverBandLayers(toPx(band, c.px), page.title, page.subtitle, c)));
@@ -110,7 +128,7 @@ async function renderPage(page: BookPage, spec: FormatSpec, c: Canvas): Promise<
     for (let i = 0; i < page.items.length; i++) {
       const r = rects[i];
       if (!r) break;
-      const layer = await photoLayer(page.items[i]!.mediaId, r, r.fit, c);
+      const layer = await photoLayerPx(page.items[i]!.mediaId, toPx(r, c.px), r.fit, c, page.items[i]!.crop);
       if (layer) layers.push(layer);
     }
   }
@@ -126,20 +144,54 @@ function toPx(r: Rect, px: (mm: number) => number): Rect {
 }
 
 /** Foto in ein Rechteck: `cover` füllt und beschneidet mittig, `contain` passt ein und zentriert. */
-async function photoLayer(mediaId: string, rect: Rect, fit: 'cover' | 'contain', c: Canvas): Promise<Layer | null> {
-  return photoLayerPx(mediaId, toPx(rect, c.px), fit, c);
+/** Seitenverhältnis nach EXIF-Drehung, null wenn die Datei fehlt. */
+async function photoAspect(mediaId: string, c: Canvas): Promise<number | null> {
+  const path = await c.env.photoPath(mediaId);
+  if (!path) return null;
+  try {
+    const meta = await sharp(path, { failOn: 'none' }).metadata();
+    if (!meta.width || !meta.height) return null;
+    const swap = (meta.orientation ?? 1) >= 5;
+    return swap ? meta.height / meta.width : meta.width / meta.height;
+  } catch {
+    return null;
+  }
 }
 
-async function photoLayerPx(mediaId: string, rect: Rect, fit: 'cover' | 'contain', c: Canvas): Promise<Layer | null> {
+/** Ausschnitt im Seitenverhältnis `aspect` um den Fokuspunkt, verkleinert um den Zoom, innerhalb des Fotos. */
+export function cropBox(width: number, height: number, aspect: number, crop: Crop): { left: number; top: number; width: number; height: number } {
+  const baseW = Math.min(width, height * aspect);
+  const baseH = baseW / aspect;
+  const zoom = Math.min(4, Math.max(1, crop.zoom));
+  const w = Math.max(1, Math.min(width, Math.round(baseW / zoom)));
+  const h = Math.max(1, Math.min(height, Math.round(baseH / zoom)));
+  const clamp = (v: number, max: number) => Math.min(Math.max(0, Math.round(v)), max);
+  return { left: clamp(crop.x * width - w / 2, width - w), top: clamp(crop.y * height - h / 2, height - h), width: w, height: h };
+}
+
+/**
+ * Foto in ein Rechteck (Pixel). `cover` füllt: mit gesetztem Ausschnitt um dessen Fokuspunkt und Zoom, sonst
+ * auf den bildwichtigsten Bereich (sharp «attention»: Kontraste, Hauttöne) statt stur auf die Mitte.
+ * `contain` passt das ganze Foto ein und zentriert es.
+ */
+async function photoLayerPx(mediaId: string, rect: Rect, fit: 'cover' | 'contain', c: Canvas, crop?: Crop): Promise<Layer | null> {
   const path = await c.env.photoPath(mediaId);
   if (!path) return null;
   const r = { x: Math.round(rect.x), y: Math.round(rect.y), w: Math.max(1, Math.round(rect.w)), h: Math.max(1, Math.round(rect.h)) };
   try {
-    const image = sharp(path, { failOn: 'none', animated: false }).rotate();
-    const buf = await image
-      .resize({ width: r.w, height: r.h, fit: fit === 'cover' ? 'cover' : 'inside', position: 'centre', withoutEnlargement: false })
-      .jpeg({ quality: 92 })
-      .toBuffer({ resolveWithObject: true });
+    let image: Sharp;
+    if (fit === 'cover' && crop) {
+      const oriented = await sharp(path, { failOn: 'none', animated: false }).rotate().raw().toBuffer({ resolveWithObject: true });
+      const box = cropBox(oriented.info.width, oriented.info.height, r.w / r.h, crop);
+      image = sharp(oriented.data, { raw: { width: oriented.info.width, height: oriented.info.height, channels: oriented.info.channels } })
+        .extract(box)
+        .resize({ width: r.w, height: r.h, fit: 'fill' });
+    } else {
+      image = sharp(path, { failOn: 'none', animated: false })
+        .rotate()
+        .resize({ width: r.w, height: r.h, fit: fit === 'cover' ? 'cover' : 'inside', position: fit === 'cover' ? sharp.strategy.attention : 'centre', withoutEnlargement: false });
+    }
+    const buf = await image.jpeg({ quality: 92 }).toBuffer({ resolveWithObject: true });
     // bei contain zentrieren
     const left = r.x + Math.round((r.w - buf.info.width) / 2);
     const top = r.y + Math.round((r.h - buf.info.height) / 2);
@@ -280,7 +332,7 @@ async function photoWithTextLayers(item: PageItem, spec: FormatSpec, c: Canvas, 
   if (!hasText) {
     const w = Math.min(box.w, box.h * aspect);
     const h = w / aspect;
-    const photo = await photoLayerPx(item.mediaId, { x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, w, h }, 'cover', c);
+    const photo = await photoLayerPx(item.mediaId, { x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, w, h }, 'cover', c, item.crop);
     return photo ? [photo] : [];
   }
 
@@ -292,7 +344,7 @@ async function photoWithTextLayers(item: PageItem, spec: FormatSpec, c: Canvas, 
     const textW = Math.min(box.w - photoW - gap, c.px(85));
     const x = box.x + (box.w - (photoW + gap + textW)) / 2;
     const y = box.y + (box.h - photoH) / 2;
-    const photo = await photoLayerPx(item.mediaId, { x, y, w: photoW, h: photoH }, 'cover', c);
+    const photo = await photoLayerPx(item.mediaId, { x, y, w: photoW, h: photoH }, 'cover', c, item.crop);
     if (photo) layers.push(photo);
     const stack = await textStack(item, textW, photoH, c);
     layers.push(...place(stack.pieces, x + photoW + gap, y + photoH - stack.height));
@@ -314,7 +366,7 @@ async function photoWithTextLayers(item: PageItem, spec: FormatSpec, c: Canvas, 
   const total = h + gap + stack.height;
   const x = box.x + (box.w - w) / 2;
   const y = box.y + (box.h - total) / 2;
-  const photo = await photoLayerPx(item.mediaId, { x, y, w, h }, 'cover', c);
+  const photo = await photoLayerPx(item.mediaId, { x, y, w, h }, 'cover', c, item.crop);
   if (photo) layers.push(photo);
   layers.push(...place(stack.pieces, x, y + h + gap));
   return layers;
@@ -341,7 +393,7 @@ async function collageWithTextLayers(items: PageItem[], spec: FormatSpec, c: Can
   const layers: Layer[] = [];
   for (let i = 0; i < items.length; i++) {
     const r = rects[i]!;
-    const photo = await photoLayerPx(items[i]!.mediaId, r, 'cover', c);
+    const photo = await photoLayerPx(items[i]!.mediaId, r, 'cover', c, items[i]!.crop);
     if (photo) layers.push(photo);
     if (hasText(items[i]!) && below[i]! > 0) {
       // höchstens so hoch wie reserviert – nichts ragt in die nächste Reihe

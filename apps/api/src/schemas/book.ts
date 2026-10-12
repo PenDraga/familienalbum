@@ -9,6 +9,9 @@ export const bookLayoutSchema = z.enum(['SINGLE', 'MIXED', 'COLLAGE']);
 export const pageTemplateSchema = z.enum(['one', 'two', 'two_stacked', 'four', 'one_text', 'auto']);
 export const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'JJJJ-MM');
 
+/** Bildausschnitt: Fokuspunkt relativ zum ganzen Foto, Zoom 1–4 */
+export const cropSchema = z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1), zoom: z.number().min(1).max(4) });
+
 const bookCommentSchema = z.object({ author: z.string().max(80), body: z.string().max(2000) });
 
 export const pageItemSchema = z.object({
@@ -17,12 +20,13 @@ export const pageItemSchema = z.object({
   comments: z.array(bookCommentSchema).max(10),
   /** Breite / Höhe; der Server setzt es beim Speichern aus den Fotodaten */
   aspect: z.number().positive().max(20).optional(),
+  crop: cropSchema.optional(),
 });
 
 /** Seitenliste – die gespeicherte Wahrheit des Buchs (ADR-0004). */
 export const bookPageSchema = z
   .discriminatedUnion('type', [
-    z.object({ type: z.literal('cover'), mediaId: uuidSchema.nullable(), title: z.string().max(120), subtitle: z.string().max(120) }),
+    z.object({ type: z.literal('cover'), mediaId: uuidSchema.nullable(), title: z.string().max(120), subtitle: z.string().max(120), crop: cropSchema.optional() }),
     z.object({ type: z.literal('chapter'), title: z.string().max(120), subtitle: z.string().max(120) }),
     z.object({ type: z.literal('photos'), template: pageTemplateSchema, items: z.array(pageItemSchema).min(1).max(6), hideText: z.boolean().optional() }),
   ])
@@ -120,5 +124,8 @@ export const updateBookBodySchema = z
     pages: z.array(bookPageSchema).min(1).max(200).optional(),
   })
   .refine((v) => v.title !== undefined || v.pages !== undefined, { message: 'title oder pages angeben' });
+
+/** Vorschau einer einzelnen (bearbeiteten) Seite, ohne zu speichern */
+export const previewPageBodySchema = z.object({ page: bookPageSchema });
 
 export const bookPageParamsSchema = z.object({ id: uuidSchema, index: z.coerce.number().int().min(1).max(200) });

@@ -24,7 +24,9 @@ Zahlungsabwicklung in die App holen.
   ein ganzseitiges Highlight pro Monat), `COLLAGE` (bis 6). Die Vorlage `auto` setzt die Fotos in Reihen oder
   Spalten nach ihrem Seitenverhältnis (wie Google Fotos), ohne Beschnitt. Der Vorschlag ist deterministisch.
 - **Assistent** in der App: Zeitraum (nur Monate mit Fotos), einzelne Fotos abwählen, Gestaltung mit
-  Seitenschätzung des Servers.
+  Seitenschätzung des Servers. **Kontroll-Assistent** danach: jede Seite mit Server-Vorschau (`preview-page`),
+  Ausschnitt pro Foto als Fokuspunkt und Zoom (`crop`), Fotos entfernen oder verschieben, Text pro Seite ausblenden,
+  Umschlagfoto und Titel; ohne gesetzten Ausschnitt schneidet der Server auf den bildwichtigsten Bereich.
 - **Texte** werden beim Erzeugen gewählt: keine, Bildunterschriften, Bildunterschriften mit Kommentaren. Der Schalter
   bestimmt das Layout; in der Bearbeitung können Texte pro Seite ausgeblendet und einzelne Kommentare entfernt werden.
 - **Gespeichert** wird ein `PhotoBook` pro Album (Titel, Format, Optionen, Seitenliste als JSON, Status, PDF-Pfad).

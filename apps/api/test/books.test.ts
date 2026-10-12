@@ -1,6 +1,7 @@
 import { stat } from 'node:fs/promises';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { BookService } from '../src/services/book.service.js';
+import { cropBox } from '../src/services/book-render.js';
 import { justifiedRects, proposeBook, type BookLayout, type BookPhoto } from '../src/services/book-layout.js';
 import { TestContext, expectProblem } from './helpers/app.js';
 import { makeJpeg } from './helpers/fixtures.js';
@@ -242,5 +243,53 @@ describe('Fotobuch', () => {
         expect(r.w / r.h).toBeCloseTo(aspects[i]!, 3);
       });
     }
+  });
+  it('Kontroll-Assistent: Einzelseiten-Vorschau, Ausschnitt speichern, Rechte', async () => {
+    const { family, admin } = await ctx.createFamilyWithAdmin('Familie Test');
+    const viewer = await ctx.createUser();
+    await ctx.addMember(family, viewer, { canComment: true });
+    const portrait = await ctx.uploadAndProcess(admin, family, await makeJpeg({ width: 600, height: 900 }), { takenAt: '2026-06-01T10:00:00.000Z' });
+    const landscape = await ctx.uploadAndProcess(admin, family, await makeJpeg({ width: 900, height: 600, color: '#cc3366' }), { takenAt: '2026-06-02T10:00:00.000Z' });
+    const book = (await (await ctx.as(admin)).post(`/families/${family.id}/books`, { months: ['2026-06'] })).json();
+
+    const cover = { ...book.pages[0].page, mediaId: portrait.id, crop: { x: 0.5, y: 0.2, zoom: 1.5 } };
+    const preview = await (await ctx.as(admin)).post(`/books/${book.id}/preview-page`, { page: cover });
+    expect(preview.statusCode, preview.body).toBe(200);
+    expect(preview.headers['content-type']).toBe('image/webp');
+    expect(preview.headers['cache-control']).toBe('no-store');
+    const meta = await (await import('sharp')).default(preview.rawPayload).metadata();
+    expect(meta.width).toBe(900);
+
+    const photoPage = { type: 'photos', template: 'auto', items: [{ mediaId: landscape.id, caption: 'Hallo 👋', comments: [], crop: { x: 0.3, y: 0.6, zoom: 2 } }] };
+    expect((await (await ctx.as(admin)).post(`/books/${book.id}/preview-page`, { page: photoPage })).statusCode).toBe(200);
+    expectProblem(await (await ctx.as(viewer)).post(`/books/${book.id}/preview-page`, { page: cover }), 403, 'BOOK_NOT_OWNER');
+    expectProblem(await (await ctx.as(admin)).post(`/books/${book.id}/preview-page`, { page: { ...cover, crop: { x: 0.5, y: 0.5, zoom: 5 } } }), 400);
+    const foreign = await ctx.createFamilyWithAdmin();
+    const other = await ctx.uploadAndProcess(foreign.admin, foreign.family, await makeJpeg(), { takenAt: '2026-06-01T00:00:00.000Z' });
+    expectProblem(await (await ctx.as(admin)).post(`/books/${book.id}/preview-page`, { page: { ...cover, mediaId: other.id } }), 400, 'BOOK_MEDIA_INVALID');
+
+    // Ausschnitt wird mit den Seiten gespeichert
+    const pages = book.pages.map((p: { page: unknown }) => p.page);
+    pages[0] = cover;
+    const saved = await (await ctx.as(admin)).patch(`/books/${book.id}`, { pages });
+    expect(saved.statusCode, saved.body).toBe(202);
+    expect(saved.json().pages[0].page.crop).toEqual({ x: 0.5, y: 0.2, zoom: 1.5 });
+
+    // und beim Rendern des ganzen Buchs verwendet
+    const svc = new BookService(ctx.prisma, ctx.app.storage, ctx.app.signer, ctx.queue);
+    const rendered = await svc.render(book.id, { dpi: 60, previewWidth: 200, log: silentLog });
+    expect(rendered.status, rendered.error ?? '').toBe('READY');
+  });
+
+  it('Ausschnitt: Fokuspunkt, Zoom und Ränder', () => {
+    // 4000×3000, quadratischer Rahmen: grösster Ausschnitt 3000×3000
+    expect(cropBox(4000, 3000, 1, { x: 0.5, y: 0.5, zoom: 1 })).toEqual({ left: 500, top: 0, width: 3000, height: 3000 });
+    // Fokus ganz links bleibt im Bild
+    expect(cropBox(4000, 3000, 1, { x: 0, y: 0.5, zoom: 1 })).toEqual({ left: 0, top: 0, width: 3000, height: 3000 });
+    // Zoom 2 um einen Punkt oben rechts
+    expect(cropBox(4000, 3000, 1, { x: 0.9, y: 0.1, zoom: 2 })).toEqual({ left: 2500, top: 0, width: 1500, height: 1500 });
+    // breiter Rahmen auf einem Hochformat: Höhe wird knapp, Fokus oben hält Köpfe im Bild
+    expect(cropBox(2000, 3000, 2, { x: 0.5, y: 0.15, zoom: 1 })).toEqual({ left: 0, top: 0, width: 2000, height: 1000 });
+    expect(cropBox(2000, 3000, 2, { x: 0.5, y: 0.5, zoom: 1 })).toEqual({ left: 0, top: 1000, width: 2000, height: 1000 });
   });
 });

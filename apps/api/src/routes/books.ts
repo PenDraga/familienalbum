@@ -5,7 +5,7 @@ import { Errors } from '../lib/errors.js';
 import { requestLanguage } from '../lib/messages.en.js';
 import { sendFile } from '../lib/send-file.js';
 import { requireFamilyPermission } from '../plugins/permissions.js';
-import { bookDetailSchema, bookMonthsSchema, bookPageParamsSchema, bookPhotosQuerySchema, bookPhotosSchema, bookPreviewSchema, bookSchema, createBookBodySchema, updateBookBodySchema } from '../schemas/book.js';
+import { bookDetailSchema, bookMonthsSchema, bookPageParamsSchema, bookPhotosQuerySchema, bookPhotosSchema, bookPreviewSchema, bookSchema, createBookBodySchema, previewPageBodySchema, updateBookBodySchema } from '../schemas/book.js';
 import { emptyResponse, errorResponses, idParamsSchema } from '../schemas/common.js';
 import { BookService } from '../services/book.service.js';
 
@@ -136,6 +136,27 @@ export const bookRoutes: FastifyPluginAsyncZod = async (app) => {
       requireEdit(book, request);
       const updated = await books.update(book, request.body);
       return reply.code(202).send(books.toDetailDto(updated, request.membership!));
+    },
+  );
+
+  app.post(
+    '/books/:id/preview-page',
+    {
+      preHandler: requireFamilyPermission('member', bookFamilyResolver),
+      schema: {
+        tags: ['books'],
+        summary: 'Eine bearbeitete Seite als WebP-Vorschau rendern, ohne zu speichern (Ersteller oder Album-Admin)',
+        security: bearer,
+        params: idParamsSchema,
+        body: previewPageBodySchema,
+        produces: ['image/webp'],
+      },
+    },
+    async (request, reply) => {
+      const book = await books.get(request.params.id);
+      requireEdit(book, request);
+      const image = await books.previewPage(book, request.body.page);
+      return reply.header('cache-control', 'no-store').type('image/webp').send(image);
     },
   );
 

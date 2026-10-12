@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
@@ -37,6 +41,18 @@ class BooksRepository {
   Future<BookPreview> preview(String familyId, BookRequest request) async {
     final data = await _api.dio.post<Map<String, dynamic>>('/families/$familyId/books/preview', data: request.toJson()).unwrap();
     return BookPreview.fromJson(data);
+  }
+
+  /// Seitenliste ersetzen (Kontroll-Assistent); der Server rendert danach neu.
+  Future<BookItem> savePages(String bookId, List<Map<String, dynamic>> pages) async {
+    final data = await _api.dio.patch<Map<String, dynamic>>('/books/$bookId', data: {'pages': pages}).unwrap();
+    return BookItem.fromJson(data, _api.absolute);
+  }
+
+  /// Eine (bearbeitete) Seite als Bild, ohne zu speichern.
+  Future<Uint8List> previewPage(String bookId, Map<String, dynamic> page) async {
+    final data = await _api.dio.post<List<int>>('/books/$bookId/preview-page', data: {'page': page}, options: Options(responseType: ResponseType.bytes)).unwrap();
+    return Uint8List.fromList(data);
   }
 
   Future<BookItem> rename(String bookId, String title) async {
@@ -90,3 +106,21 @@ class BookPreviewArgs {
 
 /// Seitenschätzung des Servers für die aktuelle Auswahl im Assistenten.
 final bookPreviewProvider = FutureProvider.autoDispose.family<BookPreview, BookPreviewArgs>((ref, args) => ref.watch(booksRepositoryProvider).preview(args.familyId, args.request));
+
+/// Schlüssel der Seitenvorschau: Buch und die Seite als JSON (vergleichbar).
+class PagePreviewArgs {
+  PagePreviewArgs(this.bookId, Map<String, dynamic> page) : json = jsonEncode(page);
+  final String bookId;
+  final String json;
+
+  @override
+  bool operator ==(Object other) => other is PagePreviewArgs && other.bookId == bookId && other.json == json;
+
+  @override
+  int get hashCode => Object.hash(bookId, json);
+}
+
+/// Vorschau einer bearbeiteten Seite vom Server.
+final bookPagePreviewProvider = FutureProvider.autoDispose.family<Uint8List, PagePreviewArgs>(
+  (ref, args) => ref.watch(booksRepositoryProvider).previewPage(args.bookId, jsonDecode(args.json) as Map<String, dynamic>),
+);

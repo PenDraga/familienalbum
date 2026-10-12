@@ -166,7 +166,7 @@ GET    /families/:id/recaps | POST /families/:id/recaps {kind, period}   Rückbl
 GET    /recaps/:id/video | /poster        signiert oder Mitglied
 GET    /families/:id/books | POST /families/:id/books {format, textMode, layout, months[], excludeMediaIds[]}   Fotobuch (canCreateBooks); Layoutvorschlag sofort, PDF im Worker
 GET    /families/:id/books/months | /books/photos?months= | POST /families/:id/books/preview   Assistent (canCreateBooks)
-GET    /books/:id (Seitenliste) | PATCH /books/:id {title, pages} | POST /books/:id/render | DELETE /books/:id   Ersteller oder isFamilyAdmin
+GET    /books/:id (Seitenliste) | PATCH /books/:id {title, pages} | POST /books/:id/preview-page {page} | POST /books/:id/render | DELETE /books/:id   Ersteller oder isFamilyAdmin
 GET    /books/:id/pdf | /pages/:n          signiert oder Mitglied
 GET    /families/:id/on-this-day         «An diesem Tag» (gleicher Kalendertag vor 1–12 Monaten, 1–10 Jahren)
 GET    /families/:id/export-link/:scope  signierter Link (canDownload); scope = alle | JJJJ-MM

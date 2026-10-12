@@ -5,7 +5,7 @@ import type { MediaQueue } from '../lib/queue.js';
 import type { UrlSigner } from '../lib/signed-url.js';
 import { MIME_EXTENSIONS, type MediaStorage } from '../lib/storage.js';
 import { aspectOf, countMedia, MAX_PAGES, monthKeyUtc, periodLabel, proposeBook, type BookFormat, type BookLayout, type BookPage, type BookPhoto, type BookTextMode } from './book-layout.js';
-import { previewFileName, renderBook, type RenderEnv } from './book-render.js';
+import { previewFileName, renderBook, renderPagePreview, type RenderEnv } from './book-render.js';
 import { iso, isoOrNull, toUserBrief, type UserBriefSource } from './dto.js';
 import { mediaPaths } from './media.service.js';
 
@@ -197,15 +197,7 @@ export class BookService {
       }
     }
     if (input.pages !== undefined) {
-      const ids = [...new Set(input.pages.flatMap(pageMediaIds))];
-      const found = await this.prisma.media.findMany({
-        where: { id: { in: ids }, familyId: book.familyId, deletedAt: null, status: 'READY', type: 'PHOTO' },
-        select: { id: true, width: true, height: true },
-      });
-      if (found.length !== ids.length) throw Errors.badRequest('Mindestens ein Foto gehört nicht zu diesem Album.', 'BOOK_MEDIA_INVALID');
-      // Seitenverhältnisse kommen immer aus den Fotodaten, nicht vom Client
-      const aspects = new Map(found.map((m) => [m.id, aspectOf(m)]));
-      const pages = input.pages.map((p) => (p.type === 'photos' ? { ...p, items: p.items.map((i) => ({ ...i, aspect: aspects.get(i.mediaId) })) } : p));
+      const pages = await this.checkPages(book.familyId, input.pages);
       data.pages = pages as unknown as Prisma.InputJsonValue;
       data.pageCount = pages.length;
       data.mediaCount = countMedia(pages);
@@ -214,6 +206,29 @@ export class BookService {
     await this.storage.removeQuietly(this.storage.bookDir(book.familyId, book.id));
     await this.queue.enqueueRenderBook(book.id);
     return updated;
+  }
+
+  /**
+   * Seiten vom Client prüfen: alle Fotos gehören zum Album und sind fertig; Seitenverhältnisse kommen immer aus den
+   * Fotodaten, nicht vom Client.
+   */
+  private async checkPages(familyId: string, pages: BookPage[]): Promise<BookPage[]> {
+    const ids = [...new Set(pages.flatMap(pageMediaIds))];
+    const found = await this.prisma.media.findMany({
+      where: { id: { in: ids }, familyId, deletedAt: null, status: 'READY', type: 'PHOTO' },
+      select: { id: true, width: true, height: true },
+    });
+    if (found.length !== ids.length) throw Errors.badRequest('Mindestens ein Foto gehört nicht zu diesem Album.', 'BOOK_MEDIA_INVALID');
+    const aspects = new Map(found.map((m) => [m.id, aspectOf(m)]));
+    return pages.map((p) => (p.type === 'photos' ? { ...p, items: p.items.map((i) => ({ ...i, aspect: aspects.get(i.mediaId) })) } : p));
+  }
+
+  /** Eine (bearbeitete) Seite als WebP rendern, ohne zu speichern – Kontroll-Assistent. */
+  async previewPage(book: BookRow, page: BookPage): Promise<Buffer> {
+    const [checked] = await this.checkPages(book.familyId, [page]);
+    // Fotos dieser Seite, nicht der gespeicherten – die Seite kann gerade bearbeitet sein
+    const env = await this.renderEnvFor(book.familyId, book.id, pageMediaIds(checked!), { dpi: 90, previewWidth: 900, log: { info() {}, warn() {} } });
+    return renderPagePreview(checked!, book.format, env);
   }
 
   /** Fehlgeschlagenes Buch nochmals rendern. */
@@ -236,31 +251,40 @@ export class BookService {
     return this.storage.bookPagePath(book.familyId, book.id, previewFileName(index1 - 1));
   }
 
-  /** Vom Worker: Seiten rastern, PDF und Vorschauen schreiben, Status setzen. */
-  async render(bookId: string, env: BookRenderEnv): Promise<PhotoBook> {
-    const book = await this.get(bookId);
-    const pages = book.pages as unknown as BookPage[];
-    const ids = [...new Set(pages.flatMap(pageMediaIds))];
+  /** Pfade der Fotos fürs Rendern: Original in voller Auflösung, bei HEIC oder fehlendem Original das Thumbnail. */
+  private async renderEnv(book: Pick<PhotoBook, 'id' | 'familyId' | 'pages'>, env: BookRenderEnv): Promise<RenderEnv> {
+    const ids = [...new Set((book.pages as unknown as BookPage[]).flatMap(pageMediaIds))];
+    return this.renderEnvFor(book.familyId, book.id, ids, env);
+  }
+
+  private async renderEnvFor(familyId: string, bookId: string, ids: string[], env: BookRenderEnv): Promise<RenderEnv> {
     const media = await this.prisma.media.findMany({ where: { id: { in: ids } }, select: { id: true, mimeType: true, deletedAt: true } });
     const byId = new Map(media.map((m) => [m.id, m]));
-    const dir = this.storage.bookDir(book.familyId, book.id);
-    await this.storage.ensureDir(dir);
-    const renderEnv: RenderEnv = {
+    return {
       dpi: env.dpi ?? 300,
       previewWidth: env.previewWidth ?? 600,
       photoPath: async (mediaId) => {
         const m = byId.get(mediaId);
         if (!m || m.deletedAt) return null;
         const ext = MIME_EXTENSIONS[m.mimeType]?.ext;
-        const thumb = this.storage.thumbPath(book.familyId, mediaId, 1600);
+        const thumb = this.storage.thumbPath(familyId, mediaId, 1600);
         // HEIC kann sharp ohne libheif nicht lesen → Thumbnail (1600 px); sonst das Original in voller Auflösung
         if (!ext || ext === 'heic' || ext === 'heif') return (await this.storage.exists(thumb)) ? thumb : null;
-        const original = this.storage.originalPath(book.familyId, mediaId, ext);
+        const original = this.storage.originalPath(familyId, mediaId, ext);
         if (await this.storage.exists(original)) return original;
         return (await this.storage.exists(thumb)) ? thumb : null;
       },
       log: (msg, extra) => env.log.warn({ bookId, ...extra }, msg),
     };
+  }
+
+  /** Vom Worker: Seiten rastern, PDF und Vorschauen schreiben, Status setzen. */
+  async render(bookId: string, env: BookRenderEnv): Promise<PhotoBook> {
+    const book = await this.get(bookId);
+    const pages = book.pages as unknown as BookPage[];
+    const dir = this.storage.bookDir(book.familyId, book.id);
+    await this.storage.ensureDir(dir);
+    const renderEnv = await this.renderEnv(book, env);
     try {
       const result = await renderBook(pages, book.format, renderEnv, { pdfPath: this.pdfPath(book), pageDir: dir });
       const updated = await this.prisma.photoBook.update({

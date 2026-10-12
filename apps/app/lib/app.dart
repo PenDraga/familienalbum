@@ -23,6 +23,7 @@ import 'features/push/push_service.dart';
 import 'features/timeline/timeline_controller.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/timeline/timeline_screen.dart';
+import 'features/books/book_editor_screen.dart';
 import 'features/books/book_screen.dart';
 import 'features/books/create_book_dialog.dart';
 import 'features/books/books_repository.dart';
@@ -95,6 +96,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'recaps/:id', builder: (_, state) => RecapScreen(recapId: state.pathParameters['id']!)),
           GoRoute(path: 'books/new', builder: (_, state) => BookWizardScreen(familyId: state.uri.queryParameters['family'] ?? '')),
           GoRoute(path: 'books/:id', builder: (_, state) => BookScreen(bookId: state.pathParameters['id']!)),
+          GoRoute(
+            path: 'books/:id/edit',
+            builder: (_, state) => BookEditorScreen(bookId: state.pathParameters['id']!, initialPage: int.tryParse(state.uri.queryParameters['page'] ?? '') ?? 0),
+          ),
           GoRoute(
             path: 'settings',
             builder: (_, _) => const SettingsScreen(),
