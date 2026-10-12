@@ -11,7 +11,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import PDFDocument from 'pdfkit';
 import sharp, { type OverlayOptions } from 'sharp';
-import { coverRects, FORMATS, pageSize, photoRects, textRect, type BookFormat, type BookPage, type FormatSpec, type PageItem, type Rect } from './book-layout.js';
+import { coverRects, FORMATS, hasText, inner, justifiedRects, pageSize, photoRects, type BookFormat, type BookPage, type FormatSpec, type PageItem, type Rect } from './book-layout.js';
 
 export interface RenderEnv {
   /** Auflösung der Druckseiten (Produktion 300) */
@@ -34,6 +34,8 @@ const COLORS = {
   ink: '#2E2A3A',
   muted: '#7C7689',
   accent: '#E8694A',
+  /** Kommentartext: etwas weicher als die Beschreibung */
+  body: '#4A4458',
 };
 const FONT_DISPLAY = 'Baloo 2';
 const FONT_BODY = 'Nunito';
@@ -99,17 +101,16 @@ async function renderPage(page: BookPage, spec: FormatSpec, c: Canvas): Promise<
   } else if (page.type === 'chapter') {
     background = COLORS.cream;
     layers.push(...(await chapterLayers(toPx({ x: 0, y: 0, w: size.w, h: size.h }, c.px), page.title, page.subtitle, c)));
+  } else if (page.template === 'one_text') {
+    layers.push(...(await photoWithTextLayers(page.items[0]!, spec, c, page.hideText ?? false)));
+  } else if (page.template === 'auto' && !page.hideText && page.items.some(hasText)) {
+    layers.push(...(await collageWithTextLayers(page.items, spec, c)));
   } else {
     const rects = photoRects(spec, page.template, page.items.length, page.items.map((i) => i.aspect ?? 1.5));
     for (let i = 0; i < page.items.length; i++) {
       const r = rects[i];
       if (!r) break;
       const layer = await photoLayer(page.items[i]!.mediaId, r, r.fit, c);
-      if (layer) layers.push(layer);
-    }
-    const tr = textRect(spec, page.template);
-    if (tr && !page.hideText) {
-      const layer = await textBlockLayer(toPx(tr, c.px), page.items[0]!, c);
       if (layer) layers.push(layer);
     }
   }
@@ -126,9 +127,13 @@ function toPx(r: Rect, px: (mm: number) => number): Rect {
 
 /** Foto in ein Rechteck: `cover` füllt und beschneidet mittig, `contain` passt ein und zentriert. */
 async function photoLayer(mediaId: string, rect: Rect, fit: 'cover' | 'contain', c: Canvas): Promise<Layer | null> {
+  return photoLayerPx(mediaId, toPx(rect, c.px), fit, c);
+}
+
+async function photoLayerPx(mediaId: string, rect: Rect, fit: 'cover' | 'contain', c: Canvas): Promise<Layer | null> {
   const path = await c.env.photoPath(mediaId);
   if (!path) return null;
-  const r = toPx(rect, c.px);
+  const r = { x: Math.round(rect.x), y: Math.round(rect.y), w: Math.max(1, Math.round(rect.w)), h: Math.max(1, Math.round(rect.h)) };
   try {
     const image = sharp(path, { failOn: 'none', animated: false }).rotate();
     const buf = await image
@@ -204,31 +209,145 @@ async function chapterLayers(full: Rect, title: string, subtitle: string, c: Can
   return layers;
 }
 
+/** Ein gesetztes Textstück relativ zur oberen linken Ecke des Textblocks. */
+interface Piece {
+  input: Buffer;
+  dx: number;
+  dy: number;
+}
+
 /**
- * Bildunterschrift (gross) und Kommentare (Autor in Akzentfarbe, Text normal) im Textfeld. Passt der Block
- * nicht, fallen Kommentare von hinten weg; passt auch die Unterschrift allein nicht, wird unten abgeschnitten.
+ * Beschreibung und Kommentare als Block in der gegebenen Breite: Beschreibung in Baloo 2, darunter die Kommentare
+ * wie Zitate (feine Akzentlinie links, Name in Akzentfarbe, Text etwas weicher). Ist der Block höher als `maxH`,
+ * fallen Kommentare von hinten weg; eine zu lange Beschreibung wird unten abgeschnitten.
  */
-async function textBlockLayer(box: Rect, item: PageItem, c: Canvas): Promise<Layer | null> {
-  const captionPx = c.px(5);
-  const bodyPx = c.px(3.6);
-  const build = (comments: PageItem['comments']) => {
-    const parts: string[] = [];
-    if (item.caption) parts.push(span(item.caption, { size: captionPx, color: COLORS.ink, family: FONT_DISPLAY, weight: '800' }));
-    for (const cm of comments) {
-      parts.push(`${span(cm.author, { size: bodyPx, color: COLORS.accent, weight: '700' })}\n${span(cm.body, { size: bodyPx, color: COLORS.ink })}`);
-    }
-    return parts.join('\n\n');
-  };
-  if (!item.caption && item.comments.length === 0) return null;
+async function textStack(item: PageItem, width: number, maxH: number, c: Canvas, compact = false): Promise<{ pieces: Piece[]; height: number; width: number }> {
+  // kompakt: unter Fotos in einer Collage
+  const captionPx = c.px(compact ? 3.7 : 4.6);
+  const bodyPx = c.px(compact ? 2.9 : 3.3);
+  const authorPx = c.px(compact ? 2.6 : 2.9);
+  const gap = c.px(compact ? 1.8 : 3.2);
+  const indent = c.px(compact ? 2.6 : 3.4);
+  const barW = Math.max(2, c.px(0.6));
+  const pieces: Piece[] = [];
+  let height = 0;
+  let used = 0;
+  if (item.caption) {
+    const t = await pangoText(span(item.caption, { size: captionPx, color: COLORS.ink, family: FONT_DISPLAY, weight: '800' }), width, 'left', captionPx * 0.12);
+    const h = Math.min(t.height, Math.round(maxH));
+    pieces.push({ input: h < t.height ? await sharp(t.data).extract({ left: 0, top: 0, width: t.width, height: h }).toBuffer() : t.data, dx: 0, dy: 0 });
+    height = h;
+    used = t.width;
+  }
   let comments = item.comments;
-  for (;;) {
-    const markup = build(comments);
-    if (!markup) return null;
-    const t = await pangoText(markup, box.w, 'left', bodyPx * 0.35);
-    if (t.height <= box.h || comments.length === 0) {
-      const input = t.height > box.h ? await sharp(t.data).extract({ left: 0, top: 0, width: t.width, height: box.h }).toBuffer() : t.data;
-      return { input, left: box.x, top: box.y };
+  while (comments.length > 0) {
+    const markup = comments
+      .map((cm) => `${span(cm.author, { size: authorPx, color: COLORS.accent, weight: '700' })}\n${span(cm.body, { size: bodyPx, color: COLORS.body })}`)
+      .join(`\n${span(' ', { size: bodyPx * 0.45, color: COLORS.body })}\n`);
+    const t = await pangoText(markup, width - indent, 'left', bodyPx * 0.28);
+    const top = height > 0 ? height + gap : 0;
+    if (top + t.height <= maxH) {
+      const bar = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${barW}" height="${t.height}"><rect width="${barW}" height="${t.height}" rx="${barW / 2}" fill="${COLORS.accent}" fill-opacity="0.55"/></svg>`);
+      pieces.push({ input: bar, dx: 0, dy: top }, { input: t.data, dx: indent, dy: top });
+      height = top + t.height;
+      used = Math.max(used, indent + t.width);
+      break;
     }
     comments = comments.slice(0, -1);
   }
+  return { pieces, height, width: used };
+}
+
+function place(pieces: Piece[], x: number, y: number): Layer[] {
+  return pieces.map((p) => ({ input: p.input, left: Math.round(x + p.dx), top: Math.round(y + p.dy) }));
+}
+
+/**
+ * Seite «Bild mit Text».
+ * - Querformat: Foto oben, Beschreibung und Kommentare direkt darunter, genau so breit wie das Foto; Foto und Text
+ *   zusammen vertikal zentriert. Viel Text macht das Foto kleiner (höchstens 45 % der Höhe für Text).
+ * - Hoch- oder quadratisches Format auf quadratischer oder querer Seite: Text rechts neben dem Foto, bündig mit
+ *   dessen Unterkante (darunter würde das Foto zu klein).
+ * Das Foto wird nie beschnitten.
+ */
+async function photoWithTextLayers(item: PageItem, spec: FormatSpec, c: Canvas, hideText: boolean): Promise<Layer[]> {
+  const box = toPx(inner(spec), c.px);
+  const aspect = item.aspect ?? 1.5;
+  const gap = c.px(5);
+  const layers: Layer[] = [];
+  const hasText = !hideText && (!!item.caption || item.comments.length > 0);
+
+  if (!hasText) {
+    const w = Math.min(box.w, box.h * aspect);
+    const h = w / aspect;
+    const photo = await photoLayerPx(item.mediaId, { x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, w, h }, 'cover', c);
+    return photo ? [photo] : [];
+  }
+
+  if (aspect < 1.05 && box.w / box.h >= 0.95) {
+    // nebeneinander
+    const photoW = Math.min(box.h * aspect, box.w * 0.6);
+    const photoH = photoW / aspect;
+    // Textspalte höchstens 85 mm breit (lesbar); Foto und Text als Gruppe waagrecht zentriert
+    const textW = Math.min(box.w - photoW - gap, c.px(85));
+    const x = box.x + (box.w - (photoW + gap + textW)) / 2;
+    const y = box.y + (box.h - photoH) / 2;
+    const photo = await photoLayerPx(item.mediaId, { x, y, w: photoW, h: photoH }, 'cover', c);
+    if (photo) layers.push(photo);
+    const stack = await textStack(item, textW, photoH, c);
+    layers.push(...place(stack.pieces, x + photoW + gap, y + photoH - stack.height));
+    return layers;
+  }
+
+  // untereinander: Textbreite = Fotobreite; zweimal nachrechnen, weil schmalerer Text höher wird
+  let w = Math.min(box.w, box.h * aspect);
+  let stack = await textStack(item, w, box.h * 0.45, c);
+  for (let k = 0; k < 2; k++) {
+    const h = Math.min(w / aspect, box.h - stack.height - gap);
+    const next = Math.min(box.w, h * aspect);
+    if (Math.abs(next - w) < 2) break;
+    w = next;
+    stack = await textStack(item, w, box.h * 0.45, c);
+  }
+  const h = Math.min(w / aspect, box.h - stack.height - gap);
+  w = h * aspect;
+  const total = h + gap + stack.height;
+  const x = box.x + (box.w - w) / 2;
+  const y = box.y + (box.h - total) / 2;
+  const photo = await photoLayerPx(item.mediaId, { x, y, w, h }, 'cover', c);
+  if (photo) layers.push(photo);
+  layers.push(...place(stack.pieces, x, y + h + gap));
+  return layers;
+}
+
+/**
+ * Collage mit Text: Fotos in Reihen (Seitenverhältnis bleibt), unter jedem Foto seine Beschreibung und kurze
+ * Kommentare in Fotobreite. Der Platz für den Text wird pro Reihe reserviert, die Fotos werden entsprechend kleiner.
+ * Zweimal nachgemessen, weil sich mit der Fotobreite auch die Texthöhe ändert.
+ */
+async function collageWithTextLayers(items: PageItem[], spec: FormatSpec, c: Canvas): Promise<Layer[]> {
+  const box = toPx(inner(spec), c.px);
+  const gutter = c.px(spec.gutter) * 1.6;
+  const textGap = c.px(1.8);
+  const maxText = box.h * 0.2;
+  const aspects = items.map((i) => i.aspect ?? 1.5);
+  let below = items.map(() => 0);
+  let rects = justifiedRects(box, aspects, gutter, below);
+  for (let k = 0; k < 3; k++) {
+    const heights = await Promise.all(items.map(async (it, i) => (hasText(it) ? (await textStack(it, rects[i]!.w, maxText, c, true)).height + textGap : 0)));
+    below = heights;
+    rects = justifiedRects(box, aspects, gutter, below);
+  }
+  const layers: Layer[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const r = rects[i]!;
+    const photo = await photoLayerPx(items[i]!.mediaId, r, 'cover', c);
+    if (photo) layers.push(photo);
+    if (hasText(items[i]!) && below[i]! > 0) {
+      // höchstens so hoch wie reserviert – nichts ragt in die nächste Reihe
+      const stack = await textStack(items[i]!, r.w, below[i]! - textGap, c, true);
+      layers.push(...place(stack.pieces, r.x, r.y + r.h + textGap));
+    }
+  }
+  return layers;
 }

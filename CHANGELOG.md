@@ -16,6 +16,9 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
   `excludeMediaIds` beim Anlegen; Migration `m16_book_layout`
 - Fotobuch-Texte über Pango statt SVG: Emojis erscheinen farbig (Schrift `fonts-noto-color-emoji` im Image), Zeilen
   werden nach echter Textbreite umbrochen
+- Fotobuch «Bild mit Text» neu gestaltet: Text direkt unter dem Foto in Fotobreite (Querformat) oder daneben an der
+  Unterkante (Hochformat), Kommentare als Zitate mit Akzentlinie; Fotos mit kurzem Text bleiben in Collagen, der Text
+  steht unter jedem Foto und die Reihen machen ihm Platz (Seiten mit Text höchstens 3 bzw. 4 Fotos)
 - Passwort vergessen per E-Mail: `POST /auth/password-reset` und `…/confirm`, Token 30 Minuten, einmalig, alle
   Sitzungen enden; SMTP über `SMTP_*`/`MAIL_FROM`/`PUBLIC_URL`, `GET /meta` meldet `features.passwordReset`;
   Migration `m14_password_reset`

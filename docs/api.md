@@ -273,7 +273,8 @@ Druckfertiges PDF statt Druckerei-API. Alle Mitglieder sehen Bücher und laden d
   `layout`: `SINGLE` (ein Foto pro Seite, gerahmt), `MIXED` (Standard: 1–4 pro Seite, Fotos eines Tages bleiben
   zusammen, ein ganzseitiges Highlight pro Monat), `COLLAGE` (bis 6); `months`: `JJJJ-MM` (1–36). Der Server
   berechnet den Layoutvorschlag sofort (Umschlag, Kapitel pro Monat, Vorlagen `auto` = 1–6 Fotos in Reihen oder
-  Spalten nach ihrem Seitenverhältnis ohne Beschnitt, `one` = randabfallend, `one_text`; ältere Bücher auch `two`,
+  Spalten nach ihrem Seitenverhältnis ohne Beschnitt, mit Beschreibung und kurzen Kommentaren unter jedem Foto,
+  `one` = randabfallend, `one_text` = ein Foto mit viel Text bzw. bei «ein Foto pro Seite»; ältere Bücher auch `two`,
   `two_stacked`, `four`) und rendert PDF und Seitenvorschauen im Worker (`render-book`).
   Fehler: `BOOK_EMPTY` (409), `BOOK_TOO_LARGE` (409, über 200 Seiten).
 - `GET /books/:id` – Detail mit `pages[]`: `{ index, page, previewUrl, thumbs[] }`; `page` ist die gespeicherte Seite

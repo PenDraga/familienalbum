@@ -49,13 +49,13 @@ describe('Fotobuch', () => {
       urls: { pdf: null, cover: null },
     });
     const types = book.pages.map((p: { page: { type: string; template?: string } }) => p.page.template ?? p.page.type);
-    // Umschlag, März, Foto mit Text (Kommentar), Hochformat-Paar vom selben Tag, April, Querformat allein
-    expect(types).toEqual(['cover', 'chapter', 'one_text', 'auto', 'chapter', 'auto']);
+    // Umschlag, März: das Foto mit kurzem Text bleibt mit dem Hochformat-Paar vom selben Tag in der Collage, April
+    expect(types).toEqual(['cover', 'chapter', 'auto', 'chapter', 'auto']);
     expect(book.layout).toBe('MIXED');
-    expect(book.pages[3].page.items.map((i: { aspect: number }) => i.aspect)).toEqual([0.667, 0.667]);
+    expect(book.pages[2].page.items.map((i: { aspect: number }) => i.aspect)).toEqual([1.5, 0.667, 0.667]);
     expect(book.pages[0].page.mediaId).toBe(a.id); // meistkommentiertes Foto als Titelbild
     expect(book.pages[2].page.items[0]).toMatchObject({ mediaId: a.id, caption: 'Erster Schneetag', comments: [{ author: 'Gast', body: 'So schön!' }] });
-    expect(book.pages[2].thumbs).toHaveLength(1);
+    expect(book.pages[2].thumbs).toHaveLength(3);
     expect(ctx.queue.books).toEqual([book.id]);
 
     // Liste und Detail für alle Mitglieder; Ändern/Löschen nur Ersteller oder Album-Admin
@@ -190,9 +190,23 @@ describe('Fotobuch', () => {
     const pages = proposeBook(withComment, { title: 'T', subtitle: 'S', textMode: 'NONE', layout: 'MIXED', lang: 'de' });
     expect(pages[0]).toMatchObject({ type: 'cover', mediaId: withComment[3]!.mediaId });
     expect(shape('MIXED', withComment)).toEqual(['cover', 'chapter', 'auto:3', 'one:1', 'auto:2']);
+    // Kurzer Kommentar bleibt in der Collage (Seiten mit Text höchstens 3 Fotos), «ein Foto pro Seite» gibt ihm eine Textseite
     const commented = proposeBook(withComment, { title: 'T', subtitle: 'S', textMode: 'COMMENTS', layout: 'MIXED', lang: 'en' });
-    expect(commented.map((p) => (p.type === 'photos' ? p.template : p.type))).toEqual(['cover', 'chapter', 'auto', 'one_text', 'auto']);
+    expect(commented.map((p) => (p.type === 'photos' ? `${p.template}:${p.items.length}` : p.type))).toEqual(['cover', 'chapter', 'auto:3', 'auto:3']);
     expect(commented[1]).toMatchObject({ title: 'January 2026', subtitle: '6 photos' });
+    const single = proposeBook(withComment, { title: 'T', subtitle: 'S', textMode: 'COMMENTS', layout: 'SINGLE', lang: 'de' });
+    expect(single.filter((p) => p.type === 'photos' && p.template === 'one_text')).toHaveLength(1);
+
+    // Viel Text (mehr als zwei Kommentare) bekommt auch bei «Gemischt» eine eigene Textseite
+    const chatty = sixDays.map((p, i) => (i === 2 ? { ...p, comments: ['a', 'b', 'c'].map((x) => ({ author: x, body: 'Kommentar' })) } : p));
+    const chattyPages = proposeBook(chatty, { title: 'T', subtitle: 'S', textMode: 'COMMENTS', layout: 'MIXED', lang: 'de' });
+    expect(chattyPages.map((p) => (p.type === 'photos' ? p.template : p.type))).toContain('one_text');
+
+    // Collage: Seiten mit Text höchstens 4 Fotos
+    const captioned = [1, 2, 3, 4, 5, 6].map((i) => ({ ...photo(i, 1200, 800, 3), caption: `Foto ${i}` }));
+    expect(shape('COLLAGE', captioned)).toEqual(['cover', 'chapter', 'auto:6']);
+    const captionedPages = proposeBook(captioned, { title: 'T', subtitle: 'S', textMode: 'CAPTIONS', layout: 'COLLAGE', lang: 'de' });
+    expect(captionedPages.map((p) => (p.type === 'photos' ? `${p.template}:${p.items.length}` : p.type))).toEqual(['cover', 'chapter', 'auto:3', 'auto:3']);
 
     // gleiche Eingabe → gleiches Buch
     expect(JSON.stringify(shape('MIXED', sixDays))).toBe(JSON.stringify(shape('MIXED', sixDays)));
@@ -210,6 +224,15 @@ describe('Fotobuch', () => {
     const threeLandscapes = justifiedRects(box, [1.5, 1.5, 1.5], 4);
     expect(threeLandscapes[1]!.y).toBeCloseTo(threeLandscapes[2]!.y); // oben eins gross, unten zwei
     expect(threeLandscapes[0]!.w).toBeGreaterThan(threeLandscapes[1]!.w);
+
+    // Platz für Text unter den Fotos: Reihen werden um den Text höher, nichts überlappt, alles bleibt im Satzspiegel
+    const withText = justifiedRects(box, [1.5, 1.5, 0.75], 4, [20, 0, 12]);
+    const rowOf = (r: { y: number }) => withText.findIndex((x) => Math.abs(x.y - r.y) < 1e-6);
+    for (const [i, r] of withText.entries()) {
+      const reserved = Math.max(...withText.filter((x) => rowOf(x) === rowOf(r)).map((_, k) => [20, 0, 12][withText.indexOf(_)] ?? 0), 0);
+      const nextTop = Math.min(...withText.filter((x) => x.y > r.y + 1e-6).map((x) => x.y), box.y + box.h);
+      expect(r.y + r.h + reserved, JSON.stringify({ i, r })).toBeLessThanOrEqual(nextTop + 1e-6);
+    }
 
     for (const aspects of [[1.5], [0.75], [1.5, 0.75], [1, 1, 1, 1], [1.5, 0.67, 1.5, 0.67, 1.5], [1.33, 1.33, 1.33, 0.75, 0.75, 1.33]]) {
       const rects = justifiedRects(box, aspects, 4);

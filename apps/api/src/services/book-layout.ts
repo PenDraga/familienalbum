@@ -177,9 +177,18 @@ function toItem(p: BookPhoto, textMode: BookTextMode): PageItem {
   };
 }
 
-function hasText(item: PageItem): boolean {
+export function hasText(item: PageItem): boolean {
   return !!item.caption || item.comments.length > 0;
 }
+
+/** Viel Text braucht eine eigene Seite «Bild mit Text»; kurzer Text passt unter das Foto in einer Collage. */
+function needsOwnPage(item: PageItem): boolean {
+  const commentChars = item.comments.reduce((n, c) => n + c.author.length + c.body.length, 0);
+  return item.comments.length > 2 || commentChars > 160 || (item.caption?.length ?? 0) > 140;
+}
+
+/** Seiten mit Text bekommen weniger Fotos, damit unter jedem Platz bleibt. */
+const MAX_WITH_TEXT: Record<BookLayout, number> = { SINGLE: 1, MIXED: 3, COLLAGE: 4 };
 
 type Entry = { photo: BookPhoto; item: PageItem };
 
@@ -212,7 +221,7 @@ function layoutMonth(photos: BookPhoto[], textMode: BookTextMode, layout: BookLa
     run = [];
   };
   for (const e of entries) {
-    if (hasText(e.item)) {
+    if (hasText(e.item) && (layout === 'SINGLE' || needsOwnPage(e.item))) {
       flush();
       pages.push({ type: 'photos', template: 'one_text', items: [e.item] });
     } else if (e.photo.mediaId === heroId) {
@@ -262,7 +271,10 @@ function packRun(run: Entry[], layout: BookLayout): BookPage[] {
     current.push(...day);
   }
   if (current.length) chunks.push(current);
-  return chunks.map((c) => ({ type: 'photos', template: 'auto', items: c.map((e) => e.item) }));
+  const withText = MAX_WITH_TEXT[layout];
+  return chunks
+    .flatMap((c) => (c.length > withText && c.some((e) => hasText(e.item)) ? balanced(c, withText) : [c]))
+    .map((c) => ({ type: 'photos', template: 'auto', items: c.map((e) => e.item) }));
 }
 
 /** n Elemente auf möglichst gleich volle Seiten mit höchstens `max` verteilen. */
@@ -349,29 +361,33 @@ function rowSplits(n: number): number[][] {
  * wird er verkleinert und zentriert. Gewählt wird die Aufteilung, die die meiste Fläche füllt, ohne dass ein
  * Foto neben den anderen winzig wird; bei Gleichstand gewinnt die erste (Reihen vor Spalten, wenige vor vielen).
  */
-export function justifiedRects(box: Rect, aspects: number[], gutter: number): Rect[] {
+export function justifiedRects(box: Rect, aspects: number[], gutter: number, below: number[] = []): Rect[] {
   if (aspects.length === 0) return [];
-  const rows = bestRows(box, aspects, gutter);
+  const rows = bestRows(box, aspects, gutter, below);
+  // Mit Text unter den Fotos nur Reihen (der Text gehört unter das Foto, nicht in eine Spalte)
+  if (below.some((b) => b > 0)) return rows.rects;
   // Spalten = Reihen auf der gespiegelten Seite
   const flipped = bestRows({ x: box.y, y: box.x, w: box.h, h: box.w }, aspects.map((a) => 1 / a), gutter);
   const cols = { fill: flipped.fill, rects: flipped.rects.map((r) => ({ x: r.y, y: r.x, w: r.h, h: r.w })) };
   return cols.fill > rows.fill + 0.02 ? cols.rects : rows.rects;
 }
 
-function bestRows(box: Rect, aspects: number[], gutter: number): { rects: Rect[]; fill: number } {
+/** `below[i]`: Platz, der unter Foto i frei bleiben muss (Text); eine Reihe reserviert das Maximum ihrer Fotos. */
+function bestRows(box: Rect, aspects: number[], gutter: number, below: number[] = []): { rects: Rect[]; fill: number } {
   const n = aspects.length;
   let best: { rects: Rect[]; fill: number } | null = null;
   for (const split of rowSplits(n)) {
     let i = 0;
     const rows = split.map((m) => {
       const a = aspects.slice(i, i + m);
+      const extra = Math.max(0, ...below.slice(i, i + m));
       i += m;
       const sum = a.reduce((x, y) => x + y, 0);
-      return { a, h: (box.w - gutter * (m - 1)) / sum };
+      return { a, h: (box.w - gutter * (m - 1)) / sum, extra };
     });
-    const gaps = gutter * (rows.length - 1);
+    const gaps = gutter * (rows.length - 1) + rows.reduce((x, r) => x + r.extra, 0);
     const natural = rows.reduce((x, r) => x + r.h, 0);
-    const scale = natural + gaps > box.h ? (box.h - gaps) / natural : 1;
+    const scale = natural + gaps > box.h ? Math.max(0.05, (box.h - gaps) / natural) : 1;
     const totalH = natural * scale + gaps;
     let y = box.y + (box.h - totalH) / 2;
     const rects: Rect[] = [];
@@ -386,7 +402,7 @@ function bestRows(box: Rect, aspects: number[], gutter: number): { rects: Rect[]
         area += w * h;
         x += w + gutter;
       }
-      y += h + gutter;
+      y += h + r.extra + gutter;
     }
     // Sehr ungleiche Grössen bestrafen (ein Briefmarken-Foto neben einem grossen)
     const sizes = rects.map((r) => r.w * r.h);
