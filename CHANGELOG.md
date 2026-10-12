@@ -10,13 +10,18 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
   Textmodus (ohne, Bildunterschriften, mit Kommentaren) und Monaten; automatischer Layoutvorschlag (Umschlag,
   Kapitel pro Monat, Vorlagen eins/zwei/vier/Bild mit Text), Rendern im Worker (`render-book`), Seitenvorschauen,
   Push an den Ersteller; neues Mitglieder- und Einladungs-Flag `canCreateBooks`; Migration `m15_photo_books`
+- Fotobuch-Anordnung wählbar (`layout`: ein Foto pro Seite, gemischt, Collage) und neue Vorlage `auto`: 1–6 Fotos in
+  Reihen oder Spalten nach Seitenverhältnis, ohne Beschnitt; Tage bleiben zusammen, ein Highlight pro Monat (nicht
+  das Umschlagfoto); Assistenten-Routen für Monate mit Fotos, Fotos zum Abwählen und Seitenschätzung;
+  `excludeMediaIds` beim Anlegen; Migration `m16_book_layout`
 - Passwort vergessen per E-Mail: `POST /auth/password-reset` und `…/confirm`, Token 30 Minuten, einmalig, alle
   Sitzungen enden; SMTP über `SMTP_*`/`MAIL_FROM`/`PUBLIC_URL`, `GET /meta` meldet `features.passwordReset`;
   Migration `m14_password_reset`
 
 ### App
-- Fotobuch: Karte «Fotobuch erstellen» in den Sammlungen und in den Einstellungen; Dialog mit Jahr und Monaten,
-  Format, Texten (ohne, Bildunterschriften, mit Kommentaren), optionalem Titel; Buchbildschirm mit Seitenvorschau,
+- Fotobuch: Karte «Fotobuch erstellen» in den Sammlungen und in den Einstellungen; Assistent in drei Schritten:
+  Zeitraum (nur Jahre und Monate mit Fotos), Fotos abwählen (auch «nur kommentierte»), Gestaltung mit Anordnung,
+  Format, Texten, Titel und Seitenschätzung; Buchbildschirm mit Seitenvorschau,
   PDF teilen oder laden, umbenennen, nochmals rendern, löschen; neues Recht «Darf Fotobücher erstellen» im
   Rechte-Editor, in Einladungen und auf der Einladungsseite; Push «Fotobuch fertig» öffnet das Buch
 - «Passwort vergessen?» im Login (E-Mail eingeben, Link kommt per Mail); Screen `/reset?token=…` zum Setzen des neuen

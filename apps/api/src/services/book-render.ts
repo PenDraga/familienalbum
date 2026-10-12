@@ -95,7 +95,7 @@ async function renderPage(page: BookPage, spec: FormatSpec, c: Canvas): Promise<
     const full = toPx({ x: 0, y: 0, w: size.w, h: size.h }, c.px);
     layers.push(svgLayer(full, chapterSvg(full, page.title, page.subtitle, c)));
   } else {
-    const rects = photoRects(spec, page.template, page.items.length);
+    const rects = photoRects(spec, page.template, page.items.length, page.items.map((i) => i.aspect ?? 1.5));
     for (let i = 0; i < page.items.length; i++) {
       const r = rects[i];
       if (!r) break;

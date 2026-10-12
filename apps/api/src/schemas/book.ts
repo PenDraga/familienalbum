@@ -5,7 +5,8 @@ import { userBriefSchema } from './user.js';
 
 export const bookFormatSchema = z.enum(['SQUARE_21', 'A4_LANDSCAPE', 'SQUARE_30']);
 export const bookTextModeSchema = z.enum(['NONE', 'CAPTIONS', 'COMMENTS']);
-export const pageTemplateSchema = z.enum(['one', 'two', 'two_stacked', 'four', 'one_text']);
+export const bookLayoutSchema = z.enum(['SINGLE', 'MIXED', 'COLLAGE']);
+export const pageTemplateSchema = z.enum(['one', 'two', 'two_stacked', 'four', 'one_text', 'auto']);
 export const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'JJJJ-MM');
 
 const bookCommentSchema = z.object({ author: z.string().max(80), body: z.string().max(2000) });
@@ -14,6 +15,8 @@ export const pageItemSchema = z.object({
   mediaId: uuidSchema,
   caption: z.string().max(500).nullable(),
   comments: z.array(bookCommentSchema).max(10),
+  /** Breite / Höhe; der Server setzt es beim Speichern aus den Fotodaten */
+  aspect: z.number().positive().max(20).optional(),
 });
 
 /** Seitenliste – die gespeicherte Wahrheit des Buchs (ADR-0004). */
@@ -21,7 +24,7 @@ export const bookPageSchema = z
   .discriminatedUnion('type', [
     z.object({ type: z.literal('cover'), mediaId: uuidSchema.nullable(), title: z.string().max(120), subtitle: z.string().max(120) }),
     z.object({ type: z.literal('chapter'), title: z.string().max(120), subtitle: z.string().max(120) }),
-    z.object({ type: z.literal('photos'), template: pageTemplateSchema, items: z.array(pageItemSchema).min(1).max(4), hideText: z.boolean().optional() }),
+    z.object({ type: z.literal('photos'), template: pageTemplateSchema, items: z.array(pageItemSchema).min(1).max(6), hideText: z.boolean().optional() }),
   ])
   .meta({ id: 'BookPage' });
 
@@ -33,6 +36,7 @@ export const bookSchema = z
     title: z.string(),
     format: bookFormatSchema,
     textMode: bookTextModeSchema,
+    layout: bookLayoutSchema,
     /** `JJJJ-MM`, sortiert */
     months: z.array(monthSchema),
     onlyCommented: z.boolean(),
@@ -73,9 +77,42 @@ export const createBookBodySchema = z.object({
   title: z.string().trim().min(1).max(80).optional(),
   format: bookFormatSchema.default('SQUARE_21'),
   textMode: bookTextModeSchema.default('CAPTIONS'),
+  layout: bookLayoutSchema.default('MIXED'),
   months: z.array(monthSchema).min(1).max(36),
   onlyCommented: z.boolean().default(false),
+  /** Im Assistenten abgewählte Fotos */
+  excludeMediaIds: z.array(z.uuid()).max(5000).default([]),
 });
+
+/** Monate mit fertigen Fotos (neueste zuerst) – Auswahl im Assistenten. */
+export const bookMonthsSchema = z.array(z.object({ month: monthSchema, count: z.number().int() })).meta({ id: 'BookMonths' });
+
+export const bookPhotosQuerySchema = z.object({
+  /** Kommagetrennt, `JJJJ-MM` */
+  months: z
+    .string()
+    .transform((v) => v.split(',').map((m) => m.trim()).filter(Boolean))
+    .pipe(z.array(monthSchema).min(1).max(36)),
+});
+
+/** Fotos der gewählten Monate für den Assistenten (zum Abwählen). */
+export const bookPhotosSchema = z
+  .array(
+    z.object({
+      id: uuidSchema,
+      takenAt: z.iso.datetime(),
+      width: z.number().int().nullable(),
+      height: z.number().int().nullable(),
+      caption: z.string().nullable(),
+      commentCount: z.number().int(),
+      thumbUrl: z.string(),
+    }),
+  )
+  .meta({ id: 'BookPhotos' });
+
+export const bookPreviewSchema = z
+  .object({ pageCount: z.number().int(), mediaCount: z.number().int(), maxPages: z.number().int() })
+  .meta({ id: 'BookPreview' });
 
 export const updateBookBodySchema = z
   .object({

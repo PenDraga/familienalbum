@@ -1,7 +1,7 @@
 import { stat } from 'node:fs/promises';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { BookService } from '../src/services/book.service.js';
-import { proposeBook, type BookPhoto } from '../src/services/book-layout.js';
+import { justifiedRects, proposeBook, type BookLayout, type BookPhoto } from '../src/services/book-layout.js';
 import { TestContext, expectProblem } from './helpers/app.js';
 import { makeJpeg } from './helpers/fixtures.js';
 
@@ -49,8 +49,10 @@ describe('Fotobuch', () => {
       urls: { pdf: null, cover: null },
     });
     const types = book.pages.map((p: { page: { type: string; template?: string } }) => p.page.template ?? p.page.type);
-    // Umschlag, März, Foto mit Text (Kommentar), Hochformat-Paar, April, Querformat allein
-    expect(types).toEqual(['cover', 'chapter', 'one_text', 'two', 'chapter', 'one']);
+    // Umschlag, März, Foto mit Text (Kommentar), Hochformat-Paar vom selben Tag, April, Querformat allein
+    expect(types).toEqual(['cover', 'chapter', 'one_text', 'auto', 'chapter', 'auto']);
+    expect(book.layout).toBe('MIXED');
+    expect(book.pages[3].page.items.map((i: { aspect: number }) => i.aspect)).toEqual([0.667, 0.667]);
     expect(book.pages[0].page.mediaId).toBe(a.id); // meistkommentiertes Foto als Titelbild
     expect(book.pages[2].page.items[0]).toMatchObject({ mediaId: a.id, caption: 'Erster Schneetag', comments: [{ author: 'Gast', body: 'So schön!' }] });
     expect(book.pages[2].thumbs).toHaveLength(1);
@@ -100,15 +102,15 @@ describe('Fotobuch', () => {
     const svc = new BookService(ctx.prisma, ctx.app.storage, ctx.app.signer, ctx.queue);
     const rendered = await svc.render(created.id, { dpi: 60, previewWidth: 200, log: silentLog });
     expect(rendered.status, rendered.error ?? '').toBe('READY');
-    expect(rendered.pageCount).toBe(4); // Umschlag, Kapitel, zwei Fotoseiten
+    expect(rendered.pageCount).toBe(3); // Umschlag, Kapitel, eine Seite mit beiden Fotos
     expect(rendered.pdfBytes).toBeGreaterThan(1000);
     expect((await stat(ctx.app.storage.bookPdfPath(family.id, created.id))).size).toBe(rendered.pdfBytes);
 
     const detail = (await (await ctx.as(admin)).get(`/books/${created.id}`)).json();
     expect(detail.status).toBe('READY');
     expect(detail.urls.pdf).toMatch(/\/books\/.*\/pdf\?exp=/);
-    expect(detail.pages).toHaveLength(4);
-    expect(detail.pages[3].previewUrl).toMatch(/\/pages\/4\?exp=/);
+    expect(detail.pages).toHaveLength(3);
+    expect(detail.pages[2].previewUrl).toMatch(/\/pages\/3\?exp=/);
 
     // signierte Links ohne Bearer; Bearer eines Mitglieds geht auch
     const pdf = await ctx.app.inject({ method: 'GET', url: detail.urls.pdf });
@@ -122,23 +124,100 @@ describe('Fotobuch', () => {
     expectProblem(await ctx.app.inject({ method: 'GET', url: `/api/v1/books/${created.id}/pdf` }), 401);
   });
 
-  it('Layout: Querformate wechseln zwischen ganzer Seite und Paaren, Vierer-Raster bei vielen kleinen', () => {
-    const at = (h: number) => new Date(Date.UTC(2026, 0, 3, h));
-    const photo = (i: number, w: number, h: number): BookPhoto => ({ mediaId: `00000000-0000-0000-0000-0000000000${String(i).padStart(2, '0')}`, takenAt: at(i), width: w, height: h, caption: null, comments: [] });
-    const landscapes = [1, 2, 3, 4, 5, 6].map((i) => photo(i, 1200, 800));
-    const pages = proposeBook(landscapes, { title: 'T', subtitle: 'S', textMode: 'NONE', lang: 'de' });
-    expect(pages.map((p) => (p.type === 'photos' ? p.template : p.type))).toEqual(['cover', 'chapter', 'one', 'two_stacked', 'two_stacked', 'one']);
-    expect(pages[1]).toMatchObject({ type: 'chapter', title: 'Januar 2026', subtitle: '6 Fotos' });
+  it('Assistent: Monate mit Fotos, Fotos zum Abwählen, Seitenschätzung und Ausschlüsse beim Anlegen', async () => {
+    const { family, admin } = await ctx.createFamilyWithAdmin('Familie Test');
+    const viewer = await ctx.createUser();
+    await ctx.addMember(family, viewer, { canUpload: true });
+    const ids: string[] = [];
+    for (const [i, d] of ['2025-12-24', '2026-02-01', '2026-02-02', '2026-02-03'].entries()) {
+      const m = await ctx.uploadAndProcess(admin, family, await makeJpeg({ width: 300 + i, height: 200 }), { takenAt: `${d}T10:00:00.000Z` });
+      ids.push(m.id);
+    }
 
-    const mixed = [photo(1, 800, 1200), photo(2, 1200, 800), photo(3, 1200, 800), photo(4, 1200, 800)];
-    const mixedPages = proposeBook(mixed, { title: 'T', subtitle: 'S', textMode: 'NONE', lang: 'en' });
-    expect(mixedPages.map((p) => (p.type === 'photos' ? p.template : p.type))).toEqual(['cover', 'chapter', 'four']);
-    expect(mixedPages[1]).toMatchObject({ title: 'January 2026', subtitle: '4 photos' });
+    expectProblem(await (await ctx.as(viewer)).get(`/families/${family.id}/books/months`), 403, 'PERMISSION_CANCREATEBOOKS');
+    const months = (await (await ctx.as(admin)).get(`/families/${family.id}/books/months`)).json();
+    expect(months).toEqual([{ month: '2026-02', count: 3 }, { month: '2025-12', count: 1 }]);
 
-    // Text erzwingt «Bild mit Text», gleiche Eingabe → gleiches Ergebnis
-    const withText = [{ ...photo(1, 1200, 800), caption: 'Hallo' }, photo(2, 1200, 800)];
-    const t1 = proposeBook(withText, { title: 'T', subtitle: 'S', textMode: 'CAPTIONS', lang: 'de' });
-    expect(t1.map((p) => (p.type === 'photos' ? p.template : p.type))).toEqual(['cover', 'chapter', 'one_text', 'one']);
-    expect(JSON.stringify(t1)).toBe(JSON.stringify(proposeBook(withText, { title: 'T', subtitle: 'S', textMode: 'CAPTIONS', lang: 'de' })));
+    const photos = await (await ctx.as(admin)).get(`/families/${family.id}/books/photos?months=2026-02,2025-12`);
+    expect(photos.statusCode, photos.body).toBe(200);
+    expect(photos.json().map((p: { id: string }) => p.id)).toEqual(ids);
+    expect(photos.json()[0]).toMatchObject({ width: 300, height: 200, commentCount: 0, caption: null });
+    expect(photos.json()[0].thumbUrl).toMatch(/\/thumb\/400\?exp=/);
+    expectProblem(await (await ctx.as(admin)).get(`/families/${family.id}/books/photos?months=2026-2`), 400);
+
+    const body = { months: ['2026-02'], layout: 'SINGLE' };
+    const preview = (await (await ctx.as(admin)).post(`/families/${family.id}/books/preview`, body)).json();
+    expect(preview).toEqual({ pageCount: 5, mediaCount: 3, maxPages: 200 }); // Umschlag, Kapitel, 3 Einzelseiten
+    const collage = (await (await ctx.as(admin)).post(`/families/${family.id}/books/preview`, { ...body, layout: 'COLLAGE' })).json();
+    expect(collage.pageCount).toBe(3);
+    const none = (await (await ctx.as(admin)).post(`/families/${family.id}/books/preview`, { ...body, excludeMediaIds: ids })).json();
+    expect(none).toEqual({ pageCount: 0, mediaCount: 0, maxPages: 200 });
+
+    const created = await (await ctx.as(admin)).post(`/families/${family.id}/books`, { ...body, excludeMediaIds: [ids[2]] });
+    expect(created.statusCode, created.body).toBe(202);
+    expect(created.json()).toMatchObject({ layout: 'SINGLE', mediaCount: 2, pageCount: 4 });
+    const used = created.json().pages.flatMap((p: { page: { items?: Array<{ mediaId: string }> } }) => p.page.items?.map((i) => i.mediaId) ?? []);
+    expect(used).not.toContain(ids[2]);
+    expectProblem(await (await ctx.as(admin)).post(`/families/${family.id}/books`, { ...body, excludeMediaIds: ids }), 409, 'BOOK_EMPTY');
+  });
+
+  it('Layout: ein Foto pro Seite, gemischt mit Highlight und Tagen zusammen, Collage', () => {
+    const photo = (i: number, w: number, h: number, day = i): BookPhoto => ({
+      mediaId: `00000000-0000-0000-0000-0000000000${String(i).padStart(2, '0')}`,
+      takenAt: new Date(Date.UTC(2026, 0, day, 8 + i)),
+      width: w,
+      height: h,
+      caption: null,
+      comments: [],
+    });
+    const shape = (layout: BookLayout, photos: BookPhoto[]) =>
+      proposeBook(photos, { title: 'T', subtitle: 'S', textMode: 'NONE', layout, lang: 'de' }).map((p) => (p.type === 'photos' ? `${p.template}:${p.items.length}` : p.type));
+
+    const sixDays = [1, 2, 3, 4, 5, 6].map((i) => photo(i, 1200, 800));
+    expect(shape('SINGLE', sixDays)).toEqual(['cover', 'chapter', 'auto:1', 'auto:1', 'auto:1', 'auto:1', 'auto:1', 'auto:1']);
+    // Tage zusammengelegt (höchstens 3 aus verschiedenen Tagen); Highlight = Querformat in der Monatsmitte,
+    // nicht das Umschlagfoto, eingesetzt an der Seitengrenze
+    expect(shape('MIXED', sixDays)).toEqual(['cover', 'chapter', 'auto:3', 'one:1', 'auto:2']);
+    expect(shape('COLLAGE', sixDays)).toEqual(['cover', 'chapter', 'auto:6']);
+
+    // Fünf Fotos am selben Tag bleiben zusammen und werden gleichmässig geteilt
+    const oneDay = [1, 2, 3, 4, 5].map((i) => photo(i, 800, 1200, 7));
+    expect(shape('MIXED', oneDay)).toEqual(['cover', 'chapter', 'auto:3', 'auto:2']);
+
+    // Das meistkommentierte Foto kommt auf den Umschlag und wird darum nicht nochmals Highlight;
+    // mit Kommentar-Text bekommt es eine eigene Textseite
+    const withComment = sixDays.map((p, i) => (i === 3 ? { ...p, comments: [{ author: 'Oma', body: 'Schön' }] } : p));
+    const pages = proposeBook(withComment, { title: 'T', subtitle: 'S', textMode: 'NONE', layout: 'MIXED', lang: 'de' });
+    expect(pages[0]).toMatchObject({ type: 'cover', mediaId: withComment[3]!.mediaId });
+    expect(shape('MIXED', withComment)).toEqual(['cover', 'chapter', 'auto:3', 'one:1', 'auto:2']);
+    const commented = proposeBook(withComment, { title: 'T', subtitle: 'S', textMode: 'COMMENTS', layout: 'MIXED', lang: 'en' });
+    expect(commented.map((p) => (p.type === 'photos' ? p.template : p.type))).toEqual(['cover', 'chapter', 'auto', 'one_text', 'auto']);
+    expect(commented[1]).toMatchObject({ title: 'January 2026', subtitle: '6 photos' });
+
+    // gleiche Eingabe → gleiches Buch
+    expect(JSON.stringify(shape('MIXED', sixDays))).toBe(JSON.stringify(shape('MIXED', sixDays)));
+  });
+
+  it('Reihen-Layout: Seitenverhältnisse bleiben, nichts ragt aus dem Satzspiegel', () => {
+    const box = { x: 15, y: 15, w: 186, h: 186 };
+    const within = (r: { x: number; y: number; w: number; h: number }) =>
+      r.x >= box.x - 1e-6 && r.y >= box.y - 1e-6 && r.x + r.w <= box.x + box.w + 1e-6 && r.y + r.h <= box.y + box.h + 1e-6;
+
+    const twoPortraits = justifiedRects(box, [2 / 3, 2 / 3], 4);
+    expect(twoPortraits[0]!.y).toBeCloseTo(twoPortraits[1]!.y); // eine Reihe
+    expect(twoPortraits[0]!.w / twoPortraits[0]!.h).toBeCloseTo(2 / 3);
+
+    const threeLandscapes = justifiedRects(box, [1.5, 1.5, 1.5], 4);
+    expect(threeLandscapes[1]!.y).toBeCloseTo(threeLandscapes[2]!.y); // oben eins gross, unten zwei
+    expect(threeLandscapes[0]!.w).toBeGreaterThan(threeLandscapes[1]!.w);
+
+    for (const aspects of [[1.5], [0.75], [1.5, 0.75], [1, 1, 1, 1], [1.5, 0.67, 1.5, 0.67, 1.5], [1.33, 1.33, 1.33, 0.75, 0.75, 1.33]]) {
+      const rects = justifiedRects(box, aspects, 4);
+      expect(rects).toHaveLength(aspects.length);
+      rects.forEach((r, i) => {
+        expect(within(r), JSON.stringify({ aspects, r })).toBe(true);
+        expect(r.w / r.h).toBeCloseTo(aspects[i]!, 3);
+      });
+    }
   });
 });

@@ -1063,12 +1063,13 @@
                   "two",
                   "two_stacked",
                   "four",
-                  "one_text"
+                  "one_text",
+                  "auto"
                 ]
               },
               "items": {
                 "minItems": 1,
-                "maxItems": 4,
+                "maxItems": 6,
                 "type": "array",
                 "items": {
                   "type": "object",
@@ -1109,6 +1110,11 @@
                           "body"
                         ]
                       }
+                    },
+                    "aspect": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 20
                     }
                   },
                   "required": [
@@ -1163,6 +1169,14 @@
               "NONE",
               "CAPTIONS",
               "COMMENTS"
+            ]
+          },
+          "layout": {
+            "type": "string",
+            "enum": [
+              "SINGLE",
+              "MIXED",
+              "COLLAGE"
             ]
           },
           "months": {
@@ -1266,6 +1280,7 @@
           "title",
           "format",
           "textMode",
+          "layout",
           "months",
           "onlyCommented",
           "status",
@@ -1313,6 +1328,14 @@
               "NONE",
               "CAPTIONS",
               "COMMENTS"
+            ]
+          },
+          "layout": {
+            "type": "string",
+            "enum": [
+              "SINGLE",
+              "MIXED",
+              "COLLAGE"
             ]
           },
           "months": {
@@ -1450,6 +1473,7 @@
           "title",
           "format",
           "textMode",
+          "layout",
           "months",
           "onlyCommented",
           "status",
@@ -1463,6 +1487,117 @@
           "canEdit",
           "urls",
           "pages"
+        ]
+      },
+      "BookMonthsInput": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "month": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            },
+            "count": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "month",
+            "count"
+          ]
+        }
+      },
+      "BookPhotosInput": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "takenAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+            },
+            "width": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "height": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "caption": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "commentCount": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "thumbUrl": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "takenAt",
+            "width",
+            "height",
+            "caption",
+            "commentCount",
+            "thumbUrl"
+          ]
+        }
+      },
+      "BookPreviewInput": {
+        "type": "object",
+        "properties": {
+          "pageCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "mediaCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "maxPages": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "pageCount",
+          "mediaCount",
+          "maxPages"
         ]
       },
       "CommentInput": {
@@ -3131,12 +3266,13 @@
                   "two",
                   "two_stacked",
                   "four",
-                  "one_text"
+                  "one_text",
+                  "auto"
                 ]
               },
               "items": {
                 "minItems": 1,
-                "maxItems": 4,
+                "maxItems": 6,
                 "type": "array",
                 "items": {
                   "type": "object",
@@ -3178,6 +3314,11 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "aspect": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 20
                     }
                   },
                   "required": [
@@ -3234,6 +3375,14 @@
               "NONE",
               "CAPTIONS",
               "COMMENTS"
+            ]
+          },
+          "layout": {
+            "type": "string",
+            "enum": [
+              "SINGLE",
+              "MIXED",
+              "COLLAGE"
             ]
           },
           "months": {
@@ -3338,6 +3487,7 @@
           "title",
           "format",
           "textMode",
+          "layout",
           "months",
           "onlyCommented",
           "status",
@@ -3386,6 +3536,14 @@
               "NONE",
               "CAPTIONS",
               "COMMENTS"
+            ]
+          },
+          "layout": {
+            "type": "string",
+            "enum": [
+              "SINGLE",
+              "MIXED",
+              "COLLAGE"
             ]
           },
           "months": {
@@ -3525,6 +3683,7 @@
           "title",
           "format",
           "textMode",
+          "layout",
           "months",
           "onlyCommented",
           "status",
@@ -3538,6 +3697,120 @@
           "canEdit",
           "urls",
           "pages"
+        ],
+        "additionalProperties": false
+      },
+      "BookMonths": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "month": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            },
+            "count": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "month",
+            "count"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "BookPhotos": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "takenAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+            },
+            "width": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "height": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "caption": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "commentCount": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "thumbUrl": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "takenAt",
+            "width",
+            "height",
+            "caption",
+            "commentCount",
+            "thumbUrl"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "BookPreview": {
+        "type": "object",
+        "properties": {
+          "pageCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "mediaCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "maxPages": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "pageCount",
+          "mediaCount",
+          "maxPages"
         ],
         "additionalProperties": false
       },
@@ -7943,6 +8216,15 @@
                       "COMMENTS"
                     ]
                   },
+                  "layout": {
+                    "default": "MIXED",
+                    "type": "string",
+                    "enum": [
+                      "SINGLE",
+                      "MIXED",
+                      "COLLAGE"
+                    ]
+                  },
                   "months": {
                     "minItems": 1,
                     "maxItems": 36,
@@ -7955,6 +8237,16 @@
                   "onlyCommented": {
                     "default": false,
                     "type": "boolean"
+                  },
+                  "excludeMediaIds": {
+                    "default": [],
+                    "maxItems": 5000,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
                   }
                 },
                 "required": [
@@ -8033,6 +8325,305 @@
             }
           },
           "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/families/{id}/books/months": {
+      "get": {
+        "summary": "Monate mit Fotos (Assistent, canCreateBooks)",
+        "tags": [
+          "books"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookMonths"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/families/{id}/books/photos": {
+      "get": {
+        "summary": "Fotos der gewählten Monate zum Abwählen (Assistent, canCreateBooks)",
+        "tags": [
+          "books"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "months",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookPhotos"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/families/{id}/books/preview": {
+      "post": {
+        "summary": "Seitenzahl schätzen, ohne zu speichern (Assistent, canCreateBooks)",
+        "tags": [
+          "books"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "format": {
+                    "default": "SQUARE_21",
+                    "type": "string",
+                    "enum": [
+                      "SQUARE_21",
+                      "A4_LANDSCAPE",
+                      "SQUARE_30"
+                    ]
+                  },
+                  "textMode": {
+                    "default": "CAPTIONS",
+                    "type": "string",
+                    "enum": [
+                      "NONE",
+                      "CAPTIONS",
+                      "COMMENTS"
+                    ]
+                  },
+                  "layout": {
+                    "default": "MIXED",
+                    "type": "string",
+                    "enum": [
+                      "SINGLE",
+                      "MIXED",
+                      "COLLAGE"
+                    ]
+                  },
+                  "months": {
+                    "minItems": 1,
+                    "maxItems": 36,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                    }
+                  },
+                  "onlyCommented": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "excludeMediaIds": {
+                    "default": [],
+                    "maxItems": 5000,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "required": [
+                  "months"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Default Response",
             "content": {
               "application/json": {

@@ -17,9 +17,14 @@ Zahlungsabwicklung in die App holen.
   als zweiter Schritt möglich und ändert am Datenmodell nichts.
 - **Formate:** 21 × 21 cm, A4 quer (29,7 × 21 cm), 30 × 30 cm; je 3 mm Beschnitt, 10 mm Sicherheitsabstand, sRGB,
   Bilder in Originalauflösung bis 300 dpi. Schriften Baloo 2 und Nunito werden eingebettet.
-- **Automatischer Layoutvorschlag** im Worker: Umschlag (Albumname, Zeitraum, Titelbild), Kapitelseite pro Monat,
-  Bilder nach Aufnahmedatum gruppiert nach Tag; Vorlagen «eins», «zwei», «vier», «Bild mit Text». Der Vorschlag ist
-  deterministisch (gleiche Eingabe → gleiches Buch).
+- **Automatischer Layoutvorschlag** auf dem Server: Umschlag (Albumname, Zeitraum, Titelbild), Kapitelseite pro
+  Monat, Fotos nach Aufnahmedatum. Die **Anordnung** ist wählbar, nach dem Vorbild gängiger Anbieter (CEWE leitet die
+  Fotos pro Seite aus der Seitenzahl ab, Shutterfly empfiehlt 1–4 pro Seite im Wechsel mit ganzseitigen Bildern,
+  Lightroom/Blurb bieten «ein Foto pro Seite» als Regel): `SINGLE` (gerahmt), `MIXED` (1–4, Tage bleiben zusammen,
+  ein ganzseitiges Highlight pro Monat), `COLLAGE` (bis 6). Die Vorlage `auto` setzt die Fotos in Reihen oder
+  Spalten nach ihrem Seitenverhältnis (wie Google Fotos), ohne Beschnitt. Der Vorschlag ist deterministisch.
+- **Assistent** in der App: Zeitraum (nur Monate mit Fotos), einzelne Fotos abwählen, Gestaltung mit
+  Seitenschätzung des Servers.
 - **Texte** werden beim Erzeugen gewählt: keine, Bildunterschriften, Bildunterschriften mit Kommentaren. Der Schalter
   bestimmt das Layout; in der Bearbeitung können Texte pro Seite ausgeblendet und einzelne Kommentare entfernt werden.
 - **Gespeichert** wird ein `PhotoBook` pro Album (Titel, Format, Optionen, Seitenliste als JSON, Status, PDF-Pfad).

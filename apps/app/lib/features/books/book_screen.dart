@@ -194,6 +194,7 @@ class _Header extends StatelessWidget {
           runSpacing: 6,
           children: [
             Chip(avatar: const Icon(Icons.crop_square_outlined, size: 16), label: Text(book.format.label(l10n)), visualDensity: VisualDensity.compact),
+            Chip(avatar: const Icon(Icons.dashboard_outlined, size: 16), label: Text(book.layout.label(l10n)), visualDensity: VisualDensity.compact),
             Chip(avatar: const Icon(Icons.notes_outlined, size: 16), label: Text(book.textMode.label(l10n)), visualDensity: VisualDensity.compact),
             Chip(avatar: const Icon(Icons.auto_stories_outlined, size: 16), label: Text(l10n.bookPages(book.pageCount)), visualDensity: VisualDensity.compact),
             Chip(avatar: const Icon(Icons.photo_outlined, size: 16), label: Text(l10n.bookPhotos(book.mediaCount)), visualDensity: VisualDensity.compact),

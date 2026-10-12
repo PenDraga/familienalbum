@@ -25,6 +25,35 @@ extension BookFormatLabel on BookFormat {
   double get aspectRatio => this == BookFormat.a4Landscape ? 297 / 210 : 1;
 }
 
+/// Anordnung der Fotos (siehe Server: book-layout.ts)
+enum BookLayout { single, mixed, collage }
+
+BookLayout bookLayoutFromJson(String? s) => switch (s) {
+  'SINGLE' => BookLayout.single,
+  'COLLAGE' => BookLayout.collage,
+  _ => BookLayout.mixed,
+};
+
+extension BookLayoutLabel on BookLayout {
+  String get apiValue => switch (this) {
+    BookLayout.single => 'SINGLE',
+    BookLayout.mixed => 'MIXED',
+    BookLayout.collage => 'COLLAGE',
+  };
+
+  String label(AppLocalizations l10n) => switch (this) {
+    BookLayout.single => l10n.bookLayoutSingle,
+    BookLayout.mixed => l10n.bookLayoutMixed,
+    BookLayout.collage => l10n.bookLayoutCollage,
+  };
+
+  String description(AppLocalizations l10n) => switch (this) {
+    BookLayout.single => l10n.bookLayoutSingleText,
+    BookLayout.mixed => l10n.bookLayoutMixedText,
+    BookLayout.collage => l10n.bookLayoutCollageText,
+  };
+}
+
 enum BookTextMode { none, captions, comments }
 
 BookTextMode bookTextModeFromJson(String s) => switch (s) {
@@ -56,6 +85,7 @@ class BookItem {
     required this.title,
     required this.format,
     required this.textMode,
+    this.layout = BookLayout.mixed,
     required this.months,
     required this.status,
     required this.pageCount,
@@ -75,6 +105,7 @@ class BookItem {
   final String title;
   final BookFormat format;
   final BookTextMode textMode;
+  final BookLayout layout;
   final List<String> months;
   final String status; // PROCESSING | READY | FAILED
   final String? error;
@@ -101,6 +132,7 @@ class BookItem {
       title: j['title'] as String,
       format: bookFormatFromJson(j['format'] as String),
       textMode: bookTextModeFromJson(j['textMode'] as String),
+      layout: bookLayoutFromJson(j['layout'] as String?),
       months: (j['months'] as List<dynamic>).cast<String>(),
       status: j['status'] as String,
       error: j['error'] as String?,
@@ -141,4 +173,69 @@ class BookPageView {
       thumbs: ((j['thumbs'] as List<dynamic>?) ?? const []).map((e) => absolute(e as String)).toList(),
     );
   }
+}
+
+/// Monat mit Fotos (Assistent, Schritt «Zeitraum»).
+class BookMonth {
+  const BookMonth({required this.month, required this.count});
+  final String month; // JJJJ-MM
+  final int count;
+
+  int get year => int.parse(month.substring(0, 4));
+  int get monthNumber => int.parse(month.substring(5, 7));
+
+  factory BookMonth.fromJson(Map<String, dynamic> j) => BookMonth(month: j['month'] as String, count: j['count'] as int);
+}
+
+/// Foto zum An- und Abwählen (Assistent, Schritt «Fotos»).
+class BookPhoto {
+  const BookPhoto({required this.id, required this.takenAt, required this.commentCount, required this.thumbUrl, this.caption});
+  final String id;
+  final DateTime takenAt;
+  final int commentCount;
+  final String thumbUrl;
+  final String? caption;
+
+  String get month => '${takenAt.toUtc().year}-${takenAt.toUtc().month.toString().padLeft(2, '0')}';
+
+  factory BookPhoto.fromJson(Map<String, dynamic> j, String Function(String) absolute) => BookPhoto(
+    id: j['id'] as String,
+    takenAt: DateTime.parse(j['takenAt'] as String),
+    commentCount: j['commentCount'] as int,
+    thumbUrl: absolute(j['thumbUrl'] as String),
+    caption: j['caption'] as String?,
+  );
+}
+
+/// Seitenschätzung des Servers.
+class BookPreview {
+  const BookPreview({required this.pageCount, required this.mediaCount, required this.maxPages});
+  final int pageCount;
+  final int mediaCount;
+  final int maxPages;
+
+  factory BookPreview.fromJson(Map<String, dynamic> j) => BookPreview(pageCount: j['pageCount'] as int, mediaCount: j['mediaCount'] as int, maxPages: j['maxPages'] as int);
+}
+
+/// Was der Assistent an den Server schickt (Anlegen und Seitenschätzung).
+class BookRequest {
+  const BookRequest({required this.months, required this.format, required this.textMode, required this.layout, this.excludeMediaIds = const [], this.title});
+  final List<String> months;
+  final BookFormat format;
+  final BookTextMode textMode;
+  final BookLayout layout;
+  final List<String> excludeMediaIds;
+  final String? title;
+
+  Map<String, dynamic> toJson() => {
+    'months': months,
+    'format': format.apiValue,
+    'textMode': textMode.apiValue,
+    'layout': layout.apiValue,
+    'excludeMediaIds': excludeMediaIds,
+    if (title != null && title!.trim().isNotEmpty) 'title': title!.trim(),
+  };
+
+  /// Schlüssel für die Seitenschätzung (der Titel ändert die Seitenzahl nicht)
+  String get previewKey => [months.join(','), format.apiValue, textMode.apiValue, layout.apiValue, (excludeMediaIds.toList()..sort()).join(',')].join('|');
 }

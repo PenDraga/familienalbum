@@ -1,8 +1,10 @@
 import 'package:familienalbum/features/admin/rights_editor.dart';
 import 'package:familienalbum/features/auth/auth_models.dart';
 import 'package:familienalbum/features/books/book_models.dart';
+import 'package:familienalbum/features/books/books_repository.dart';
 import 'package:familienalbum/features/books/create_book_dialog.dart';
 import 'package:familienalbum/l10n/l10n.dart';
+import 'package:familienalbum/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -99,38 +101,84 @@ void main() {
     expect(flagsToJson(changed!)['canCreateBooks'], isTrue);
   });
 
-  testWidgets('Dialog «Fotobuch erstellen» zeigt Monate, Formate und Textmodus', (tester) async {
+  testWidgets('Assistent: nur Jahre und Monate mit Fotos, Fotos abwählen, Anordnung mit Seitenschätzung', (tester) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final photos = [
+      for (var i = 0; i < 5; i++)
+        BookPhoto(id: 'p$i', takenAt: DateTime.utc(2026, i < 3 ? 4 : 3, 1 + i), commentCount: i == 1 ? 2 : 0, thumbUrl: ''),
+    ];
+    BookPreviewArgs? lastArgs;
     await tester.pumpWidget(
-      app(
-        Scaffold(
-          body: Consumer(
-            builder: (context, ref, _) => Center(
-              child: FilledButton(onPressed: () => showCreateBookDialog(context, ref, 'f1'), child: const Text('open')),
-            ),
-          ),
+      ProviderScope(
+        key: UniqueKey(),
+        overrides: [
+          bookMonthsProvider.overrideWith((ref, familyId) async => const [
+            BookMonth(month: '2026-04', count: 3),
+            BookMonth(month: '2026-03', count: 2),
+            BookMonth(month: '2025-12', count: 1),
+          ]),
+          bookPhotosProvider.overrideWith((ref, key) async => photos),
+          bookPreviewProvider.overrideWith((ref, args) async {
+            lastArgs = args;
+            final n = 5 - args.request.excludeMediaIds.length;
+            return BookPreview(pageCount: args.request.layout == BookLayout.single ? n + 3 : 4, mediaCount: n, maxPages: 200);
+          }),
+        ],
+        child: MaterialApp(
+          // App-Theme: gefüllte Knöpfe sind dort volle Breite (deckte einen Layoutfehler auf)
+          theme: AppTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('de', 'CH'),
+          home: const BookWizardScreen(familyId: 'f1'),
         ),
       ),
     );
-    await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    expect(find.text('Fotobuch erstellen'), findsOneWidget);
-    expect(find.byType(FilterChip), findsNWidgets(12));
-    expect(find.byType(ChoiceChip), findsNWidgets(6));
-    expect(find.text('21 × 21 cm'), findsOneWidget);
-    expect(find.text('A4 quer'), findsOneWidget);
-    expect(find.text('Bildunterschriften'), findsOneWidget);
-    expect(find.text('Mit Kommentaren'), findsOneWidget);
-    expect(find.text('Nur kommentierte Fotos'), findsOneWidget);
 
-    // Alle Monate abwählen → «Erstellen» gesperrt
-    for (var i = 0; i < 12; i++) {
-      if (tester.widget<FilterChip>(find.byType(FilterChip).at(i)).selected) {
-        await tester.tap(find.byType(FilterChip).at(i));
-        await tester.pump();
-      }
-    }
+    // Schritt 1: nur 2026 und 2025, im neusten Jahr nur April und März (beide vorgewählt)
+    expect(find.widgetWithText(ChoiceChip, '2026'), findsOneWidget);
+    expect(find.widgetWithText(ChoiceChip, '2025'), findsOneWidget);
+    expect(find.byType(ChoiceChip), findsNWidgets(2));
+    expect(find.byType(FilterChip), findsNWidgets(2));
+    expect(find.text('März · 2'), findsOneWidget);
+    expect(find.text('April · 3'), findsOneWidget);
+    expect(find.text('5 Fotos'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, '2025'));
     await tester.pumpAndSettle();
-    final create = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Erstellen'));
-    expect(create.onPressed, isNull);
+    expect(find.text('Dezember · 1'), findsOneWidget);
+    expect(find.byType(FilterChip), findsOneWidget);
+    await tester.tap(find.widgetWithText(ChoiceChip, '2026'));
+    await tester.pumpAndSettle();
+
+    // Schritt 2: Fotos abwählen
+    await tester.tap(find.text('Weiter'));
+    await tester.pumpAndSettle();
+    expect(find.text('5 von 5 Fotos im Buch'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('book-photo-p0')));
+    await tester.pumpAndSettle();
+    expect(find.text('4 von 5 Fotos im Buch'), findsOneWidget);
+    await tester.tap(find.text('Nur kommentierte'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 von 5 Fotos im Buch'), findsOneWidget);
+    await tester.tap(find.text('Alle'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('book-photo-p4')));
+    await tester.pumpAndSettle();
+
+    // Schritt 3: Anordnung wählen, Schätzung folgt
+    await tester.tap(find.text('Weiter'));
+    await tester.pumpAndSettle();
+    expect(find.text('Gemischt'), findsOneWidget);
+    expect(find.text('Ca. 4 Seiten · 4 Fotos'), findsOneWidget);
+    expect(lastArgs?.request.excludeMediaIds, ['p4']);
+    expect(lastArgs?.request.months, ['2026-03', '2026-04']);
+    await tester.tap(find.text('Ein Foto pro Seite'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ca. 7 Seiten · 4 Fotos'), findsOneWidget);
+    expect(lastArgs?.request.toJson()['layout'], 'SINGLE');
   });
 }

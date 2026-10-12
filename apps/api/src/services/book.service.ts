@@ -4,7 +4,7 @@ import { Errors } from '../lib/errors.js';
 import type { MediaQueue } from '../lib/queue.js';
 import type { UrlSigner } from '../lib/signed-url.js';
 import { MIME_EXTENSIONS, type MediaStorage } from '../lib/storage.js';
-import { countMedia, MAX_PAGES, monthKeyUtc, periodLabel, proposeBook, type BookFormat, type BookPage, type BookPhoto, type BookTextMode } from './book-layout.js';
+import { aspectOf, countMedia, MAX_PAGES, monthKeyUtc, periodLabel, proposeBook, type BookFormat, type BookLayout, type BookPage, type BookPhoto, type BookTextMode } from './book-layout.js';
 import { previewFileName, renderBook, type RenderEnv } from './book-render.js';
 import { iso, isoOrNull, toUserBrief, type UserBriefSource } from './dto.js';
 import { mediaPaths } from './media.service.js';
@@ -16,8 +16,10 @@ export interface CreateBookInput {
   title?: string;
   format: BookFormat;
   textMode: BookTextMode;
+  layout: BookLayout;
   months: string[];
   onlyCommented: boolean;
+  excludeMediaIds: string[];
 }
 
 export interface UpdateBookInput {
@@ -53,6 +55,7 @@ export class BookService {
       title: b.title,
       format: b.format,
       textMode: b.textMode,
+      layout: b.layout,
       months: b.months,
       onlyCommented: b.onlyCommented,
       status: b.status,
@@ -99,18 +102,63 @@ export class BookService {
     return b;
   }
 
-  /** Vorschlag berechnen und speichern; das Rendern läuft im Worker. */
-  async create(familyId: string, userId: string, input: CreateBookInput, lang: Lang) {
+  /** Seitenvorschlag berechnen, ohne zu speichern (Assistent: geschätzte Seitenzahl, Anlegen). */
+  async plan(familyId: string, input: CreateBookInput, lang: Lang) {
     const months = [...new Set(input.months)].sort();
     const family = await this.prisma.family.findUnique({ where: { id: familyId }, select: { name: true } });
     if (!family) throw Errors.notFound('Album nicht gefunden.', 'FAMILY_NOT_FOUND');
-
-    const photos = await this.loadPhotos(familyId, months, input.textMode, input.onlyCommented);
-    if (photos.length === 0) throw Errors.conflict('In diesem Zeitraum gibt es keine Fotos.', 'BOOK_EMPTY');
-
+    const excluded = new Set(input.excludeMediaIds);
+    const photos = (await this.loadPhotos(familyId, months, input.textMode, input.onlyCommented)).filter((p) => !excluded.has(p.mediaId));
     const subtitle = periodLabel(months, lang);
     const title = input.title ?? family.name;
-    const pages = proposeBook(photos, { title, subtitle, textMode: input.textMode, lang });
+    const pages = photos.length === 0 ? [] : proposeBook(photos, { title, subtitle, textMode: input.textMode, layout: input.layout, lang });
+    return { months, title, pages };
+  }
+
+  async preview(familyId: string, input: CreateBookInput, lang: Lang) {
+    const { pages } = await this.plan(familyId, input, lang);
+    return { pageCount: pages.length, mediaCount: countMedia(pages), maxPages: MAX_PAGES };
+  }
+
+  /** Monate mit fertigen Fotos, neueste zuerst. */
+  async months(familyId: string) {
+    const rows = await this.prisma.$queryRaw<Array<{ month: string; count: bigint }>>`
+      SELECT to_char("takenAt" AT TIME ZONE 'UTC', 'YYYY-MM') AS month, count(*) AS count
+      FROM "Media"
+      WHERE "familyId" = ${familyId} AND "deletedAt" IS NULL AND status = 'READY' AND type = 'PHOTO'
+      GROUP BY 1 ORDER BY 1 DESC`;
+    return rows.map((r) => ({ month: r.month, count: Number(r.count) }));
+  }
+
+  /** Fotos der Monate für den Assistenten, chronologisch, mit signiertem Thumbnail. */
+  async photos(familyId: string, months: string[]) {
+    const sorted = [...new Set(months)].sort();
+    const wanted = new Set(sorted);
+    const [fy, fm] = sorted[0]!.split('-').map(Number) as [number, number];
+    const [ly, lm] = sorted[sorted.length - 1]!.split('-').map(Number) as [number, number];
+    const rows = await this.prisma.media.findMany({
+      where: { familyId, deletedAt: null, status: 'READY', type: 'PHOTO', takenAt: { gte: new Date(Date.UTC(fy, fm - 1, 1)), lt: new Date(Date.UTC(ly, lm, 1)) } },
+      select: { id: true, takenAt: true, width: true, height: true, caption: true, _count: { select: { comments: true } } },
+      orderBy: [{ takenAt: 'asc' }, { id: 'asc' }],
+      take: 5000,
+    });
+    return rows
+      .filter((m) => wanted.has(monthKeyUtc(m.takenAt)))
+      .map((m) => ({
+        id: m.id,
+        takenAt: iso(m.takenAt),
+        width: m.width,
+        height: m.height,
+        caption: m.caption,
+        commentCount: m._count.comments,
+        thumbUrl: this.signer.sign(mediaPaths(m.id).thumb400, LINK_TTL),
+      }));
+  }
+
+  /** Vorschlag berechnen und speichern; das Rendern läuft im Worker. */
+  async create(familyId: string, userId: string, input: CreateBookInput, lang: Lang) {
+    const { months, title, pages } = await this.plan(familyId, input, lang);
+    if (pages.length === 0) throw Errors.conflict('In diesem Zeitraum gibt es keine Fotos.', 'BOOK_EMPTY');
     if (pages.length > MAX_PAGES) {
       throw Errors.conflict(`Das Buch hätte ${pages.length} Seiten, erlaubt sind ${MAX_PAGES}. Bitte weniger Monate wählen.`, 'BOOK_TOO_LARGE');
     }
@@ -122,6 +170,7 @@ export class BookService {
         title,
         format: input.format,
         textMode: input.textMode,
+        layout: input.layout,
         months,
         onlyCommented: input.onlyCommented,
         pages: pages as unknown as Prisma.InputJsonValue,
@@ -149,11 +198,17 @@ export class BookService {
     }
     if (input.pages !== undefined) {
       const ids = [...new Set(input.pages.flatMap(pageMediaIds))];
-      const found = await this.prisma.media.count({ where: { id: { in: ids }, familyId: book.familyId, deletedAt: null, status: 'READY', type: 'PHOTO' } });
-      if (found !== ids.length) throw Errors.badRequest('Mindestens ein Foto gehört nicht zu diesem Album.', 'BOOK_MEDIA_INVALID');
-      data.pages = input.pages as unknown as Prisma.InputJsonValue;
-      data.pageCount = input.pages.length;
-      data.mediaCount = countMedia(input.pages);
+      const found = await this.prisma.media.findMany({
+        where: { id: { in: ids }, familyId: book.familyId, deletedAt: null, status: 'READY', type: 'PHOTO' },
+        select: { id: true, width: true, height: true },
+      });
+      if (found.length !== ids.length) throw Errors.badRequest('Mindestens ein Foto gehört nicht zu diesem Album.', 'BOOK_MEDIA_INVALID');
+      // Seitenverhältnisse kommen immer aus den Fotodaten, nicht vom Client
+      const aspects = new Map(found.map((m) => [m.id, aspectOf(m)]));
+      const pages = input.pages.map((p) => (p.type === 'photos' ? { ...p, items: p.items.map((i) => ({ ...i, aspect: aspects.get(i.mediaId) })) } : p));
+      data.pages = pages as unknown as Prisma.InputJsonValue;
+      data.pageCount = pages.length;
+      data.mediaCount = countMedia(pages);
     }
     const updated = await this.prisma.photoBook.update({ where: { id: book.id }, data, include });
     await this.storage.removeQuietly(this.storage.bookDir(book.familyId, book.id));

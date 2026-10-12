@@ -265,10 +265,16 @@ Druckfertiges PDF statt Druckerei-API. Alle Mitglieder sehen Bücher und laden d
 
 - `GET /families/:id/books` – Liste (neueste zuerst), `PhotoBook` mit `status` (PROCESSING | READY | FAILED), `pageCount`,
   `mediaCount`, `canEdit` und signierten `urls.pdf` / `urls.cover` (7 Tage).
-- `POST /families/:id/books` `{ title?, format, textMode, months[], onlyCommented }` → 202 `PhotoBookDetail`.
+- Assistent (alle `canCreateBooks`): `GET /families/:id/books/months` – Monate mit fertigen Fotos `[{ month, count }]`;
+  `GET /families/:id/books/photos?months=JJJJ-MM,…` – Fotos zum Abwählen mit signiertem Thumbnail;
+  `POST /families/:id/books/preview` (Body wie beim Anlegen) – `{ pageCount, mediaCount, maxPages }`, ohne zu speichern.
+- `POST /families/:id/books` `{ title?, format, textMode, layout, months[], onlyCommented, excludeMediaIds[] }` → 202 `PhotoBookDetail`.
   `format`: `SQUARE_21` (21 × 21 cm), `A4_LANDSCAPE`, `SQUARE_30`; `textMode`: `NONE` | `CAPTIONS` | `COMMENTS`;
-  `months`: `JJJJ-MM` (1–36). Der Server berechnet den Layoutvorschlag sofort (Umschlag, Kapitel pro Monat, Vorlagen
-  `one`, `two`, `two_stacked`, `four`, `one_text`) und rendert PDF und Seitenvorschauen im Worker (`render-book`).
+  `layout`: `SINGLE` (ein Foto pro Seite, gerahmt), `MIXED` (Standard: 1–4 pro Seite, Fotos eines Tages bleiben
+  zusammen, ein ganzseitiges Highlight pro Monat), `COLLAGE` (bis 6); `months`: `JJJJ-MM` (1–36). Der Server
+  berechnet den Layoutvorschlag sofort (Umschlag, Kapitel pro Monat, Vorlagen `auto` = 1–6 Fotos in Reihen oder
+  Spalten nach ihrem Seitenverhältnis ohne Beschnitt, `one` = randabfallend, `one_text`; ältere Bücher auch `two`,
+  `two_stacked`, `four`) und rendert PDF und Seitenvorschauen im Worker (`render-book`).
   Fehler: `BOOK_EMPTY` (409), `BOOK_TOO_LARGE` (409, über 200 Seiten).
 - `GET /books/:id` – Detail mit `pages[]`: `{ index, page, previewUrl, thumbs[] }`; `page` ist die gespeicherte Seite
   (`cover` | `chapter` | `photos` mit `template`, `items[{ mediaId, caption, comments[] }]`, `hideText`).

@@ -24,6 +24,7 @@ import 'features/timeline/timeline_controller.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/timeline/timeline_screen.dart';
 import 'features/books/book_screen.dart';
+import 'features/books/create_book_dialog.dart';
 import 'features/books/books_repository.dart';
 import 'features/recaps/recap_screen.dart';
 import 'features/recaps/recaps_repository.dart';
@@ -92,6 +93,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(path: 'activity', builder: (_, _) => const ActivityScreen()),
           GoRoute(path: 'recaps/:id', builder: (_, state) => RecapScreen(recapId: state.pathParameters['id']!)),
+          GoRoute(path: 'books/new', builder: (_, state) => BookWizardScreen(familyId: state.uri.queryParameters['family'] ?? '')),
           GoRoute(path: 'books/:id', builder: (_, state) => BookScreen(bookId: state.pathParameters['id']!)),
           GoRoute(
             path: 'settings',

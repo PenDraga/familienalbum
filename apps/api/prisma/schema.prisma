@@ -49,6 +49,7 @@ model PhotoBook {
   title       String
   format      BookFormat
   textMode    BookTextMode
+  layout      BookLayout   @default(MIXED)
   months      String[] // JJJJ-MM, sortiert
   onlyCommented Boolean    @default(false)
   pages       Json
@@ -76,6 +77,13 @@ enum BookTextMode {
   NONE
   CAPTIONS
   COMMENTS
+}
+
+/// Anordnung: ein Foto pro Seite, gemischt (1–4), Collage (bis 6)
+enum BookLayout {
+  SINGLE
+  MIXED
+  COLLAGE
 }
 
 enum MediaStatus {

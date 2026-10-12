@@ -178,45 +178,117 @@
     }
   },
   "autoUploadWifiOnly": "Nur im WLAN",
-  "avatarPickFromLibrary": "Bild aus der Mediathek wählen",
   "avatarPickerTitle": "Profilbild wählen",
+  "avatarPickFromLibrary": "Bild aus der Mediathek wählen",
   "avatarReadFailed": "Bild konnte nicht gelesen werden.",
   "avatarRemove": "Profilbild entfernen",
   "avatarUploading": "Profilbild wird hochgeladen …",
+  "bookBack": "Zurück",
+  "bookCreatedBy": "Erstellt von {name}",
+  "@bookCreatedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "bookCreateHint": "Der Server schlägt die Seiten vor und rendert das PDF. Höchstens 200 Seiten; nur Fotos, keine Videos.",
   "bookCreateStarted": "«{title}» wird erstellt – {count} Seiten. Du bekommst eine Mitteilung, sobald das PDF fertig ist.",
-  "@bookCreateStarted": { "placeholders": { "title": { "type": "String" }, "count": { "type": "int" } } },
+  "@bookCreateStarted": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "bookCreateSubtitle": "Druckfertiges PDF",
   "bookCreateTitle": "Fotobuch erstellen",
-  "bookCreatedBy": "Erstellt von {name}",
-  "@bookCreatedBy": { "placeholders": { "name": { "type": "String" } } },
   "bookDeleteText": "Das PDF und die Seitenvorschau werden entfernt. Das Buch lässt sich jederzeit neu erstellen.",
   "bookDeleteTitle": "«{title}» löschen?",
-  "@bookDeleteTitle": { "placeholders": { "title": { "type": "String" } } },
+  "@bookDeleteTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "bookDownloadPdf": "PDF herunterladen",
+  "bookEstimate": "Ca. {pages} Seiten · {photos} Fotos",
+  "@bookEstimate": {
+    "placeholders": {
+      "pages": {
+        "type": "int"
+      },
+      "photos": {
+        "type": "int"
+      }
+    }
+  },
+  "bookEstimating": "Seiten werden berechnet …",
   "bookFailed": "Fehlgeschlagen",
   "bookFailedText": "Das PDF konnte nicht erstellt werden.",
   "bookFormat": "Format",
   "bookFormatA4": "A4 quer",
   "bookFormatSquare21": "21 × 21 cm",
   "bookFormatSquare30": "30 × 30 cm",
+  "bookLayout": "Anordnung",
+  "bookLayoutCollage": "Collage",
+  "bookLayoutCollageText": "Bis 6 Fotos pro Seite – kompakt, wenige Seiten.",
+  "bookLayoutMixed": "Gemischt",
+  "bookLayoutMixedText": "1–4 Fotos pro Seite, Fotos eines Tages bleiben zusammen, ein grosses Highlight pro Monat.",
+  "bookLayoutSingle": "Ein Foto pro Seite",
+  "bookLayoutSingleText": "Jedes Foto gross und gerahmt – klassisch, mehr Seiten.",
+  "bookMonths": "Monate",
+  "bookNext": "Weiter",
+  "bookNoPhotos": "In diesem Album gibt es noch keine Fotos für ein Buch.",
   "bookNotFound": "Fotobuch nicht gefunden.",
-  "bookOnlyCommented": "Nur kommentierte Fotos",
   "bookOrderHint": "Das PDF kann bei jedem Fotobuch-Anbieter mit PDF-Upload bestellt werden (3 mm Beschnitt, sRGB).",
   "bookPageChapter": "Kapitel",
   "bookPageCover": "Umschlag",
   "bookPages": "{count, plural, =1{1 Seite} other{{count} Seiten}}",
-  "@bookPages": { "placeholders": { "count": { "type": "int" } } },
+  "@bookPages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "bookPeriod": "Zeitraum",
   "bookPhotos": "{count, plural, =1{1 Foto} other{{count} Fotos}}",
-  "@bookPhotos": { "placeholders": { "count": { "type": "int" } } },
+  "@bookPhotos": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookPhotosHint": "Tippe auf ein Foto, um es aus dem Buch zu nehmen. Die Sprechblase zeigt Fotos mit Kommentaren.",
   "bookRenameTitle": "Titel ändern",
   "bookRendering": "Wird erstellt …",
   "bookRenderingHint": "Je nach Anzahl Fotos dauert das ein paar Minuten. Du bekommst eine Mitteilung.",
   "bookRenderingText": "Das PDF wird gerade erstellt …",
   "bookRerender": "Nochmals rendern",
   "bookRerendering": "Das Buch wird neu gerendert …",
+  "bookSelectAll": "Alle",
+  "bookSelectCommented": "Nur kommentierte",
+  "bookSelectedCount": "{selected} von {total} Fotos im Buch",
+  "@bookSelectedCount": {
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "bookSharePdf": "PDF teilen oder sichern",
+  "bookStepDesign": "Gestaltung",
+  "bookStepPeriod": "Zeitraum",
+  "bookStepPhotos": "Fotos",
   "bookTextCaptions": "Bildunterschriften",
   "bookTextComments": "Mit Kommentaren",
   "bookTextNone": "Keine",
@@ -224,6 +296,15 @@
   "bookTitle": "Fotobuch",
   "bookTitleHint": "Albumname",
   "bookTitleLabel": "Titel (optional)",
+  "bookTooLarge": "Mehr als {max} Seiten – bitte weniger Monate oder eine kompaktere Anordnung wählen.",
+  "@bookTooLarge": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "bookYear": "Jahr",
   "collectionsItemCount": "{count, plural, =1{1 Foto} other{{count} Medien}}",
   "@collectionsItemCount": {
     "placeholders": {
@@ -457,6 +538,7 @@
     }
   },
   "lastSeenYesterday": "Gestern",
+  "loginForgotPassword": "Passwort vergessen?",
   "loginHaveInviteCode": "Ich habe einen Einladungscode",
   "loginServerShown": "Server: {host}",
   "@loginServerShown": {
@@ -501,7 +583,6 @@
     }
   },
   "mediaDeleteTitle": "Löschen?",
-  "mediaDownloadFile": "Als Datei herunterladen",
   "mediaDownloaded": "„{name}“ heruntergeladen",
   "@mediaDownloaded": {
     "placeholders": {
@@ -510,6 +591,7 @@
       }
     }
   },
+  "mediaDownloadFile": "Als Datei herunterladen",
   "mediaEditCaption": "Beschreibung bearbeiten",
   "mediaEditDateTime": "Datum und Uhrzeit ändern",
   "mediaInfo": "Info",
@@ -574,8 +656,8 @@
   "mediaPause": "Pause",
   "mediaPlay": "Abspielen",
   "mediaPrevious": "Vorheriges",
-  "mediaSaveToPhotos": "In Fotos sichern",
   "mediaSavedToPhotos": "In Fotos gesichert",
+  "mediaSaveToPhotos": "In Fotos sichern",
   "mediaShare": "Teilen …",
   "mediaSkipBack": "10 s zurück",
   "mediaSkipForward": "10 s vor",
@@ -734,6 +816,16 @@
   "renameAlbumNameLabel": "Name des Albums",
   "renameAlbumNameRequired": "Bitte einen Namen eingeben",
   "renameAlbumTitle": "Album umbenennen",
+  "resetBackToLogin": "Zur Anmeldung",
+  "resetDone": "Dein Passwort ist gesetzt. Du kannst dich jetzt anmelden – andere Geräte müssen sich neu anmelden.",
+  "resetLinkInvalid": "Dieser Link ist unvollständig oder abgelaufen. Bitte fordere im Login einen neuen an.",
+  "resetRequestBody": "Wir schicken dir einen Link an deine E-Mail-Adresse. Damit kannst du ein neues Passwort setzen.",
+  "resetRequestSend": "Link senden",
+  "resetRequestSent": "Falls die Adresse bekannt ist, ist der Link unterwegs. Bitte auch den Spam-Ordner prüfen.",
+  "resetRequestTitle": "Passwort zurücksetzen",
+  "resetSubmit": "Passwort setzen",
+  "resetSubtitle": "Wähle ein neues Passwort für dein Konto.",
+  "resetTitle": "Neues Passwort",
   "rightsAlbumAdmin": "Album-Admin",
   "rightsAlbumAdminSubtitle": "Verwaltet Mitglieder und Einladungen",
   "rightsComment": "Kommentieren",
@@ -799,11 +891,11 @@
   "settingsRedeemInvite": "Einladungscode einlösen",
   "settingsSectionAppearance": "Darstellung",
   "settingsSectionAutoUpload": "Automatischer Upload",
+  "settingsSectionBooks": "Fotobuch",
   "settingsSectionConnection": "Verbindung",
   "settingsSectionExport": "Export",
   "settingsSectionLastSeen": "Zuletzt im Album",
   "settingsSectionManagement": "Verwaltung",
-  "settingsSectionBooks": "Fotobuch",
   "settingsSectionRecaps": "Rückblicke",
   "settingsSectionStorage": "Speicherplatz",
   "settingsServerUrlLabel": "Server-URL",
@@ -1104,16 +1196,16 @@
       }
     }
   },
-  "usersDeleteTitle": "{name} löschen?",
-  "@usersDeleteTitle": {
+  "usersDeleted": "Konto von {name} gelöscht",
+  "@usersDeleted": {
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "usersDeleted": "Konto von {name} gelöscht",
-  "@usersDeleted": {
+  "usersDeleteTitle": "{name} löschen?",
+  "@usersDeleteTitle": {
     "placeholders": {
       "name": {
         "type": "String"
@@ -1148,16 +1240,5 @@
       }
     }
   },
-  "usersTitle": "Benutzer",
-  "loginForgotPassword": "Passwort vergessen?",
-  "resetRequestTitle": "Passwort zurücksetzen",
-  "resetRequestBody": "Wir schicken dir einen Link an deine E-Mail-Adresse. Damit kannst du ein neues Passwort setzen.",
-  "resetRequestSend": "Link senden",
-  "resetRequestSent": "Falls die Adresse bekannt ist, ist der Link unterwegs. Bitte auch den Spam-Ordner prüfen.",
-  "resetTitle": "Neues Passwort",
-  "resetSubtitle": "Wähle ein neues Passwort für dein Konto.",
-  "resetSubmit": "Passwort setzen",
-  "resetDone": "Dein Passwort ist gesetzt. Du kannst dich jetzt anmelden – andere Geräte müssen sich neu anmelden.",
-  "resetLinkInvalid": "Dieser Link ist unvollständig oder abgelaufen. Bitte fordere im Login einen neuen an.",
-  "resetBackToLogin": "Zur Anmeldung"
+  "usersTitle": "Benutzer"
 }

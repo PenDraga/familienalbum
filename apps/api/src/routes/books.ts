@@ -5,7 +5,7 @@ import { Errors } from '../lib/errors.js';
 import { requestLanguage } from '../lib/messages.en.js';
 import { sendFile } from '../lib/send-file.js';
 import { requireFamilyPermission } from '../plugins/permissions.js';
-import { bookDetailSchema, bookPageParamsSchema, bookSchema, createBookBodySchema, updateBookBodySchema } from '../schemas/book.js';
+import { bookDetailSchema, bookMonthsSchema, bookPageParamsSchema, bookPhotosQuerySchema, bookPhotosSchema, bookPreviewSchema, bookSchema, createBookBodySchema, updateBookBodySchema } from '../schemas/book.js';
 import { emptyResponse, errorResponses, idParamsSchema } from '../schemas/common.js';
 import { BookService } from '../services/book.service.js';
 
@@ -46,6 +46,47 @@ export const bookRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: { tags: ['books'], summary: 'Fotobücher des Albums (neueste zuerst)', security: bearer, params: idParamsSchema, response: { 200: z.array(bookSchema), ...errorResponses(401, 403, 404) } },
     },
     async (request) => books.list(request.params.id, request.membership!),
+  );
+
+  app.get(
+    '/families/:id/books/months',
+    {
+      preHandler: requireFamilyPermission('canCreateBooks'),
+      schema: { tags: ['books'], summary: 'Monate mit Fotos (Assistent, canCreateBooks)', security: bearer, params: idParamsSchema, response: { 200: bookMonthsSchema, ...errorResponses(401, 403, 404) } },
+    },
+    async (request) => books.months(request.params.id),
+  );
+
+  app.get(
+    '/families/:id/books/photos',
+    {
+      preHandler: requireFamilyPermission('canCreateBooks'),
+      schema: {
+        tags: ['books'],
+        summary: 'Fotos der gewählten Monate zum Abwählen (Assistent, canCreateBooks)',
+        security: bearer,
+        params: idParamsSchema,
+        querystring: bookPhotosQuerySchema,
+        response: { 200: bookPhotosSchema, ...errorResponses(400, 401, 403, 404) },
+      },
+    },
+    async (request) => books.photos(request.params.id, request.query.months),
+  );
+
+  app.post(
+    '/families/:id/books/preview',
+    {
+      preHandler: requireFamilyPermission('canCreateBooks'),
+      schema: {
+        tags: ['books'],
+        summary: 'Seitenzahl schätzen, ohne zu speichern (Assistent, canCreateBooks)',
+        security: bearer,
+        params: idParamsSchema,
+        body: createBookBodySchema,
+        response: { 200: bookPreviewSchema, ...errorResponses(400, 401, 403, 404) },
+      },
+    },
+    async (request) => books.preview(request.params.id, request.body, requestLanguage(request.headers['accept-language'])),
   );
 
   app.post(

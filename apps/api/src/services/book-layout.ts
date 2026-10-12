@@ -7,7 +7,13 @@
 
 export type BookFormat = 'SQUARE_21' | 'A4_LANDSCAPE' | 'SQUARE_30';
 export type BookTextMode = 'NONE' | 'CAPTIONS' | 'COMMENTS';
-export type PageTemplate = 'one' | 'two' | 'two_stacked' | 'four' | 'one_text';
+/** Anordnung: ein Foto pro Seite, gemischt (1–4, Tage zusammen, ein Highlight pro Monat), Collage (bis 6). */
+export type BookLayout = 'SINGLE' | 'MIXED' | 'COLLAGE';
+/**
+ * `auto`: 1–6 Fotos in Reihen nach ihrem Seitenverhältnis (ohne Beschnitt), zentriert im Satzspiegel.
+ * Die festen Vorlagen `two`, `two_stacked`, `four` stammen aus der ersten Version und bleiben für ältere Bücher.
+ */
+export type PageTemplate = 'one' | 'two' | 'two_stacked' | 'four' | 'one_text' | 'auto';
 
 /** Masse in mm. `w`/`h` = Endformat; dazu kommt rundum `bleed`. */
 export interface FormatSpec {
@@ -27,6 +33,10 @@ export const FORMATS: Record<BookFormat, FormatSpec> = {
 export const MAX_PAGES = 200;
 /** Höchstens so viele Kommentare pro Foto im Buch */
 export const MAX_COMMENTS = 6;
+/** Höchstens so viele Fotos auf einer `auto`-Seite */
+export const MAX_PER_PAGE: Record<BookLayout, number> = { SINGLE: 1, MIXED: 4, COLLAGE: 6 };
+/** Seitenverhältnis, wenn die Masse fehlen (übliches Querformat) */
+const DEFAULT_ASPECT = 1.5;
 
 export interface BookComment {
   author: string;
@@ -46,6 +56,8 @@ export interface PageItem {
   mediaId: string;
   caption: string | null;
   comments: BookComment[];
+  /** Breite / Höhe (nach EXIF-Drehung); für `auto`-Seiten */
+  aspect?: number;
 }
 
 export type BookPage =
@@ -103,24 +115,25 @@ export interface ProposeOptions {
   title: string;
   subtitle: string;
   textMode: BookTextMode;
+  layout: BookLayout;
   lang: Lang;
 }
 
-/** Fotoseiten-Vorschlag. Fotos werden nach Aufnahmedatum sortiert, pro Monat ein Kapitel, pro Tag gruppiert. */
+/**
+ * Seitenvorschlag. Fotos werden nach Aufnahmedatum sortiert, pro Monat ein Kapitel. Fotos mit Text bekommen
+ * «Bild mit Text», die übrigen werden je nach Anordnung auf `auto`-Seiten verteilt.
+ */
 export function proposeBook(photos: BookPhoto[], opts: ProposeOptions): BookPage[] {
   const sorted = [...photos].sort((a, b) => a.takenAt.getTime() - b.takenAt.getTime() || a.mediaId.localeCompare(b.mediaId));
   const pages: BookPage[] = [];
   const cover = pickCover(sorted);
   pages.push({ type: 'cover', mediaId: cover?.mediaId ?? null, title: opts.title, subtitle: opts.subtitle });
 
-  const byMonth = groupBy(sorted, (p) => monthKeyUtc(p.takenAt));
-  for (const [month, inMonth] of byMonth) {
+  for (const [month, inMonth] of groupBy(sorted, (p) => monthKeyUtc(p.takenAt))) {
     const n = inMonth.length;
     const subtitle = opts.lang === 'en' ? `${n} ${n === 1 ? 'photo' : 'photos'}` : `${n} ${n === 1 ? 'Foto' : 'Fotos'}`;
     pages.push({ type: 'chapter', title: monthLabel(month, opts.lang), subtitle });
-    for (const [, inDay] of groupBy(inMonth, (p) => dayKeyUtc(p.takenAt))) {
-      pages.push(...layoutDay(inDay, opts.textMode));
-    }
+    pages.push(...layoutMonth(inMonth, opts.textMode, opts.layout, cover?.mediaId ?? null));
   }
   return pages;
 }
@@ -150,10 +163,15 @@ function groupBy<T>(items: T[], key: (t: T) => string): Array<[string, T[]]> {
   return out;
 }
 
+export function aspectOf(p: Pick<BookPhoto, 'width' | 'height'>): number {
+  return p.width && p.height ? Math.round((p.width / p.height) * 1000) / 1000 : DEFAULT_ASPECT;
+}
+
 function toItem(p: BookPhoto, textMode: BookTextMode): PageItem {
-  if (textMode === 'NONE') return { mediaId: p.mediaId, caption: null, comments: [] };
+  const base = { mediaId: p.mediaId, aspect: aspectOf(p) };
+  if (textMode === 'NONE') return { ...base, caption: null, comments: [] };
   return {
-    mediaId: p.mediaId,
+    ...base,
     caption: p.caption?.trim() || null,
     comments: textMode === 'COMMENTS' ? p.comments.slice(0, MAX_COMMENTS).map((c) => ({ author: c.author, body: c.body.trim() })) : [],
   };
@@ -163,58 +181,103 @@ function hasText(item: PageItem): boolean {
   return !!item.caption || item.comments.length > 0;
 }
 
-/**
- * Vorlagen pro Tag: Fotos mit Text bekommen «Bild mit Text»; Hochformate werden gepaart; jedes dritte
- * Querformat bekommt die ganze Seite, die anderen werden übereinander gestellt; sonst Vierer-Raster.
- */
-function layoutDay(photos: BookPhoto[], textMode: BookTextMode): BookPage[] {
-  const queue = photos.map((p) => ({ item: toItem(p, textMode), portrait: isPortrait(p) }));
+type Entry = { photo: BookPhoto; item: PageItem };
+
+/** Ein Monat: Textfotos einzeln, dazwischen Läufe ohne Text; bei «Gemischt» ein ganzseitiges Highlight. */
+function layoutMonth(photos: BookPhoto[], textMode: BookTextMode, layout: BookLayout, coverId: string | null): BookPage[] {
+  const entries: Entry[] = photos.map((photo) => ({ photo, item: toItem(photo, textMode) }));
+  let heroId: string | null = null;
+  if (layout === 'MIXED') {
+    const plain = entries.filter((e) => !hasText(e.item)).map((e) => e.photo);
+    // nicht dasselbe Foto wie auf dem Umschlag
+    if (plain.length >= 6) heroId = pickHero(plain.filter((p) => p.mediaId !== coverId))?.mediaId ?? null;
+  }
+
   const pages: BookPage[] = [];
-  let landscapeTurn = 0;
-
-  const takeIndex = (i: number) => queue.splice(i, 1)[0]!;
-  const findNext = (pred: (q: (typeof queue)[number]) => boolean) => queue.findIndex((q) => pred(q) && !hasText(q.item));
-
-  while (queue.length > 0) {
-    const first = takeIndex(0);
-    if (hasText(first.item)) {
-      pages.push({ type: 'photos', template: 'one_text', items: [first.item] });
-      continue;
+  const takenAt = new Map(entries.map((e) => [e.photo.mediaId, e.photo.takenAt.getTime()]));
+  let run: Entry[] = [];
+  let hero: Entry | null = null;
+  const flush = () => {
+    const packed = packRun(run, layout);
+    if (hero) {
+      // Das Highlight kommt an die Seitengrenze, an der es zeitlich hingehört – so bleiben Tage beisammen
+      const t = hero.photo.takenAt.getTime();
+      const at = packed.findIndex((p) => p.type === 'photos' && takenAt.get(p.items[0]!.mediaId)! > t);
+      // Querformat randabfallend, Hochformat gerahmt (sonst würde zu viel abgeschnitten)
+      const page: BookPage = { type: 'photos', template: isPortrait(hero.photo) ? 'auto' : 'one', items: [hero.item] };
+      packed.splice(at < 0 ? packed.length : at, 0, page);
+      hero = null;
     }
-    if (first.portrait) {
-      const j = findNext((q) => q.portrait);
-      if (j >= 0) {
-        pages.push({ type: 'photos', template: 'two', items: [first.item, takeIndex(j).item] });
-        continue;
-      }
+    pages.push(...packed);
+    run = [];
+  };
+  for (const e of entries) {
+    if (hasText(e.item)) {
+      flush();
+      pages.push({ type: 'photos', template: 'one_text', items: [e.item] });
+    } else if (e.photo.mediaId === heroId) {
+      hero = e;
     } else {
-      const full = landscapeTurn++ % 3 === 0;
-      if (!full) {
-        const j = findNext((q) => !q.portrait);
-        if (j >= 0) {
-          pages.push({ type: 'photos', template: 'two_stacked', items: [first.item, takeIndex(j).item] });
-          continue;
-        }
-      } else {
-        pages.push({ type: 'photos', template: 'one', items: [first.item] });
-        continue;
-      }
-    }
-    // Rest: drei weitere ohne Text → Vierer-Raster, sonst allein
-    const others: PageItem[] = [];
-    for (let k = 0; k < 3; k++) {
-      const j = findNext(() => true);
-      if (j < 0) break;
-      others.push(takeIndex(j).item);
-    }
-    if (others.length === 3) pages.push({ type: 'photos', template: 'four', items: [first.item, ...others] });
-    else {
-      pages.push({ type: 'photos', template: 'one', items: [first.item] });
-      // zu wenig für ein Raster: die herausgenommenen wieder nach vorn
-      queue.unshift(...others.map((item) => ({ item, portrait: false })));
+      run.push(e);
     }
   }
+  flush();
   return pages;
+}
+
+/** Highlight: meistkommentiert, sonst das Querformat nächst der Monatsmitte (gibt einen ruhigen Rhythmus). */
+function pickHero(photos: BookPhoto[]): BookPhoto | undefined {
+  const top = photos.reduce<BookPhoto | undefined>((best, p) => (!best || p.comments.length > best.comments.length ? p : best), undefined);
+  if (top && top.comments.length > 0) return top;
+  const mid = Math.floor(photos.length / 2);
+  const byDistance = photos.map((p, i) => ({ p, d: Math.abs(i - mid) })).sort((x, y) => x.d - y.d);
+  return byDistance.find((x) => !isPortrait(x.p))?.p ?? photos[mid];
+}
+
+/**
+ * Lauf ohne Text auf Seiten verteilen. Fotos eines Tages bleiben zusammen; aufeinanderfolgende Tage werden
+ * zusammengelegt, solange sie auf eine Seite passen. Zu grosse Tage werden gleichmässig geteilt.
+ */
+function packRun(run: Entry[], layout: BookLayout): BookPage[] {
+  const max = MAX_PER_PAGE[layout];
+  if (run.length === 0) return [];
+  if (max === 1) return run.map((e) => ({ type: 'photos', template: 'auto', items: [e.item] }));
+  // Beim Zusammenlegen verschiedener Tage etwas luftiger als das Maximum
+  const mergeLimit = layout === 'MIXED' ? 3 : max;
+  const chunks: Entry[][] = [];
+  let current: Entry[] = [];
+  for (const [, day] of groupBy(run, (e) => dayKeyUtc(e.photo.takenAt))) {
+    if (day.length > max) {
+      if (current.length) chunks.push(current);
+      current = [];
+      chunks.push(...balanced(day, max));
+      continue;
+    }
+    // Ein einzelnes Foto darf bis zum Maximum aufgefüllt werden, sonst bleibt es allein auf der Seite
+    const limit = current.length === 1 ? max : mergeLimit;
+    if (current.length > 0 && current.length + day.length > limit) {
+      chunks.push(current);
+      current = [];
+    }
+    current.push(...day);
+  }
+  if (current.length) chunks.push(current);
+  return chunks.map((c) => ({ type: 'photos', template: 'auto', items: c.map((e) => e.item) }));
+}
+
+/** n Elemente auf möglichst gleich volle Seiten mit höchstens `max` verteilen. */
+function balanced<T>(items: T[], max: number): T[][] {
+  const count = Math.ceil(items.length / max);
+  const base = Math.floor(items.length / count);
+  const extra = items.length % count;
+  const out: T[][] = [];
+  let i = 0;
+  for (let k = 0; k < count; k++) {
+    const size = base + (k < extra ? 1 : 0);
+    out.push(items.slice(i, i + size));
+    i += size;
+  }
+  return out;
 }
 
 // ---------- Rechtecke ----------
@@ -223,13 +286,13 @@ export function pageSize(spec: FormatSpec): { w: number; h: number } {
   return { w: spec.w + 2 * spec.bleed, h: spec.h + 2 * spec.bleed };
 }
 
-function inner(spec: FormatSpec): Rect {
+export function inner(spec: FormatSpec): Rect {
   const off = spec.bleed + spec.margin;
   return { x: off, y: off, w: spec.w - 2 * spec.margin, h: spec.h - 2 * spec.margin };
 }
 
 /** Bildrechtecke für eine Fotoseite; `fit` sagt dem Renderer, ob das Bild füllt (beschnitten) oder passt. */
-export function photoRects(spec: FormatSpec, template: PageTemplate, count: number): Array<Rect & { fit: 'cover' | 'contain' }> {
+export function photoRects(spec: FormatSpec, template: PageTemplate, count: number, aspects: number[] = []): Array<Rect & { fit: 'cover' | 'contain' }> {
   const full = pageSize(spec);
   const box = inner(spec);
   const g = spec.gutter;
@@ -258,7 +321,79 @@ export function photoRects(spec: FormatSpec, template: PageTemplate, count: numb
     }
     case 'one_text':
       return [{ x: box.x, y: box.y, w: box.w, h: box.h * 0.7, fit: 'contain' }];
+    case 'auto': {
+      const a = Array.from({ length: count }, (_, i) => aspects[i] ?? DEFAULT_ASPECT);
+      return justifiedRects(box, a, g).map((r) => ({ ...r, fit: 'cover' as const }));
+    }
   }
+}
+
+/** Alle Aufteilungen von n Fotos in 1–3 Reihen mit je 1–3 Fotos (Reihenfolge bleibt). */
+function rowSplits(n: number): number[][] {
+  const out: number[][] = [];
+  const walk = (left: number, acc: number[]) => {
+    if (left === 0) {
+      out.push(acc);
+      return;
+    }
+    if (acc.length === 3) return;
+    for (let k = 1; k <= Math.min(3, left); k++) walk(left - k, [...acc, k]);
+  };
+  walk(n, []);
+  return out;
+}
+
+/**
+ * Fotos in Reihen oder Spalten setzen (wie Google Fotos): jede Reihe füllt die Breite bzw. jede Spalte die
+ * Höhe, die andere Kante folgt aus den Seitenverhältnissen, nichts wird beschnitten. Ist der Block zu gross,
+ * wird er verkleinert und zentriert. Gewählt wird die Aufteilung, die die meiste Fläche füllt, ohne dass ein
+ * Foto neben den anderen winzig wird; bei Gleichstand gewinnt die erste (Reihen vor Spalten, wenige vor vielen).
+ */
+export function justifiedRects(box: Rect, aspects: number[], gutter: number): Rect[] {
+  if (aspects.length === 0) return [];
+  const rows = bestRows(box, aspects, gutter);
+  // Spalten = Reihen auf der gespiegelten Seite
+  const flipped = bestRows({ x: box.y, y: box.x, w: box.h, h: box.w }, aspects.map((a) => 1 / a), gutter);
+  const cols = { fill: flipped.fill, rects: flipped.rects.map((r) => ({ x: r.y, y: r.x, w: r.h, h: r.w })) };
+  return cols.fill > rows.fill + 0.02 ? cols.rects : rows.rects;
+}
+
+function bestRows(box: Rect, aspects: number[], gutter: number): { rects: Rect[]; fill: number } {
+  const n = aspects.length;
+  let best: { rects: Rect[]; fill: number } | null = null;
+  for (const split of rowSplits(n)) {
+    let i = 0;
+    const rows = split.map((m) => {
+      const a = aspects.slice(i, i + m);
+      i += m;
+      const sum = a.reduce((x, y) => x + y, 0);
+      return { a, h: (box.w - gutter * (m - 1)) / sum };
+    });
+    const gaps = gutter * (rows.length - 1);
+    const natural = rows.reduce((x, r) => x + r.h, 0);
+    const scale = natural + gaps > box.h ? (box.h - gaps) / natural : 1;
+    const totalH = natural * scale + gaps;
+    let y = box.y + (box.h - totalH) / 2;
+    const rects: Rect[] = [];
+    let area = 0;
+    for (const r of rows) {
+      const h = r.h * scale;
+      const widths = r.a.map((x) => x * h);
+      const rowW = widths.reduce((x, w) => x + w, 0) + gutter * (r.a.length - 1);
+      let x = box.x + (box.w - rowW) / 2;
+      for (const w of widths) {
+        rects.push({ x, y, w, h });
+        area += w * h;
+        x += w + gutter;
+      }
+      y += h + gutter;
+    }
+    // Sehr ungleiche Grössen bestrafen (ein Briefmarken-Foto neben einem grossen)
+    const sizes = rects.map((r) => r.w * r.h);
+    const fill = area / (box.w * box.h) - (Math.min(...sizes) / Math.max(...sizes) < 0.2 ? 0.25 : 0);
+    if (!best || fill > best.fill + 1e-6) best = { rects, fill };
+  }
+  return best!;
 }
 
 /** Textfeld unter dem Bild (nur «Bild mit Text»). */
