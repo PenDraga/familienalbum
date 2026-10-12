@@ -1,3 +1,4 @@
+import type { PasswordResetService } from '../services/password-reset.service.js';
 import type { FamilyMember, Media, PrismaClient } from '@prisma/client';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { AppConfig } from '../config/env.js';
@@ -22,6 +23,7 @@ declare module 'fastify' {
     signer: UrlSigner;
     mediaQueue: MediaQueue;
     notifications: NotificationService;
+    passwordReset: PasswordResetService;
     /** preHandler: verlangt gültiges Access-Token, setzt request.user */
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     /** preHandler: verlangt globalen Admin */

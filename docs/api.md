@@ -31,6 +31,12 @@ Alle Fehler sind RFC 7807 Problem-JSON (`Content-Type: application/problem+json`
   (`REFRESH_REUSED`).
 - `POST /auth/logout` `{ refreshToken }` oder mit Access-Token `{ all: true }`
 - Gesperrte Benutzer (`isDisabled`) werden bei jedem Request geprüft, nicht nur beim Login.
+- **Passwort vergessen** (nur wenn SMTP und `PUBLIC_URL` konfiguriert sind, sichtbar in `GET /health` → `features.passwordReset`):
+  `POST /auth/password-reset` `{ email }` antwortet immer 204 (keine Rückschlüsse auf Konten) und schickt bekannten,
+  nicht gesperrten Adressen einen Link `PUBLIC_URL/reset?token=…` (zufällig, 32 Byte; nur der SHA-256-Hash in
+  `PasswordResetToken`, Gültigkeit `PASSWORD_RESET_TTL_MINUTES`, Standard 30, ein neuer Link entwertet ältere).
+  `POST /auth/password-reset/confirm` `{ token, password }` setzt das Passwort, verbraucht das Token und beendet alle
+  Sitzungen. Fehler: `RESET_TOKEN_INVALID` (400), `PASSWORD_RESET_DISABLED` (503). Rate-Limit 5 bzw. 10 pro 15 Minuten.
 
 Es gibt **keine offene Registrierung**. Konten entstehen durch einen globalen Admin
 (`POST /admin/users`) oder über eine Einladung (siehe unten).

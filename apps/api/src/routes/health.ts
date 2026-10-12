@@ -9,7 +9,13 @@ export const healthRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ['system'],
         summary: 'Liveness/Readiness',
         response: {
-          200: z.object({ status: z.literal('ok'), database: z.enum(['up', 'down']), time: z.iso.datetime() }),
+          200: z.object({
+            status: z.literal('ok'),
+            database: z.enum(['up', 'down']),
+            time: z.iso.datetime(),
+            /** Was dieser Server anbietet (z.B. Passwort-Reset per Mail) */
+            features: z.object({ passwordReset: z.boolean() }),
+          }),
         },
       },
     },
@@ -20,7 +26,7 @@ export const healthRoutes: FastifyPluginAsyncZod = async (app) => {
       } catch {
         database = 'down';
       }
-      return { status: 'ok' as const, database, time: new Date().toISOString() };
+      return { status: 'ok' as const, database, time: new Date().toISOString(), features: { passwordReset: app.passwordReset.enabled } };
     },
   );
 
@@ -35,6 +41,8 @@ export const healthRoutes: FastifyPluginAsyncZod = async (app) => {
             name: z.literal('Familienalbum'),
             version: z.string(),
             operator: z.object({ name: z.string().nullable(), email: z.string().nullable() }),
+            /** Was dieser Server anbietet, z.B. Passwort-Reset per Mail */
+            features: z.object({ passwordReset: z.boolean() }),
           }),
         },
       },
@@ -43,6 +51,7 @@ export const healthRoutes: FastifyPluginAsyncZod = async (app) => {
       name: 'Familienalbum' as const,
       version: app.config.version,
       operator: { name: app.config.operatorName ?? null, email: app.config.operatorEmail ?? null },
+      features: { passwordReset: app.passwordReset.enabled },
     }),
   );
 };

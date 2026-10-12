@@ -61,6 +61,7 @@ model User {
   memberships   FamilyMember[]
   refreshTokens RefreshToken[]
   devices       Device[]
+  passwordResets PasswordResetToken[]
   uploads       Media[]        @relation("UploaderMedia")
   comments      Comment[]
   invites       Invite[]       @relation("InviteCreator")
@@ -199,6 +200,19 @@ model Device {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   lastError String?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Passwort-Reset per E-Mail-Link: nur der SHA-256-Hash des Tokens liegt in der DB, einmalig nutzbar.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  usedAt    DateTime?
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])

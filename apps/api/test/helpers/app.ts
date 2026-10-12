@@ -11,6 +11,7 @@ import { hashPassword } from '../../src/lib/password.js';
 import { createPrismaClient } from '../../src/lib/prisma.js';
 import { RecordingMediaQueue } from '../../src/lib/queue.js';
 import { MediaProcessor } from '../../src/services/media-processor.js';
+import { RecordingMailer } from '../../src/services/mail.service.js';
 import { RecordingPushSender } from '../../src/services/push.js';
 
 export const TEST_CHUNK_SIZE = 16384;
@@ -29,6 +30,9 @@ export const testConfig: AppConfig = {
   notifyDigestSeconds: 0,
   rateLimit: false,
   version: "test",
+  publicUrl: '',
+  smtp: null,
+  passwordResetTtlMinutes: 30,
 };
 
 export const DEFAULT_PASSWORD = 'Passw0rd!geheim';
@@ -55,6 +59,7 @@ export class TestContext {
     public readonly queue: RecordingMediaQueue,
     public readonly processor: MediaProcessor,
     public readonly push: RecordingPushSender,
+    public readonly mail: RecordingMailer,
   ) {}
 
   static async create(extend?: (app: FastifyInstance) => Promise<void> | void): Promise<TestContext> {
@@ -62,13 +67,14 @@ export class TestContext {
     const mediaRoot = await mkdtemp(join(tmpdir(), 'familienalbum-test-'));
     const queue = new RecordingMediaQueue();
     const push = new RecordingPushSender();
-    const config = { ...testConfig, mediaRoot };
-    const app = await buildApp({ prisma, config, mediaQueue: queue, pushSender: push, logger: false });
+    const mail = new RecordingMailer();
+    const config = { ...testConfig, mediaRoot, publicUrl: 'https://album.test' };
+    const app = await buildApp({ prisma, config, mediaQueue: queue, pushSender: push, mailer: mail, logger: false });
     if (extend) await extend(app);
     await app.ready();
     // Wie im Worker: fertige Medien lösen den Push-Digest aus
     const processor = new MediaProcessor(prisma, app.storage, { onReady: (m) => queue.enqueueNotifyMedia(m.familyId, m.uploaderId) });
-    return new TestContext(app, prisma, mediaRoot, queue, processor, push);
+    return new TestContext(app, prisma, mediaRoot, queue, processor, push, mail);
   }
 
   async close() {

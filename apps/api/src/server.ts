@@ -1,4 +1,5 @@
 import pino from 'pino';
+import { SmtpMailer } from './services/mail.service.js';
 import { buildApp } from './app.js';
 import { configFromEnv, loadEnv } from './config/env.js';
 import { createPrismaClient } from './lib/prisma.js';
@@ -94,9 +95,20 @@ async function main() {
   await prisma.$connect();
   await app.listen({ port: env.PORT, host: env.HOST });
   app.log.info(
-    { mediaRoot: config.mediaRoot, processing: env.MEDIA_PROCESSING, push: pushSender.enabled ? 'fcm' : 'off (polling)' },
+    {
+      mediaRoot: config.mediaRoot,
+      processing: env.MEDIA_PROCESSING,
+      push: pushSender.enabled ? 'fcm' : 'off (polling)',
+      passwordReset: app.passwordReset.enabled ? `mail via ${config.smtp?.host}` : 'off (SMTP_HOST/PUBLIC_URL fehlt)',
+    },
     'api ready',
   );
+  if (config.smtp) {
+    new SmtpMailer(config.smtp)
+      .verify()
+      .then(() => app.log.info({ host: config.smtp?.host }, 'smtp ok'))
+      .catch((err: unknown) => app.log.warn({ err, host: config.smtp?.host }, 'smtp nicht erreichbar – Passwort-Reset-Mails würden scheitern'));
+  }
 
   // Hängengebliebene Medien (z.B. Neustart oder Fehler beim Einreihen) erneut einreihen – die feste jobId
   // verhindert Doppel-Jobs, wenn der Job noch in der Queue steht.

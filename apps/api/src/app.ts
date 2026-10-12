@@ -26,7 +26,9 @@ import { exportRoutes } from './routes/export.js';
 import { recapRoutes } from './routes/recaps.js';
 import { mediaRoutes } from './routes/media.js';
 import { uploadRoutes } from './routes/uploads.js';
+import { mailerFromConfig, type Mailer } from './services/mail.service.js';
 import { NotificationService } from './services/notification.service.js';
+import { PasswordResetService } from './services/password-reset.service.js';
 import { NoopPushSender, type PushSender } from './services/push.js';
 
 export { API_PREFIX };
@@ -37,6 +39,8 @@ export interface BuildAppOptions {
   mediaQueue: MediaQueue;
   /** Ohne Angabe: kein Push (Clients pollen). */
   pushSender?: PushSender;
+  /** Ohne Angabe: aus config.smtp (SmtpMailer) bzw. NoopMailer – Passwort-Reset dann aus. */
+  mailer?: Mailer;
   logger?: FastifyServerOptions['logger'];
 }
 
@@ -61,6 +65,15 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   configureDto({ signer: app.signer });
   app.decorate('mediaQueue', opts.mediaQueue);
   app.decorate('notifications', new NotificationService(opts.prisma, opts.pushSender ?? new NoopPushSender(), app.log));
+  app.decorate(
+    'passwordReset',
+    new PasswordResetService(
+      opts.prisma,
+      opts.mailer ?? mailerFromConfig(opts.config.smtp),
+      { publicUrl: opts.config.publicUrl, ttlMinutes: opts.config.passwordResetTtlMinutes },
+      app.log,
+    ),
+  );
 
   registerErrorHandling(app);
 

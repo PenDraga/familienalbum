@@ -1,6 +1,14 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { Errors } from '../lib/errors.js';
-import { loginBodySchema, loginResponseSchema, logoutBodySchema, refreshBodySchema } from '../schemas/auth.js';
+import {
+  loginBodySchema,
+  loginResponseSchema,
+  logoutBodySchema,
+  passwordResetConfirmBodySchema,
+  passwordResetConfirmResponseSchema,
+  passwordResetRequestBodySchema,
+  refreshBodySchema,
+} from '../schemas/auth.js';
 import { emptyResponse, errorResponses } from '../schemas/common.js';
 import { AuthService } from '../services/auth.service.js';
 
@@ -59,5 +67,39 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       }
       return reply.code(204).send(null);
     },
+  );
+
+  app.post(
+    '/auth/password-reset',
+    {
+      config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
+      schema: {
+        tags: ['auth'],
+        summary: 'Passwort vergessen: Link per E-Mail anfordern',
+        description:
+          'Antwortet immer mit 204, auch für unbekannte Adressen (keine Rückschlüsse auf Konten). 503, wenn der Server keinen Mail-Versand hat.',
+        body: passwordResetRequestBodySchema,
+        response: { 204: emptyResponse, ...errorResponses(400, 429, 503) },
+      },
+    },
+    async (request, reply) => {
+      await app.passwordReset.request(request.body.email);
+      return reply.code(204).send(null);
+    },
+  );
+
+  app.post(
+    '/auth/password-reset/confirm',
+    {
+      config: { rateLimit: { max: 10, timeWindow: '15 minutes' } },
+      schema: {
+        tags: ['auth'],
+        summary: 'Neues Passwort mit dem Link-Token setzen',
+        description: 'Verbraucht das Token und beendet alle Sitzungen des Benutzers.',
+        body: passwordResetConfirmBodySchema,
+        response: { 200: passwordResetConfirmResponseSchema, ...errorResponses(400, 403, 429) },
+      },
+    },
+    async (request) => app.passwordReset.confirm(request.body.token, request.body.password),
   );
 };

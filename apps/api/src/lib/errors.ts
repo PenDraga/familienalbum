@@ -33,6 +33,7 @@ export const Errors = {
   notFound: (detail = 'Nicht gefunden.', code = 'NOT_FOUND') => new AppError(404, 'Not Found', detail, code),
   conflict: (detail: string, code = 'CONFLICT') => new AppError(409, 'Conflict', detail, code),
   gone: (detail: string, code = 'GONE') => new AppError(410, 'Gone', detail, code),
+  serviceUnavailable: (detail: string, code = 'SERVICE_UNAVAILABLE') => new AppError(503, 'Service Unavailable', detail, code),
 };
 
 export interface ProblemJson {

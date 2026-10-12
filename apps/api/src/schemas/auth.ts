@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { emailSchema } from './common.js';
+import { emailSchema, passwordSchema } from './common.js';
 import { userPublicSchema } from './user.js';
 
 export const loginBodySchema = z.object({
@@ -33,3 +33,14 @@ export const logoutBodySchema = z.object({
   /** Alle Sitzungen dieses Benutzers beenden (nur mit gültigem Access-Token). */
   all: z.boolean().default(false),
 });
+
+export const passwordResetRequestBodySchema = z.object({
+  email: emailSchema,
+});
+
+export const passwordResetConfirmBodySchema = z.object({
+  token: z.string().min(20).max(200),
+  password: passwordSchema,
+});
+
+export const passwordResetConfirmResponseSchema = z.object({ email: z.string() }).meta({ id: 'PasswordResetConfirmed' });

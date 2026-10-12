@@ -5,6 +5,11 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 
 ## [Unreleased]
 
+### Server
+- Passwort vergessen per E-Mail: `POST /auth/password-reset` und `…/confirm`, Token 30 Minuten, einmalig, alle
+  Sitzungen enden; SMTP über `SMTP_*`/`MAIL_FROM`/`PUBLIC_URL`, `GET /meta` meldet `features.passwordReset`;
+  Migration `m14_password_reset`
+
 ## [1.1.0] – 2026-10-08
 
 Die App spricht Deutsch und Englisch und folgt der Systemsprache des Geräts; Deutsch bleibt Standard.

@@ -151,6 +151,13 @@ Daily backup via cron with `infra/backup.sh` (`pg_dump` + `rsync` of the media).
 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
+### Forgot password (e-mail)
+
+Optional. With `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` and `PUBLIC_URL`
+(public address of the web app, used to build the link) the server sends reset links and the login screen shows
+"Forgot password?". The API checks the SMTP connection at startup and logs problems. Without SMTP the admin resets
+passwords in the user management screen.
+
 ### Push (Firebase Cloud Messaging)
 
 Optional. Without it the clients poll once a minute.

@@ -33,6 +33,21 @@ const envSchema = z.object({
   OPERATOR_NAME: z.string().optional(),
   OPERATOR_EMAIL: z.string().optional(),
   NOTIFY_DIGEST_SECONDS: z.coerce.number().int().min(0).default(90),
+  /** Öffentliche Adresse der Web-App (für Links in E-Mails), z.B. https://album.example.ch */
+  PUBLIC_URL: z.string().url().optional(),
+  /** SMTP für Passwort-Reset-Mails; ohne SMTP_HOST ist der Reset ausgeschaltet. */
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  /** true = TLS ab Verbindungsaufbau (Port 465); false = STARTTLS (Port 587) */
+  SMTP_SECURE: z
+    .string()
+    .optional()
+    .transform((v) => v === 'true' || v === '1'),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  /** Absender, z.B. "Familienalbum <album@example.ch>" */
+  MAIL_FROM: z.string().optional(),
+  PASSWORD_RESET_TTL_MINUTES: z.coerce.number().int().min(5).max(24 * 60).default(30),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -60,6 +75,11 @@ export interface AppConfig {
   version: string;
   operatorName?: string;
   operatorEmail?: string;
+  /** Öffentliche Basis-URL der Web-App (Links in Mails); leer = unbekannt. */
+  publicUrl: string;
+  /** SMTP-Zugang oder null (Passwort-Reset aus). */
+  smtp: { host: string; port: number; secure: boolean; user?: string; pass?: string; from: string } | null;
+  passwordResetTtlMinutes: number;
 }
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
@@ -100,5 +120,17 @@ export function configFromEnv(env: Env): AppConfig {
     version: packageVersion(),
     operatorName: env.OPERATOR_NAME,
     operatorEmail: env.OPERATOR_EMAIL,
+    publicUrl: env.PUBLIC_URL ?? '',
+    smtp: env.SMTP_HOST
+      ? {
+          host: env.SMTP_HOST,
+          port: env.SMTP_PORT,
+          secure: env.SMTP_SECURE,
+          user: env.SMTP_USER,
+          pass: env.SMTP_PASS,
+          from: env.MAIL_FROM ?? env.SMTP_USER ?? 'familienalbum@localhost',
+        }
+      : null,
+    passwordResetTtlMinutes: env.PASSWORD_RESET_TTL_MINUTES,
   };
 }

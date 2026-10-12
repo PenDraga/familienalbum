@@ -151,6 +151,13 @@ Backup täglich per Cron mit `infra/backup.sh` (`pg_dump` + `rsync` der Medien).
 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
+### Passwort vergessen (E-Mail)
+
+Optional. Mit `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` und `PUBLIC_URL`
+(öffentliche Adresse der Web-App, Basis für den Link) verschickt der Server Reset-Links; im Login erscheint dann
+„Passwort vergessen?“. Beim Start prüft die API die SMTP-Verbindung und meldet Probleme im Log. Ohne SMTP bleibt der
+Weg über den Admin: Passwort in der Benutzerverwaltung neu setzen.
+
 ### Push (Firebase Cloud Messaging)
 
 Optional. Ohne Konfiguration pollen die Clients jede Minute.

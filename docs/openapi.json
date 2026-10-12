@@ -3,7 +3,7 @@
   "info": {
     "title": "Familienalbum API",
     "description": "Privates, selbst gehostetes Familienalbum – REST-API.",
-    "version": "0.1.0"
+    "version": "test"
   },
   "components": {
     "securitySchemes": {
@@ -898,6 +898,19 @@
             "type": "integer",
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
+          },
+          "photoCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "videoCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "totalBytes": {
+            "type": "number"
           }
         },
         "required": [
@@ -905,7 +918,64 @@
           "name",
           "createdAt",
           "memberCount",
-          "mediaCount"
+          "mediaCount",
+          "photoCount",
+          "videoCount",
+          "totalBytes"
+        ]
+      },
+      "FamilyStorageInput": {
+        "type": "object",
+        "properties": {
+          "totalBytes": {
+            "type": "number"
+          },
+          "photoBytes": {
+            "type": "number"
+          },
+          "videoBytes": {
+            "type": "number"
+          },
+          "photoCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "videoCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "disk": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "totalBytes": {
+                    "type": "number"
+                  },
+                  "freeBytes": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "totalBytes",
+                  "freeBytes"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "totalBytes",
+          "photoBytes",
+          "videoBytes",
+          "photoCount",
+          "videoCount",
+          "disk"
         ]
       },
       "CommentInput": {
@@ -1002,6 +1072,17 @@
         "required": [
           "user",
           "tokens"
+        ]
+      },
+      "PasswordResetConfirmedInput": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
         ]
       },
       "InviteInput": {
@@ -2381,6 +2462,19 @@
             "type": "integer",
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
+          },
+          "photoCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "videoCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "totalBytes": {
+            "type": "number"
           }
         },
         "required": [
@@ -2388,7 +2482,66 @@
           "name",
           "createdAt",
           "memberCount",
-          "mediaCount"
+          "mediaCount",
+          "photoCount",
+          "videoCount",
+          "totalBytes"
+        ],
+        "additionalProperties": false
+      },
+      "FamilyStorage": {
+        "type": "object",
+        "properties": {
+          "totalBytes": {
+            "type": "number"
+          },
+          "photoBytes": {
+            "type": "number"
+          },
+          "videoBytes": {
+            "type": "number"
+          },
+          "photoCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "videoCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "disk": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "totalBytes": {
+                    "type": "number"
+                  },
+                  "freeBytes": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "totalBytes",
+                  "freeBytes"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "totalBytes",
+          "photoBytes",
+          "videoBytes",
+          "photoCount",
+          "videoCount",
+          "disk"
         ],
         "additionalProperties": false
       },
@@ -2488,6 +2641,18 @@
         "required": [
           "user",
           "tokens"
+        ],
+        "additionalProperties": false
+      },
+      "PasswordResetConfirmed": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
         ],
         "additionalProperties": false
       },
@@ -3006,12 +3171,97 @@
                       "type": "string",
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "features": {
+                      "type": "object",
+                      "properties": {
+                        "passwordReset": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "passwordReset"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
                     "status",
                     "database",
-                    "time"
+                    "time",
+                    "features"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meta": {
+      "get": {
+        "summary": "Öffentliche Angaben zur Installation: Version und Betreiber (für die Datenschutzseite)",
+        "tags": [
+          "system"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "enum": [
+                        "Familienalbum"
+                      ]
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "email": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "email"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "features": {
+                      "type": "object",
+                      "properties": {
+                        "passwordReset": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "passwordReset"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "version",
+                    "operator",
+                    "features"
                   ],
                   "additionalProperties": false
                 }
@@ -3237,6 +3487,148 @@
             }
           },
           "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/password-reset": {
+      "post": {
+        "summary": "Passwort vergessen: Link per E-Mail anfordern",
+        "tags": [
+          "auth"
+        ],
+        "description": "Antwortet immer mit 204, auch für unbekannte Adressen (keine Rückschlüsse auf Konten). 503, wenn der Server keinen Mail-Versand hat.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Kein Inhalt"
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/password-reset/confirm": {
+      "post": {
+        "summary": "Neues Passwort mit dem Link-Token setzen",
+        "tags": [
+          "auth"
+        ],
+        "description": "Verbraucht das Token und beendet alle Sitzungen des Benutzers.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 200
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "token",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordResetConfirmed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -4035,6 +4427,73 @@
             }
           },
           "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/families/{id}/storage": {
+      "get": {
+        "summary": "Speicherplatz der Familie (Originale nach Typ); freier Platz nur für Admins",
+        "tags": [
+          "families"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyStorage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -5182,6 +5641,26 @@
             },
             "in": "query",
             "name": "month",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PHOTO",
+                "VIDEO"
+              ]
+            },
+            "in": "query",
+            "name": "type",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "commented",
             "required": false
           },
           {
@@ -6696,6 +7175,11 @@
                       "windows",
                       "web"
                     ]
+                  },
+                  "locale": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 10
                   }
                 },
                 "required": [
@@ -7497,6 +7981,75 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Konto löschen (anonymisieren): Fotos und Kommentare bleiben als «Gelöschtes Konto»",
+        "tags": [
+          "admin"
+        ],
+        "description": "Entfernt Mitgliedschaften, Sitzungen, Geräte, Einladungen und Profilbild. Nicht sich selbst (409 SELF_DELETE), nicht den letzten globalen Admin (409 LAST_ADMIN).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Kein Inhalt"
           },
           "401": {
             "description": "Default Response",
