@@ -44,6 +44,7 @@ const listing = {
     '• Rückblick-Videos pro Monat und Jahr, Sekunden-Film, «An diesem Tag»',
     '• Automatischer Upload neuer Aufnahmen im Hintergrund',
     '• Export aller Fotos und Kommentare als ZIP. Eure Daten gehören euch.',
+    '• Fotobuch als druckfertiges PDF, mit Seitenkontrolle, Ausschnitt und Zoom',
     '• Alben mit eigenen Rechten: Hochladen, Herunterladen, Kommentieren',
     '',
     'Open Source: Familienalbum ist ein Client für den eigenen Server, vergleichbar mit Nextcloud oder Immich. Quellcode und Anleitung für den eigenen Server auf GitHub: https://github.com/PenDraga/familienalbum',
@@ -51,10 +52,9 @@ const listing = {
     'Wer einen Server betreibt, ist dessen Admin und lädt die Familie per Link ein. Es gibt bewusst keine öffentliche Registrierung. Beim ersten Start wird die Adresse des eigenen Servers eingetragen.',
   ].join('\n'),
   whatsNew: [
-    'Zwei-Finger-Zoom im Foto-Viewer funktioniert wieder.',
-    'Die Zahl auf dem App-Symbol zeigt nur noch ungelesene Einträge und verschwindet nach dem Öffnen des Verlaufs.',
-    'Einladungs-Screen erklärt falsche Codes und verlinkt zur Anmeldung; Server-Adresse wird nicht mehr vorbelegt.',
-    'Konto löschen für Admins, Speicherplatz-Anzeige, Open-Source-Hinweis.',
+    'Fotobuch: aus gewählten Monaten ein druckfertiges PDF erstellen – mit Assistent, Seitenkontrolle, Ausschnitt und Zoom pro Foto, für jeden Fotobuch-Anbieter mit PDF-Upload.',
+    'Beschreibung gleich beim Hochladen eingeben, auch für mehrere Fotos auf einmal.',
+    '«Passwort vergessen?» im Login (wenn der Server E-Mail versenden kann).',
   ].join('\n'),
   copyright: env.ASC_COPYRIGHT,
   // Rückblick-Musik von Kevin MacLeod (CC BY 4.0) ist Drittinhalt mit Nutzungsrecht
@@ -86,6 +86,7 @@ const EN = {
     '• Recap videos per month and year, a one-second film, "On this day"',
     '• Automatic background upload of new captures',
     '• Export of all photos and comments as a ZIP. Your data stays yours.',
+    '• Photo book as a print-ready PDF, with page review, crop and zoom',
     '• Albums with their own permissions: upload, download, comment',
     '',
     `Open source: Familienalbum is a client for your own server, comparable to Nextcloud or Immich. Source code and setup guide on GitHub: ${listing.marketingUrl}`,
@@ -93,8 +94,9 @@ const EN = {
     'Whoever runs a server is its admin and invites the family by link. There is deliberately no public sign-up. On first launch you enter the address of your own server.',
   ].join('\n'),
   whatsNew: [
-    'The app now speaks English as well as German and follows your device language.',
-    'Two-finger zoom in the photo viewer, unread badge on the app icon, clearer invitation screen.',
+    'Photo book: turn selected months into a print-ready PDF – with a wizard, page review, crop and zoom per photo, for any photo book printer that accepts PDF uploads.',
+    'Add a description right when uploading, also for several photos at once.',
+    '"Forgot password?" on the sign-in screen (if the server can send e-mail).',
   ].join('\n'),
   betaDescription: 'Private, self-hosted family album: photos, videos, comments and recap videos. To sign in you need the server address and an invitation link from your album admin.',
 };

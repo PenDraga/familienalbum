@@ -9,7 +9,7 @@ browse them chronologically by capture date, comment on them and save originals 
 Compose stack at home and is reachable from outside through a reverse proxy (Traefik, Caddy) or a Cloudflare Tunnel.
 Clients: iOS, Android and web from one Flutter code base. Project brief and conventions (German): [CLAUDE.md](./CLAUDE.md).
 
-**Status: version 1.1.** The server runs in production, the iOS app is on the App Store, the Android app ships via
+**Status: version 1.2.** The server runs in production, the iOS app is on the App Store, the Android app ships via
 Google Play or APK, and the web app runs in any browser. The user interface is available in German and English and
 follows the device language. Changes: [CHANGELOG.md](./CHANGELOG.md) (German). License: [MIT](./LICENSE).
 

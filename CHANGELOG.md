@@ -5,6 +5,11 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 
 ## [Unreleased]
 
+## [1.2.0] – 2026-10-12
+
+Fotobuch als druckfertiges PDF (Assistent, Seiten prüfen mit Ausschnitt und Zoom, PDF auf Knopfdruck), Beschreibung
+direkt beim Hochladen, «Passwort vergessen» per E-Mail.
+
 ### Server
 - Fotobuch als Entwurf: Status `DRAFT` → `RENDERING` → `READY` (oder `FAILED`); Anlegen und jede Änderung ergeben einen
   Entwurf ohne Rendern, das Druck-PDF entsteht erst über `POST /books/:id/render` («PDF erstellen»); ein Rendern,
