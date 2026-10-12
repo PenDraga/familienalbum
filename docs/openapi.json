@@ -9001,6 +9001,7 @@
         "tags": [
           "books"
         ],
+        "description": "Header x-book-slots: JSON mediaId → Seitenverhältnis (Breite/Höhe) des Platzes, den das Foto füllt.",
         "requestBody": {
           "required": true,
           "content": {

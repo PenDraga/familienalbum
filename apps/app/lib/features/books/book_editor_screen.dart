@@ -38,6 +38,8 @@ class _BookEditorScreenState extends ConsumerState<BookEditorScreen> {
   BookPageJson? _shown;
   Timer? _debounce;
   Uint8List? _lastImage;
+  /// Seitenverhältnis des Platzes je Foto, wie der Server die Seite zuletzt gesetzt hat
+  final Map<String, double> _slots = {};
 
   @override
   void dispose() {
@@ -167,7 +169,10 @@ class _BookEditorScreenState extends ConsumerState<BookEditorScreen> {
                   Center(
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.5),
-                      child: _Preview(bookId: widget.bookId, page: _shown ?? pages[_index], aspect: _format.aspectRatio, last: _lastImage, onImage: (b) => _lastImage = b),
+                      child: _Preview(bookId: widget.bookId, page: _shown ?? pages[_index], aspect: _format.aspectRatio, last: _lastImage, onImage: (p) {
+                        _lastImage = p.bytes;
+                        _slots.addAll(p.slots);
+                      }),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -243,6 +248,12 @@ class _BookEditorScreenState extends ConsumerState<BookEditorScreen> {
               onCrop: () => _editCrop(id),
               actions: [
                 IconButton(
+                  key: ValueKey('book-swap-$id'),
+                  tooltip: l10n.bookSwap,
+                  onPressed: () => _swap(id),
+                  icon: const Icon(Icons.swap_horiz),
+                ),
+                IconButton(
                   tooltip: l10n.bookMovePrev,
                   onPressed: neighbourPhotoPage(pages, _index, -1) == null ? null : () => _move(id, -1),
                   icon: const Icon(Icons.arrow_back),
@@ -265,6 +276,72 @@ class _BookEditorScreenState extends ConsumerState<BookEditorScreen> {
     // Der Seite folgen, auf der das Foto jetzt liegt
     final target = moved.indexWhere((p) => pageMediaIds(p).contains(id));
     _update(moved, immediate: true, index: target < 0 ? _index : target);
+  }
+
+  /// Foto mit einem anderen Foto des Buchs tauschen (Auswahl aus den Fotos im Buch, nach Seite geordnet).
+  Future<void> _swap(String id) async {
+    final l10n = context.l10n;
+    final pages = _pages!;
+    final candidates = [
+      for (final (p, page) in pages.indexed)
+        if (page['type'] == 'photos')
+          for (final other in pageMediaIds(page))
+            if (other != id) (id: other, page: p),
+    ];
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(ctx).height * 0.6,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                child: Text(l10n.bookSwapTitle, style: Theme.of(ctx).textTheme.titleLarge),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Text(l10n.bookSwapHint, style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+              ),
+              Expanded(
+                child: GridView.extent(
+                  maxCrossAxisExtent: 110,
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  mainAxisSpacing: 6,
+                  crossAxisSpacing: 6,
+                  children: [
+                    for (final c in candidates)
+                      GestureDetector(
+                        key: ValueKey('book-swap-pick-${c.id}'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => Navigator.pop(ctx, c.id),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            ClipRRect(borderRadius: BorderRadius.circular(8), child: _thumbs[c.id] == null ? const ColoredBox(color: Colors.black12) : AppImage(url: _thumbs[c.id]!, fit: BoxFit.cover)),
+                            Positioned(
+                              left: 4,
+                              bottom: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
+                                child: Text(l10n.bookPageShort(c.page + 1), style: const TextStyle(color: Colors.white, fontSize: 11)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (chosen != null) _update(swapItems(_pages!, id, chosen), immediate: true);
   }
 
   Future<void> _chooseCover() async {
@@ -303,6 +380,7 @@ class _BookEditorScreenState extends ConsumerState<BookEditorScreen> {
       builder: (ctx) => _CropSheet(
         thumb: _thumbs[id],
         aspect: _aspects[id] ?? 1.5,
+        slotAspect: _slots[id],
         initial: cropOf(page, id),
         onChanged: (crop) => _update(setCrop(_pages!, _index, id, crop)),
       ),
@@ -317,13 +395,13 @@ class _Preview extends ConsumerWidget {
   final BookPageJson page;
   final double aspect;
   final Uint8List? last;
-  final ValueChanged<Uint8List> onImage;
+  final ValueChanged<PagePreview> onImage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final image = ref.watch(bookPagePreviewProvider(PagePreviewArgs(bookId, page)));
-    final bytes = image.value ?? last;
+    final bytes = image.value?.bytes ?? last;
     if (image.value != null) onImage(image.value!);
     return AspectRatio(
       aspectRatio: aspect,
@@ -366,12 +444,16 @@ class _PhotoRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: SizedBox(width: 56, height: 56, child: thumb == null ? ColoredBox(color: scheme.surfaceContainerHigh) : AppImage(url: thumb!, fit: BoxFit.cover)),
               ),
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: onCrop,
-                icon: Icon(cropped ? Icons.crop : Icons.crop_free),
-                label: Text(l10n.bookCrop),
-              ),
+              const SizedBox(width: 4),
+              // Auf schmalen Handys nur das Symbol, damit Tauschen, Verschieben und Entfernen Platz haben
+              if (MediaQuery.sizeOf(context).width < 430)
+                IconButton(tooltip: l10n.bookCrop, onPressed: onCrop, icon: Icon(cropped ? Icons.crop : Icons.crop_free))
+              else
+                TextButton.icon(
+                  onPressed: onCrop,
+                  icon: Icon(cropped ? Icons.crop : Icons.crop_free),
+                  label: Text(l10n.bookCrop),
+                ),
               const Spacer(),
               ...actions,
             ],
@@ -410,9 +492,11 @@ class _TextFieldState extends State<_TextField> {
 
 /// Ausschnitt wählen: auf den wichtigsten Bildteil tippen (Fokuspunkt), Zoom per Regler, «Automatisch» setzt zurück.
 class _CropSheet extends StatefulWidget {
-  const _CropSheet({required this.thumb, required this.aspect, required this.initial, required this.onChanged});
+  const _CropSheet({required this.thumb, required this.aspect, required this.slotAspect, required this.initial, required this.onChanged});
   final String? thumb;
   final double aspect;
+  /// Seitenverhältnis des Platzes auf der Seite (z. B. breites Band auf dem Umschlag); null = wie das Foto
+  final double? slotAspect;
   final ({double x, double y, double zoom})? initial;
   final ValueChanged<({double x, double y, double zoom})?> onChanged;
 
@@ -467,7 +551,7 @@ class _CropSheetState extends State<_CropSheet> {
                           fit: StackFit.expand,
                           children: [
                             widget.thumb == null ? ColoredBox(color: scheme.surfaceContainerHigh) : AppImage(url: widget.thumb!, fit: BoxFit.cover),
-                            if (!_auto) IgnorePointer(child: CustomPaint(painter: _CropPainter(x: _x, y: _y, zoom: _zoom))),
+                            if (!_auto) IgnorePointer(child: CustomPaint(painter: _CropPainter(x: _x, y: _y, zoom: _zoom, slotAspect: widget.slotAspect))),
                           ],
                         ),
                       ),
@@ -526,21 +610,30 @@ class _CropSheetState extends State<_CropSheet> {
   }
 }
 
-/// Dunkelt aussen ab, was beim Zoom wegfällt (Ausschnitt im Seitenverhältnis des Fotos um den Fokuspunkt),
-/// und markiert den Fokuspunkt.
+/// Ausschnitt im angezeigten Foto – dieselbe Rechnung wie `cropBox` auf dem Server: grösster Rahmen im
+/// Seitenverhältnis des Platzes, verkleinert um den Zoom, um den Fokuspunkt, innerhalb des Fotos.
+Rect cropRect(Size photo, double slotAspect, ({double x, double y, double zoom}) crop) {
+  final baseW = photo.width < photo.height * slotAspect ? photo.width : photo.height * slotAspect;
+  final baseH = baseW / slotAspect;
+  final zoom = crop.zoom.clamp(1.0, 4.0);
+  final w = baseW / zoom;
+  final h = baseH / zoom;
+  final left = (crop.x * photo.width - w / 2).clamp(0.0, photo.width - w);
+  final top = (crop.y * photo.height - h / 2).clamp(0.0, photo.height - h);
+  return Rect.fromLTWH(left, top, w, h);
+}
+
+/// Dunkelt aussen ab, was wegfällt, und markiert den Fokuspunkt.
 class _CropPainter extends CustomPainter {
-  _CropPainter({required this.x, required this.y, required this.zoom});
+  _CropPainter({required this.x, required this.y, required this.zoom, required this.slotAspect});
   final double x;
   final double y;
   final double zoom;
+  final double? slotAspect;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width / zoom;
-    final h = size.height / zoom;
-    final left = (x * size.width - w / 2).clamp(0.0, size.width - w);
-    final top = (y * size.height - h / 2).clamp(0.0, size.height - h);
-    final keep = Rect.fromLTWH(left, top, w, h);
+    final keep = cropRect(size, slotAspect ?? size.width / size.height, (x: x, y: y, zoom: zoom));
     final shade = Path()
       ..addRect(Offset.zero & size)
       ..addRect(keep)
@@ -558,5 +651,5 @@ class _CropPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_CropPainter old) => old.x != x || old.y != y || old.zoom != zoom;
+  bool shouldRepaint(_CropPainter old) => old.x != x || old.y != y || old.zoom != zoom || old.slotAspect != slotAspect;
 }

@@ -146,6 +146,7 @@ export const bookRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ['books'],
         summary: 'Eine bearbeitete Seite als WebP-Vorschau rendern, ohne zu speichern (Ersteller oder Album-Admin)',
+        description: 'Header x-book-slots: JSON mediaId → Seitenverhältnis (Breite/Höhe) des Platzes, den das Foto füllt.',
         security: bearer,
         params: idParamsSchema,
         body: previewPageBodySchema,
@@ -155,8 +156,9 @@ export const bookRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request, reply) => {
       const book = await books.get(request.params.id);
       requireEdit(book, request);
-      const image = await books.previewPage(book, request.body.page);
-      return reply.header('cache-control', 'no-store').type('image/webp').send(image);
+      const { image, slots } = await books.previewPage(book, request.body.page);
+      // Seitenverhältnis jedes Fotoplatzes (mediaId → Breite/Höhe): die App zeichnet damit den Ausschnitt-Rahmen exakt
+      return reply.header('cache-control', 'no-store').header('x-book-slots', JSON.stringify(slots)).type('image/webp').send(image);
     },
   );
 

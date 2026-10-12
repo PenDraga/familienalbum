@@ -11,6 +11,7 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
   während dem das Buch geändert wurde, wird verworfen; `urls.coverPhoto` für Karten im Entwurf; Migration
   `m17_book_draft_upload_caption` (bestehende Bücher behalten ihren Stand)
 - Upload mit Beschreibung: `caption` in `POST /families/:id/uploads`, wird beim Abschluss aufs Foto gesetzt
+- Fotobuch-Vorschau meldet im Header `x-book-slots` das Seitenverhältnis jedes Fotoplatzes (für den Ausschnitt-Rahmen)
 - Fotobuch als druckfertiges PDF (ADR-0004): `POST /families/:id/books` mit Format (21 × 21, A4 quer, 30 × 30),
   Textmodus (keine, Beschreibungen, Beschreibungen + Kommentare) und Monaten; automatischer Layoutvorschlag (Umschlag,
   Kapitel pro Monat, Vorlagen eins/zwei/vier/Bild mit Text), Rendern im Worker (`render-book`), Seitenvorschauen,
@@ -32,6 +33,9 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
   Migration `m14_password_reset`
 
 ### App
+- Fotobuch-Editor: Ausschnitt-Rahmen zeigt genau den gedruckten Bereich (Seitenverhältnis des Platzes, gleiche Rechnung
+  wie der Server); «Austauschen» tauscht zwei Fotos des Buchs samt Beschreibung und Ausschnitt; auf schmalen Handys
+  Ausschnitt als Symbol
 - Upload-Assistent: nach der Auswahl eine Übersicht mit Vorschaubild und Beschreibung pro Datei, «Gleiche
   Beschreibung für alle»; Web liest die Dateien sofort (Safari)
 - Fotobuch: nach «Erstellen» direkt «Seiten prüfen»; «PDF erstellen» im Editor und im Buch; Hinweis «Entwurf» bzw.

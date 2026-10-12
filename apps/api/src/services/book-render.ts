@@ -21,6 +21,8 @@ export interface RenderEnv {
   /** Pfad zur Bilddatei eines Fotos (Original oder Thumbnail); null = überspringen */
   photoPath: (mediaId: string) => Promise<string | null>;
   log?: (msg: string, extra?: object) => void;
+  /** Wird gefüllt: Seitenverhältnis (Breite/Höhe) des Platzes je Foto, das den Platz füllt – für den Ausschnitt-Rahmen in der App */
+  slots?: Map<string, number>;
 }
 
 export interface RenderOutput {
@@ -49,12 +51,14 @@ export function previewFileName(index: number) {
 
 /** Rendert alle Seiten; liefert Seitenzahl und PDF-Grösse. */
 /** Eine einzelne Seite als WebP (Kontroll-Assistent): gleicher Zeichenweg wie das Buch, nur kleinere Auflösung. */
-export async function renderPagePreview(page: BookPage, format: BookFormat, env: RenderEnv): Promise<Buffer> {
+export async function renderPagePreview(page: BookPage, format: BookFormat, env: RenderEnv): Promise<{ image: Buffer; slots: Record<string, number> }> {
   const spec = FORMATS[format];
   const size = pageSize(spec);
   const px = (mm: number) => Math.round((mm / 25.4) * env.dpi);
-  const jpeg = await renderPage(page, spec, { W: px(size.w), H: px(size.h), px, env });
-  return sharp(jpeg).resize({ width: env.previewWidth }).webp({ quality: 82 }).toBuffer();
+  const slots = new Map<string, number>();
+  const jpeg = await renderPage(page, spec, { W: px(size.w), H: px(size.h), px, env: { ...env, slots } });
+  const image = await sharp(jpeg).resize({ width: env.previewWidth }).webp({ quality: 82 }).toBuffer();
+  return { image, slots: Object.fromEntries([...slots].map(([id, a]) => [id, Math.round(a * 1000) / 1000])) };
 }
 
 export async function renderBook(pages: BookPage[], format: BookFormat, env: RenderEnv, out: RenderOutput): Promise<{ pageCount: number; pdfBytes: number }> {
@@ -178,6 +182,7 @@ async function photoLayerPx(mediaId: string, rect: Rect, fit: 'cover' | 'contain
   const path = await c.env.photoPath(mediaId);
   if (!path) return null;
   const r = { x: Math.round(rect.x), y: Math.round(rect.y), w: Math.max(1, Math.round(rect.w)), h: Math.max(1, Math.round(rect.h)) };
+  if (fit === 'cover') c.env.slots?.set(mediaId, r.w / r.h);
   try {
     let image: Sharp;
     if (fit === 'cover' && crop) {

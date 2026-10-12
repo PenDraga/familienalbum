@@ -226,7 +226,7 @@ export class BookService {
   }
 
   /** Eine (bearbeitete) Seite als WebP rendern, ohne zu speichern – Kontroll-Assistent. */
-  async previewPage(book: BookRow, page: BookPage): Promise<Buffer> {
+  async previewPage(book: BookRow, page: BookPage): Promise<{ image: Buffer; slots: Record<string, number> }> {
     const [checked] = await this.checkPages(book.familyId, [page]);
     // Fotos dieser Seite, nicht der gespeicherten – die Seite kann gerade bearbeitet sein
     const env = await this.renderEnvFor(book.familyId, book.id, pageMediaIds(checked!), { dpi: 90, previewWidth: 900, log: { info() {}, warn() {} } });

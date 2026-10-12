@@ -284,7 +284,7 @@ Druckfertiges PDF statt Druckerei-API. Alle Mitglieder sehen Bücher und laden d
 - `PATCH /books/:id` `{ title?, pages? }` – ersetzt Titel und/oder Seitenliste, rendert neu (202). `BOOK_MEDIA_INVALID`
   (400), wenn ein Foto nicht zum Album gehört. `POST /books/:id/render` rendert nach einem Fehler nochmals.
 - `POST /books/:id/preview-page` `{ page }` – eine (bearbeitete) Seite als WebP (900 px breit), ohne zu speichern;
-  Ersteller oder Album-Admin. Fotos und Umschlag tragen optional `crop` `{ x, y, zoom }` (Fokuspunkt 0–1 relativ zum
+  Ersteller oder Album-Admin. Header `x-book-slots`: JSON `{ mediaId: Breite/Höhe }` des Platzes, den jedes Foto füllt. Fotos und Umschlag tragen optional `crop` `{ x, y, zoom }` (Fokuspunkt 0–1 relativ zum
   ganzen Foto, Zoom 1–4); ohne `crop` wählt der Server den bildwichtigsten Ausschnitt.
 - `DELETE /books/:id` → 204.
 - `GET /books/:id/pdf`, `GET /books/:id/pages/:n` (WebP, ab 1) – signierter Link oder Bearer eines Mitglieds;

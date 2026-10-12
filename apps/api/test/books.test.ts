@@ -272,6 +272,12 @@ describe('Fotobuch', () => {
     expect(preview.statusCode, preview.body).toBe(200);
     expect(preview.headers['content-type']).toBe('image/webp');
     expect(preview.headers['cache-control']).toBe('no-store');
+    // Umschlag mit Hochformat: gerahmt, Platz im Seitenverhältnis des Fotos; Querformat-Platz auf Fotoseiten ebenso
+    const slots = JSON.parse(preview.headers['x-book-slots'] as string);
+    expect(slots[portrait.id]).toBeCloseTo(600 / 900, 1);
+    const landscapeCover = await (await ctx.as(admin)).post(`/books/${book.id}/preview-page`, { page: { ...cover, mediaId: landscape.id } });
+    // breites Band über der Titelzeile: 216 mm × 138 mm
+    expect(JSON.parse(landscapeCover.headers['x-book-slots'] as string)[landscape.id]).toBeCloseTo(216 / 138, 1);
     const meta = await (await import('sharp')).default(preview.rawPayload).metadata();
     expect(meta.width).toBe(900);
 

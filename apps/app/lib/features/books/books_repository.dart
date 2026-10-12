@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
+import '../../core/api_exception.dart';
 import '../../core/providers.dart';
 import '../auth/auth_controller.dart';
 import 'book_models.dart';
@@ -49,10 +50,16 @@ class BooksRepository {
     return BookItem.fromJson(data, _api.absolute);
   }
 
-  /// Eine (bearbeitete) Seite als Bild, ohne zu speichern.
-  Future<Uint8List> previewPage(String bookId, Map<String, dynamic> page) async {
-    final data = await _api.dio.post<List<int>>('/books/$bookId/preview-page', data: {'page': page}, options: Options(responseType: ResponseType.bytes)).unwrap();
-    return Uint8List.fromList(data);
+  /// Eine (bearbeitete) Seite als Bild, ohne zu speichern; dazu das Seitenverhältnis jedes Fotoplatzes.
+  Future<PagePreview> previewPage(String bookId, Map<String, dynamic> page) async {
+    try {
+      final res = await _api.dio.post<List<int>>('/books/$bookId/preview-page', data: {'page': page}, options: Options(responseType: ResponseType.bytes));
+      final raw = res.headers.value('x-book-slots');
+      final slots = raw == null ? const <String, double>{} : {for (final e in (jsonDecode(raw) as Map<String, dynamic>).entries) e.key: (e.value as num).toDouble()};
+      return PagePreview(Uint8List.fromList(res.data!), slots);
+    } on DioException catch (e) {
+      throw (e.error is ApiException) ? e.error! as ApiException : ApiException.fromDio(e);
+    }
   }
 
   Future<BookItem> rename(String bookId, String title) async {
@@ -108,6 +115,13 @@ class BookPreviewArgs {
 /// Seitenschätzung des Servers für die aktuelle Auswahl im Assistenten.
 final bookPreviewProvider = FutureProvider.autoDispose.family<BookPreview, BookPreviewArgs>((ref, args) => ref.watch(booksRepositoryProvider).preview(args.familyId, args.request));
 
+/// Gerenderte Seite und Seitenverhältnis (Breite/Höhe) des Platzes je Foto, das ihn füllt.
+class PagePreview {
+  const PagePreview(this.bytes, this.slots);
+  final Uint8List bytes;
+  final Map<String, double> slots;
+}
+
 /// Schlüssel der Seitenvorschau: Buch und die Seite als JSON (vergleichbar).
 class PagePreviewArgs {
   PagePreviewArgs(this.bookId, Map<String, dynamic> page) : json = jsonEncode(page);
@@ -122,6 +136,6 @@ class PagePreviewArgs {
 }
 
 /// Vorschau einer bearbeiteten Seite vom Server.
-final bookPagePreviewProvider = FutureProvider.autoDispose.family<Uint8List, PagePreviewArgs>(
+final bookPagePreviewProvider = FutureProvider.autoDispose.family<PagePreview, PagePreviewArgs>(
   (ref, args) => ref.watch(booksRepositoryProvider).previewPage(args.bookId, jsonDecode(args.json) as Map<String, dynamic>),
 );

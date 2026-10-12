@@ -219,6 +219,11 @@
   "bookDraftChanged": "Seit dem letzten PDF geändert. Erstelle das PDF neu, bevor du bestellst.",
   "bookDraftText": "Prüfe die Seiten und erstelle dann das PDF zum Bestellen.",
   "bookPdfRequested": "Das PDF wird erstellt – du bekommst eine Mitteilung, sobald es fertig ist.",
+  "bookPageShort": "S. {page}",
+  "@bookPageShort": {"placeholders": {"page": {"type": "int"}}},
+  "bookSwap": "Austauschen",
+  "bookSwapHint": "Das gewählte Foto kommt an diesen Platz, dieses Foto an dessen Platz – mit Beschreibung und Ausschnitt.",
+  "bookSwapTitle": "Foto austauschen",
   "bookCreateHint": "Der Server schlägt die Seiten vor und rendert das PDF. Höchstens 200 Seiten; nur Fotos, keine Videos.",
   "bookCreateStarted": "«{title}» ist als Entwurf angelegt ({count} Seiten). Prüfe jetzt die Seiten.",
   "@bookCreateStarted": {

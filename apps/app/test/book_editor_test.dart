@@ -25,6 +25,15 @@ List<BookPageJson> sample() => [
 final png = Uint8List.fromList(base64Decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='));
 
 void main() {
+  test('Ausschnitt-Rahmen rechnet wie der Server (cropBox)', () {
+    // 4000×3000 als 400×300 angezeigt; Werte wie im Server-Test, geteilt durch 10
+    expect(cropRect(const Size(400, 300), 1, (x: 0.5, y: 0.5, zoom: 1)), const Rect.fromLTWH(50, 0, 300, 300));
+    expect(cropRect(const Size(400, 300), 1, (x: 0.9, y: 0.1, zoom: 2)), const Rect.fromLTWH(250, 0, 150, 150));
+    // breites Band (2:1) auf einem Hochformat 200×300: Fokus oben hält den oberen Bildteil
+    expect(cropRect(const Size(200, 300), 2, (x: 0.5, y: 0.15, zoom: 1)), const Rect.fromLTWH(0, 0, 200, 100));
+    expect(cropRect(const Size(200, 300), 2, (x: 0.5, y: 0.5, zoom: 1)), const Rect.fromLTWH(0, 100, 200, 100));
+  });
+
   group('Bearbeitungsschritte', () {
     test('Foto entfernen; leere Seite verschwindet; Eingabe bleibt unverändert', () {
       final pages = sample();
@@ -45,6 +54,18 @@ void main() {
       final back = moveItem(pages, 2, 'b', 1)!;
       expect(pageMediaIds(back[3]), ['b', 'c']);
       expect(back[3]['template'], 'auto'); // «one» mit zwei Fotos geht nicht
+    });
+
+    test('Fotos tauschen die Plätze, mit Beschreibung und Ausschnitt; Umschlag zählt nicht', () {
+      var pages = setCrop(sample(), 3, 'c', (x: 0.2, y: 0.3, zoom: 2));
+      pages = swapItems(pages, 'a', 'c');
+      expect(pageMediaIds(pages[2]), ['c', 'b']);
+      expect(pageMediaIds(pages[3]), ['a']);
+      expect(cropOf(pages[2], 'c')?.zoom, 2); // Ausschnitt reist mit
+      expect((pages[3]['items'] as List).first['caption'], 'Hallo'); // Beschreibung reist mit
+      expect(pages[0]['mediaId'], 'a'); // Umschlag unverändert
+      final same = swapItems(pages, 'c', 'b');
+      expect(pageMediaIds(same[2]), ['b', 'c']);
     });
 
     test('Ausschnitt, Text ausblenden, Umschlagfoto und Titel', () {
@@ -105,7 +126,7 @@ void main() {
           bookDetailProvider.overrideWith((ref, id) async => book),
           bookPagePreviewProvider.overrideWith((ref, args) async {
             previews.add(jsonDecode(args.json) as Map<String, dynamic>);
-            return png;
+            return PagePreview(png, const {'b': 2.0});
           }),
         ],
         child: MaterialApp(
@@ -161,6 +182,44 @@ void main() {
     await tester.tap(find.text('Foto wählen'));
     await tester.pumpAndSettle();
     expect(find.byType(GridView), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Editor passt auf ein iPhone (375 pt): keine überlaufende Zeile', (tester) async {
+    tester.view.physicalSize = const Size(375, 812);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final views = [
+      for (final (i, p) in sample().indexed)
+        BookPageView(index: i, type: p['type'] as String, template: p['template'] as String?, title: p['title'] as String?, mediaCount: pageMediaIds(p).length, previewUrl: null, thumbs: [for (final _ in pageMediaIds(p)) ''], raw: p),
+    ];
+    final book = BookItem(id: 'b1', familyId: 'f1', createdByName: 'Admin', title: 'Familie', format: BookFormat.square21, textMode: BookTextMode.captions, months: const ['2026-03'], status: 'DRAFT', pageCount: views.length, mediaCount: 5, canEdit: true, createdAt: DateTime.utc(2026, 10, 13), pages: views);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookDetailProvider.overrideWith((ref, id) async => book),
+          bookPagePreviewProvider.overrideWith((ref, args) async => PagePreview(png, const {})),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('de', 'CH'),
+          home: const BookEditorScreen(bookId: 'b1', initialPage: 2),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('book-swap-b')), findsOneWidget);
+    // Tauschen: Auswahl zeigt die anderen Fotos des Buchs, Tipp tauscht
+    await tester.tap(find.byKey(const ValueKey('book-swap-b')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('book-swap-pick-b')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('book-swap-pick-c')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('book-photo-row-c')), findsOneWidget);
+    expect(find.byKey(const ValueKey('book-photo-row-b')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

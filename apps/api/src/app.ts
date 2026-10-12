@@ -83,7 +83,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   await app.register(cors, {
     origin: true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    exposedHeaders: ['content-disposition', 'content-range', 'accept-ranges'],
+    // x-book-slots: Platz-Seitenverhältnisse der Fotobuch-Vorschau (Ausschnitt-Rahmen in der App)
+    exposedHeaders: ['content-disposition', 'content-range', 'accept-ranges', 'x-book-slots'],
     maxAge: 600,
   });
   if (opts.config.rateLimit) {

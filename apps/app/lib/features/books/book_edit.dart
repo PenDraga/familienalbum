@@ -120,3 +120,35 @@ List<BookPageJson> setText(List<BookPageJson> pages, int pageIndex, String field
   out[pageIndex][field] = value;
   return out;
 }
+
+/// Fundort eines Fotos auf einer Fotoseite (der Umschlag zählt nicht – er wird separat gewählt).
+({int page, int item})? locateItem(List<BookPageJson> pages, String mediaId) {
+  for (final (p, page) in pages.indexed) {
+    if (page['type'] != 'photos') continue;
+    final i = _items(page).indexWhere((x) => x['mediaId'] == mediaId);
+    if (i >= 0) return (page: p, item: i);
+  }
+  return null;
+}
+
+/// Zwei Fotos tauschen die Plätze – mit Beschreibung, Kommentaren und Ausschnitt (die gehören zum Foto).
+List<BookPageJson> swapItems(List<BookPageJson> pages, String a, String b) {
+  final out = copyPages(pages);
+  final la = locateItem(out, a);
+  final lb = locateItem(out, b);
+  if (la == null || lb == null || a == b) return out;
+  final itemsA = _items(out[la.page]).toList();
+  final itemA = itemsA[la.item];
+  if (la.page == lb.page) {
+    itemsA[la.item] = itemsA[lb.item];
+    itemsA[lb.item] = itemA;
+    out[la.page]['items'] = itemsA;
+    return out;
+  }
+  final itemsB = _items(out[lb.page]).toList();
+  itemsA[la.item] = itemsB[lb.item];
+  itemsB[lb.item] = itemA;
+  out[la.page]['items'] = itemsA;
+  out[lb.page]['items'] = itemsB;
+  return out;
+}
