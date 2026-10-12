@@ -14,6 +14,8 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
   Reihen oder Spalten nach Seitenverhältnis, ohne Beschnitt; Tage bleiben zusammen, ein Highlight pro Monat (nicht
   das Umschlagfoto); Assistenten-Routen für Monate mit Fotos, Fotos zum Abwählen und Seitenschätzung;
   `excludeMediaIds` beim Anlegen; Migration `m16_book_layout`
+- Fotobuch-Texte über Pango statt SVG: Emojis erscheinen farbig (Schrift `fonts-noto-color-emoji` im Image), Zeilen
+  werden nach echter Textbreite umbrochen
 - Passwort vergessen per E-Mail: `POST /auth/password-reset` und `…/confirm`, Token 30 Minuten, einmalig, alle
   Sitzungen enden; SMTP über `SMTP_*`/`MAIL_FROM`/`PUBLIC_URL`, `GET /meta` meldet `features.passwordReset`;
   Migration `m14_password_reset`

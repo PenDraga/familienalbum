@@ -4,7 +4,7 @@
 # In Trixie sind die libheif-Decoder Plugins – libde265 (HEVC) muss ausdrücklich mit, weil Recommends aus sind.
 FROM node:22-trixie-slim AS base
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends openssl ca-certificates curl fontconfig ffmpeg libheif-examples libheif-plugin-libde265 \
+  && apt-get install -y --no-install-recommends openssl ca-certificates curl fontconfig fonts-noto-color-emoji ffmpeg libheif-examples libheif-plugin-libde265 \
   && rm -rf /var/lib/apt/lists/*
 WORKDIR /repo
 
@@ -32,7 +32,7 @@ COPY --from=build /repo/apps/api/node_modules apps/api/node_modules
 COPY --from=build /repo/apps/api/dist apps/api/dist
 COPY --from=build /repo/apps/api/prisma apps/api/prisma
 COPY --from=build /repo/apps/api/assets apps/api/assets
-# Schrift für Titelkarten (sharp/SVG findet sie über fontconfig)
+# Schriften für Titelkarten und Fotobuch (sharp/Pango finden sie über fontconfig); Emojis aus fonts-noto-color-emoji
 RUN mkdir -p /usr/share/fonts/truetype/familienalbum && cp apps/api/assets/fonts/*.ttf /usr/share/fonts/truetype/familienalbum/ && fc-cache -f
 
 COPY apps/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

@@ -1,10 +1,14 @@
 /**
- * Fotobuch-Renderer: jede Seite wird mit sharp als Bild gerastert (Fotos + Text als SVG), daraus entstehen
- * das PDF (eine JPEG-Seite pro Blatt, pdfkit) und die WebP-Seitenvorschauen. Ein Zeichenweg für beides.
+ * Fotobuch-Renderer: jede Seite wird mit sharp als Bild gerastert, daraus entstehen das PDF (eine JPEG-Seite pro
+ * Blatt, pdfkit) und die WebP-Seitenvorschauen. Ein Zeichenweg für beides.
+ *
+ * Texte laufen über Pango (sharp `text` mit `rgba`), nicht über SVG: nur so kommen Emojis farbig ins Buch
+ * (Schrift «Noto Color Emoji» im Server-Image), und Pango bricht Zeilen nach echter Textbreite um.
  */
 import { createWriteStream } from 'node:fs';
 import { mkdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import PDFDocument from 'pdfkit';
 import sharp, { type OverlayOptions } from 'sharp';
 import { coverRects, FORMATS, pageSize, photoRects, textRect, type BookFormat, type BookPage, type FormatSpec, type PageItem, type Rect } from './book-layout.js';
@@ -31,8 +35,11 @@ const COLORS = {
   muted: '#7C7689',
   accent: '#E8694A',
 };
-const FONT_DISPLAY = "'Baloo 2', 'Baloo2', 'Nunito', sans-serif";
-const FONT_BODY = "'Nunito', sans-serif";
+const FONT_DISPLAY = 'Baloo 2';
+const FONT_BODY = 'Nunito';
+/** Im Docker-Image liegen die Schriften auch im System (fontconfig); lokal (Tests, Mac) lädt sharp sie aus der Datei. */
+const FONT_DIR = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..', 'assets', 'fonts');
+const BODY_FONT_FILE = join(FONT_DIR, 'Nunito-Regular.ttf');
 
 export function previewFileName(index: number) {
   return `page_${String(index + 1).padStart(3, '0')}.webp`;
@@ -88,12 +95,10 @@ async function renderPage(page: BookPage, spec: FormatSpec, c: Canvas): Promise<
       const layer = await photoLayer(page.mediaId, photo, 'cover', c);
       if (layer) layers.push(layer);
     }
-    const bandPx = toPx(band, c.px);
-    layers.push(svgLayer(bandPx, coverBandSvg(bandPx, page.title, page.subtitle, c)));
+    layers.push(...(await coverBandLayers(toPx(band, c.px), page.title, page.subtitle, c)));
   } else if (page.type === 'chapter') {
     background = COLORS.cream;
-    const full = toPx({ x: 0, y: 0, w: size.w, h: size.h }, c.px);
-    layers.push(svgLayer(full, chapterSvg(full, page.title, page.subtitle, c)));
+    layers.push(...(await chapterLayers(toPx({ x: 0, y: 0, w: size.w, h: size.h }, c.px), page.title, page.subtitle, c)));
   } else {
     const rects = photoRects(spec, page.template, page.items.length, page.items.map((i) => i.aspect ?? 1.5));
     for (let i = 0; i < page.items.length; i++) {
@@ -104,9 +109,8 @@ async function renderPage(page: BookPage, spec: FormatSpec, c: Canvas): Promise<
     }
     const tr = textRect(spec, page.template);
     if (tr && !page.hideText) {
-      const trPx = toPx(tr, c.px);
-      const svg = textBlockSvg(trPx, page.items[0]!, c);
-      if (svg) layers.push(svgLayer(trPx, svg));
+      const layer = await textBlockLayer(toPx(tr, c.px), page.items[0]!, c);
+      if (layer) layers.push(layer);
     }
   }
 
@@ -141,89 +145,90 @@ async function photoLayer(mediaId: string, rect: Rect, fit: 'cover' | 'contain',
   }
 }
 
-function svgLayer(rect: Rect, svg: string): Layer {
-  return { input: Buffer.from(svg), left: rect.x, top: rect.y };
-}
-
+/** Pango-Markup: nur &, <, > maskieren (Emojis und Umlaute bleiben, wie sie sind). */
 function esc(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/** Zeilenumbruch nach geschätzter Zeichenbreite (Nunito ≈ 0,52 em). */
-function wrap(text: string, fontPx: number, widthPx: number): string[] {
-  const maxChars = Math.max(8, Math.floor(widthPx / (fontPx * 0.52)));
-  const lines: string[] = [];
-  for (const para of text.split(/\r?\n/)) {
-    let line = '';
-    for (const word of para.split(/\s+/).filter(Boolean)) {
-      const candidate = line ? `${line} ${word}` : word;
-      if (candidate.length <= maxChars) line = candidate;
-      else {
-        if (line) lines.push(line);
-        line = word.length > maxChars ? `${word.slice(0, maxChars - 1)}…` : word;
-      }
+function span(text: string, o: { size: number; color: string; family?: string; weight?: string }): string {
+  return `<span font_family="${o.family ?? FONT_BODY}" font_weight="${o.weight ?? 'normal'}" font_size="${Math.round(o.size * 1024)}" foreground="${o.color}">${esc(text)}</span>`;
+}
+
+/** Text als RGBA-Bild (Pango); Grössen in Pixeln (dpi 72 → 1 pt = 1 px). */
+async function pangoText(markup: string, width: number, align: 'left' | 'centre', lineGap: number): Promise<{ data: Buffer; width: number; height: number }> {
+  const out = await sharp({ text: { text: markup, font: `${FONT_BODY} 12`, fontfile: BODY_FONT_FILE, width: Math.max(1, Math.round(width)), wrap: 'word', align, rgba: true, dpi: 72, spacing: Math.round(lineGap) } })
+    .png()
+    .toBuffer({ resolveWithObject: true });
+  return { data: out.data, width: out.info.width, height: out.info.height };
+}
+
+function bar(x: number, y: number, w: number, h: number): Layer {
+  return { input: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="${h / 2}" fill="${COLORS.accent}"/></svg>`), left: Math.round(x), top: Math.round(y) };
+}
+
+/** Titelband des Umschlags: Akzentstrich, Titel (höchstens zwei Zeilen), Zeitraum; vertikal zentriert. */
+async function coverBandLayers(band: Rect, title: string, subtitle: string, c: Canvas): Promise<Layer[]> {
+  const titlePx = c.px(11);
+  const subPx = c.px(5);
+  const t = await pangoText(span(title, { size: titlePx, color: COLORS.ink, family: FONT_DISPLAY, weight: '800' }), band.w * 0.85, 'centre', titlePx * 0.1);
+  const sub = subtitle ? await pangoText(span(subtitle, { size: subPx, color: COLORS.muted }), band.w * 0.85, 'centre', 0) : null;
+  const barW = c.px(24);
+  const barH = Math.max(2, c.px(1.2));
+  const gap = c.px(4);
+  const titleH = Math.min(t.height, titlePx * 2.6);
+  const total = barH + gap + titleH + (sub ? gap * 0.6 + sub.height : 0);
+  let y = band.y + Math.max(gap, (band.h - total) / 2);
+  const layers: Layer[] = [bar(band.x + (band.w - barW) / 2, y, barW, barH)];
+  y += barH + gap;
+  const titleImg = t.height > titleH ? await sharp(t.data).extract({ left: 0, top: 0, width: t.width, height: Math.round(titleH) }).toBuffer() : t.data;
+  layers.push({ input: titleImg, left: Math.round(band.x + (band.w - t.width) / 2), top: Math.round(y) });
+  y += titleH + gap * 0.6;
+  if (sub) layers.push({ input: sub.data, left: Math.round(band.x + (band.w - sub.width) / 2), top: Math.round(y) });
+  return layers;
+}
+
+/** Kapitelseite: Monat gross, Akzentstrich, Anzahl Fotos – mittig. */
+async function chapterLayers(full: Rect, title: string, subtitle: string, c: Canvas): Promise<Layer[]> {
+  const t = await pangoText(span(title, { size: c.px(14), color: COLORS.ink, family: FONT_DISPLAY, weight: '800' }), full.w * 0.8, 'centre', 0);
+  const sub = await pangoText(span(subtitle, { size: c.px(5.5), color: COLORS.muted }), full.w * 0.8, 'centre', 0);
+  const barW = c.px(20);
+  const barH = Math.max(2, c.px(1.2));
+  const gap = c.px(5);
+  const total = t.height + gap + barH + gap + sub.height;
+  let y = (full.h - total) / 2;
+  const layers: Layer[] = [{ input: t.data, left: Math.round((full.w - t.width) / 2), top: Math.round(y) }];
+  y += t.height + gap;
+  layers.push(bar((full.w - barW) / 2, y, barW, barH));
+  y += barH + gap;
+  layers.push({ input: sub.data, left: Math.round((full.w - sub.width) / 2), top: Math.round(y) });
+  return layers;
+}
+
+/**
+ * Bildunterschrift (gross) und Kommentare (Autor in Akzentfarbe, Text normal) im Textfeld. Passt der Block
+ * nicht, fallen Kommentare von hinten weg; passt auch die Unterschrift allein nicht, wird unten abgeschnitten.
+ */
+async function textBlockLayer(box: Rect, item: PageItem, c: Canvas): Promise<Layer | null> {
+  const captionPx = c.px(5);
+  const bodyPx = c.px(3.6);
+  const build = (comments: PageItem['comments']) => {
+    const parts: string[] = [];
+    if (item.caption) parts.push(span(item.caption, { size: captionPx, color: COLORS.ink, family: FONT_DISPLAY, weight: '800' }));
+    for (const cm of comments) {
+      parts.push(`${span(cm.author, { size: bodyPx, color: COLORS.accent, weight: '700' })}\n${span(cm.body, { size: bodyPx, color: COLORS.ink })}`);
     }
-    lines.push(line);
-  }
-  return lines;
-}
-
-function coverBandSvg(band: Rect, title: string, subtitle: string, c: Canvas): string {
-  const titlePx = Math.round(c.px(11));
-  const subPx = Math.round(c.px(5));
-  const cx = band.w / 2;
-  const titleLines = wrap(title, titlePx, band.w * 0.85).slice(0, 2);
-  const titleY = band.h / 2 - (titleLines.length - 1) * titlePx * 0.6;
-  const tspans = titleLines.map((l, i) => `<tspan x="${cx}" dy="${i === 0 ? 0 : titlePx * 1.15}">${esc(l)}</tspan>`).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${band.w}" height="${band.h}">
-  <rect x="0" y="0" width="${band.w}" height="${band.h}" fill="${COLORS.cream}"/>
-  <rect x="${cx - c.px(12)}" y="${c.px(9)}" width="${c.px(24)}" height="${c.px(1.2)}" rx="${c.px(0.6)}" fill="${COLORS.accent}"/>
-  <text x="${cx}" y="${titleY}" text-anchor="middle" font-family="${FONT_DISPLAY}" font-weight="800" font-size="${titlePx}" fill="${COLORS.ink}">${tspans}</text>
-  <text x="${cx}" y="${titleY + titleLines.length * titlePx * 1.15 + subPx * 0.6}" text-anchor="middle" font-family="${FONT_BODY}" font-size="${subPx}" fill="${COLORS.muted}">${esc(subtitle)}</text>
-</svg>`;
-}
-
-function chapterSvg(full: Rect, title: string, subtitle: string, c: Canvas): string {
-  const titlePx = Math.round(c.px(14));
-  const subPx = Math.round(c.px(5.5));
-  const cx = full.w / 2;
-  const cy = full.h / 2;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${full.w}" height="${full.h}">
-  <text x="${cx}" y="${cy}" text-anchor="middle" font-family="${FONT_DISPLAY}" font-weight="800" font-size="${titlePx}" fill="${COLORS.ink}">${esc(title)}</text>
-  <rect x="${cx - c.px(10)}" y="${cy + c.px(6)}" width="${c.px(20)}" height="${c.px(1.2)}" rx="${c.px(0.6)}" fill="${COLORS.accent}"/>
-  <text x="${cx}" y="${cy + c.px(16)}" text-anchor="middle" font-family="${FONT_BODY}" font-size="${subPx}" fill="${COLORS.muted}">${esc(subtitle)}</text>
-</svg>`;
-}
-
-/** Bildunterschrift (gross) und Kommentare (Autor fett, Text normal) im Textfeld; was nicht passt, fällt weg. */
-function textBlockSvg(box: Rect, item: PageItem, c: Canvas): string | null {
-  const captionPx = Math.round(c.px(5));
-  const bodyPx = Math.round(c.px(3.6));
-  const lineH = bodyPx * 1.45;
-  const parts: string[] = [];
-  let y = 0;
-  if (item.caption) {
-    const lines = wrap(item.caption, captionPx, box.w).slice(0, 3);
-    y += captionPx;
-    for (const l of lines) {
-      parts.push(`<text x="0" y="${y}" font-family="${FONT_DISPLAY}" font-weight="800" font-size="${captionPx}" fill="${COLORS.ink}">${esc(l)}</text>`);
-      y += captionPx * 1.2;
+    return parts.join('\n\n');
+  };
+  if (!item.caption && item.comments.length === 0) return null;
+  let comments = item.comments;
+  for (;;) {
+    const markup = build(comments);
+    if (!markup) return null;
+    const t = await pangoText(markup, box.w, 'left', bodyPx * 0.35);
+    if (t.height <= box.h || comments.length === 0) {
+      const input = t.height > box.h ? await sharp(t.data).extract({ left: 0, top: 0, width: t.width, height: box.h }).toBuffer() : t.data;
+      return { input, left: box.x, top: box.y };
     }
-    y += bodyPx * 0.6;
+    comments = comments.slice(0, -1);
   }
-  for (const cm of item.comments) {
-    const lines = wrap(cm.body, bodyPx, box.w - bodyPx * 0.3);
-    const needed = lineH * (lines.length + 1);
-    if (y + needed > box.h) break;
-    y += bodyPx;
-    parts.push(`<text x="0" y="${y}" font-family="${FONT_BODY}" font-weight="700" font-size="${bodyPx}" fill="${COLORS.accent}">${esc(cm.author)}</text>`);
-    y += lineH;
-    for (const l of lines) {
-      parts.push(`<text x="0" y="${y}" font-family="${FONT_BODY}" font-size="${bodyPx}" fill="${COLORS.ink}">${esc(l)}</text>`);
-      y += lineH;
-    }
-    y += bodyPx * 0.5;
-  }
-  if (parts.length === 0) return null;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${box.w}" height="${box.h}">${parts.join('')}</svg>`;
 }
