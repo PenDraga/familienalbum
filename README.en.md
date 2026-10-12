@@ -46,6 +46,9 @@ link). An album admin sends an invitation link for that, see [Invitations](#invi
 - **Recaps:** monthly and yearly videos plus a one-second-per-day film, rendered on the server with ffmpeg (Ken Burns
   motion, cross-fades, title card, royalty-free music with attribution), automatically on the first of the month and on
   demand; "On this day" shows photos from the same calendar day in earlier months and years.
+- **Photo book:** print-ready PDF from selected months (21 × 21 cm, A4 landscape, 30 × 30 cm) with an automatic
+  layout proposal: cover, a chapter per month, captions or comments; order it from any printer that accepts PDF uploads
+  (ADR-0004).
 - **Export:** all photos, videos and comments as a ZIP, in total or per month, with `index.json` and the comments as a
   file. Your data stays yours, something commercial services tend to refuse.
 - **Profile:** avatar per user, shown with comments, activity and members; comments are editable (author, album admin or

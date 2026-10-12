@@ -8,7 +8,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { requireFamilyPermission, type FamilyPermission } from '../src/plugins/permissions.js';
 import { TestContext, expectProblem, type MemberFlags } from './helpers/app.js';
 
-const PERMISSIONS: FamilyPermission[] = ['member', 'isFamilyAdmin', 'canUpload', 'canDownload', 'canComment'];
+const PERMISSIONS: FamilyPermission[] = ['member', 'isFamilyAdmin', 'canUpload', 'canDownload', 'canComment', 'canCreateBooks'];
 
 async function testRoutes(app: FastifyInstance) {
   for (const perm of PERMISSIONS) {
@@ -48,13 +48,14 @@ const ALL_FORBIDDEN: Record<FamilyPermission, number> = {
   canUpload: 403,
   canDownload: 403,
   canComment: 403,
+  canCreateBooks: 403,
 };
 
 const MATRIX: Row[] = [
   {
     name: 'nicht angemeldet',
     actor: 'anonymous',
-    expected: { member: 401, isFamilyAdmin: 401, canUpload: 401, canDownload: 401, canComment: 401 },
+    expected: { member: 401, isFamilyAdmin: 401, canUpload: 401, canDownload: 401, canComment: 401, canCreateBooks: 401 },
   },
   { name: 'Nicht-Mitglied', actor: 'non-member', expected: ALL_FORBIDDEN },
   {
@@ -65,32 +66,37 @@ const MATRIX: Row[] = [
   {
     name: 'Mitglied ohne Flags',
     actor: { flags: {} },
-    expected: { member: 200, isFamilyAdmin: 403, canUpload: 403, canDownload: 403, canComment: 403 },
+    expected: { member: 200, isFamilyAdmin: 403, canUpload: 403, canDownload: 403, canComment: 403, canCreateBooks: 403 },
   },
   {
     name: 'Mitglied mit canUpload',
     actor: { flags: { canUpload: true } },
-    expected: { member: 200, isFamilyAdmin: 403, canUpload: 200, canDownload: 403, canComment: 403 },
+    expected: { member: 200, isFamilyAdmin: 403, canUpload: 200, canDownload: 403, canComment: 403, canCreateBooks: 403 },
   },
   {
     name: 'Mitglied mit canDownload',
     actor: { flags: { canDownload: true } },
-    expected: { member: 200, isFamilyAdmin: 403, canUpload: 403, canDownload: 200, canComment: 403 },
+    expected: { member: 200, isFamilyAdmin: 403, canUpload: 403, canDownload: 200, canComment: 403, canCreateBooks: 403 },
   },
   {
     name: 'Mitglied mit canComment',
     actor: { flags: { canComment: true } },
-    expected: { member: 200, isFamilyAdmin: 403, canUpload: 403, canDownload: 403, canComment: 200 },
+    expected: { member: 200, isFamilyAdmin: 403, canUpload: 403, canDownload: 403, canComment: 200, canCreateBooks: 403 },
+  },
+  {
+    name: 'Mitglied mit canCreateBooks',
+    actor: { flags: { canCreateBooks: true } },
+    expected: { member: 200, isFamilyAdmin: 403, canUpload: 403, canDownload: 403, canComment: 403, canCreateBooks: 200 },
   },
   {
     name: 'Familien-Admin ohne weitere Flags (Admin impliziert keine Upload/Download-Rechte)',
     actor: { flags: { isFamilyAdmin: true } },
-    expected: { member: 200, isFamilyAdmin: 200, canUpload: 403, canDownload: 403, canComment: 403 },
+    expected: { member: 200, isFamilyAdmin: 200, canUpload: 403, canDownload: 403, canComment: 403, canCreateBooks: 403 },
   },
   {
     name: 'Familien-Admin mit allen Flags',
-    actor: { flags: { isFamilyAdmin: true, canUpload: true, canDownload: true, canComment: true } },
-    expected: { member: 200, isFamilyAdmin: 200, canUpload: 200, canDownload: 200, canComment: 200 },
+    actor: { flags: { isFamilyAdmin: true, canUpload: true, canDownload: true, canComment: true, canCreateBooks: true } },
+    expected: { member: 200, isFamilyAdmin: 200, canUpload: 200, canDownload: 200, canComment: 200, canCreateBooks: 200 },
   },
 ];
 

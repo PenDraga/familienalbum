@@ -11,6 +11,7 @@ export const createInviteBodySchema = z.object({
   canUpload: z.boolean().default(false),
   canDownload: z.boolean().default(false),
   canComment: z.boolean().default(true),
+  canCreateBooks: z.boolean().default(false),
 });
 
 export const inviteSchema = z
@@ -26,6 +27,7 @@ export const inviteSchema = z
     canUpload: z.boolean(),
     canDownload: z.boolean(),
     canComment: z.boolean(),
+    canCreateBooks: z.boolean(),
   })
   .meta({ id: 'Invite' });
 
@@ -41,6 +43,7 @@ export const invitePreviewSchema = z
     canUpload: z.boolean(),
     canDownload: z.boolean(),
     canComment: z.boolean(),
+    canCreateBooks: z.boolean(),
   })
   .meta({ id: 'InvitePreview' });
 

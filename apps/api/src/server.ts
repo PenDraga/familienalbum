@@ -9,6 +9,7 @@ import { MediaProcessor } from './services/media-processor.js';
 import { NotificationService } from './services/notification.service.js';
 import { createPushSender } from './services/push.js';
 import { RecapService } from './services/recap.service.js';
+import { BookService } from './services/book.service.js';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
@@ -29,6 +30,7 @@ async function main() {
       enqueueProcessMedia: (id) => queue.enqueueProcessMedia(id),
       enqueueNotifyMedia: (f, u) => queue.enqueueNotifyMedia(f, u),
       enqueueRecap: (id) => queue.enqueueRecap(id),
+      enqueueRenderBook: (id) => queue.enqueueRenderBook(id),
       close: () => queue.close(),
     },
     logger:
@@ -56,6 +58,7 @@ async function main() {
             enqueueProcessMedia: (id) => queue.enqueueProcessMedia(id),
             enqueueNotifyMedia: (f, u) => queue.enqueueNotifyMedia(f, u),
             enqueueRecap: (id) => queue.enqueueRecap(id),
+            enqueueRenderBook: (id) => queue.enqueueRenderBook(id),
             close: async () => {},
           });
           const recap = await recapSvc.build(recapId, {
@@ -65,6 +68,11 @@ async function main() {
             log: app.log,
           });
           if (recap.status === 'READY') await notifications.notifyRecap(recapId);
+        },
+        renderBook: async (bookId) => {
+          const svc = new BookService(prisma, app.storage, app.signer, queue);
+          const book = await svc.render(bookId, { log: app.log });
+          if (book.status === 'READY') await notifications.notifyBook(bookId);
         },
       },
       config.notifyDigestSeconds,

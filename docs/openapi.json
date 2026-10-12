@@ -711,13 +711,17 @@
           },
           "canComment": {
             "type": "boolean"
+          },
+          "canCreateBooks": {
+            "type": "boolean"
           }
         },
         "required": [
           "isFamilyAdmin",
           "canUpload",
           "canDownload",
-          "canComment"
+          "canComment",
+          "canCreateBooks"
         ]
       },
       "FamilyInput": {
@@ -774,6 +778,9 @@
               "canComment": {
                 "type": "boolean"
               },
+              "canCreateBooks": {
+                "type": "boolean"
+              },
               "joinedAt": {
                 "type": "string",
                 "format": "date-time",
@@ -797,6 +804,7 @@
               "canUpload",
               "canDownload",
               "canComment",
+              "canCreateBooks",
               "joinedAt",
               "lastSeenAt"
             ]
@@ -843,6 +851,9 @@
           "canComment": {
             "type": "boolean"
           },
+          "canCreateBooks": {
+            "type": "boolean"
+          },
           "joinedAt": {
             "type": "string",
             "format": "date-time",
@@ -869,6 +880,7 @@
           "canUpload",
           "canDownload",
           "canComment",
+          "canCreateBooks",
           "joinedAt",
           "lastSeenAt"
         ]
@@ -976,6 +988,481 @@
           "photoCount",
           "videoCount",
           "disk"
+        ]
+      },
+      "BookPageInput": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "cover"
+              },
+              "mediaId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "subtitle": {
+                "type": "string",
+                "maxLength": 120
+              }
+            },
+            "required": [
+              "type",
+              "mediaId",
+              "title",
+              "subtitle"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "chapter"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "subtitle": {
+                "type": "string",
+                "maxLength": 120
+              }
+            },
+            "required": [
+              "type",
+              "title",
+              "subtitle"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "photos"
+              },
+              "template": {
+                "type": "string",
+                "enum": [
+                  "one",
+                  "two",
+                  "two_stacked",
+                  "four",
+                  "one_text"
+                ]
+              },
+              "items": {
+                "minItems": 1,
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "mediaId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "caption": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "comments": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "author": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "body": {
+                            "type": "string",
+                            "maxLength": 2000
+                          }
+                        },
+                        "required": [
+                          "author",
+                          "body"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "mediaId",
+                    "caption",
+                    "comments"
+                  ]
+                }
+              },
+              "hideText": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "template",
+              "items"
+            ]
+          }
+        ]
+      },
+      "PhotoBookInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "familyId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/UserBriefInput"
+          },
+          "title": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "SQUARE_21",
+              "A4_LANDSCAPE",
+              "SQUARE_30"
+            ]
+          },
+          "textMode": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "CAPTIONS",
+              "COMMENTS"
+            ]
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
+          },
+          "onlyCommented": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UPLOADING",
+              "PROCESSING",
+              "READY",
+              "FAILED"
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "mediaCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pdfBytes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "renderedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "canEdit": {
+            "type": "boolean"
+          },
+          "urls": {
+            "type": "object",
+            "properties": {
+              "pdf": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cover": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "pdf",
+              "cover"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "familyId",
+          "createdBy",
+          "title",
+          "format",
+          "textMode",
+          "months",
+          "onlyCommented",
+          "status",
+          "error",
+          "pageCount",
+          "mediaCount",
+          "pdfBytes",
+          "createdAt",
+          "updatedAt",
+          "renderedAt",
+          "canEdit",
+          "urls"
+        ]
+      },
+      "PhotoBookDetailInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "familyId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/UserBriefInput"
+          },
+          "title": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "SQUARE_21",
+              "A4_LANDSCAPE",
+              "SQUARE_30"
+            ]
+          },
+          "textMode": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "CAPTIONS",
+              "COMMENTS"
+            ]
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
+          },
+          "onlyCommented": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UPLOADING",
+              "PROCESSING",
+              "READY",
+              "FAILED"
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "mediaCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pdfBytes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "renderedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "canEdit": {
+            "type": "boolean"
+          },
+          "urls": {
+            "type": "object",
+            "properties": {
+              "pdf": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cover": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "pdf",
+              "cover"
+            ]
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "page": {
+                  "$ref": "#/components/schemas/BookPageInput"
+                },
+                "previewUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "thumbs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "index",
+                "page",
+                "previewUrl",
+                "thumbs"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "familyId",
+          "createdBy",
+          "title",
+          "format",
+          "textMode",
+          "months",
+          "onlyCommented",
+          "status",
+          "error",
+          "pageCount",
+          "mediaCount",
+          "pdfBytes",
+          "createdAt",
+          "updatedAt",
+          "renderedAt",
+          "canEdit",
+          "urls",
+          "pages"
         ]
       },
       "CommentInput": {
@@ -1134,6 +1621,9 @@
           },
           "canComment": {
             "type": "boolean"
+          },
+          "canCreateBooks": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -1147,7 +1637,8 @@
           "uses",
           "canUpload",
           "canDownload",
-          "canComment"
+          "canComment",
+          "canCreateBooks"
         ]
       },
       "InvitePreviewInput": {
@@ -1172,6 +1663,9 @@
           },
           "canComment": {
             "type": "boolean"
+          },
+          "canCreateBooks": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -1180,7 +1674,8 @@
           "isValid",
           "canUpload",
           "canDownload",
-          "canComment"
+          "canComment",
+          "canCreateBooks"
         ]
       },
       "AcceptInviteResponseInput": {
@@ -1268,6 +1763,9 @@
                     "canComment": {
                       "type": "boolean"
                     },
+                    "canCreateBooks": {
+                      "type": "boolean"
+                    },
                     "joinedAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1291,6 +1789,7 @@
                     "canUpload",
                     "canDownload",
                     "canComment",
+                    "canCreateBooks",
                     "joinedAt",
                     "lastSeenAt"
                   ]
@@ -2270,13 +2769,17 @@
           },
           "canComment": {
             "type": "boolean"
+          },
+          "canCreateBooks": {
+            "type": "boolean"
           }
         },
         "required": [
           "isFamilyAdmin",
           "canUpload",
           "canDownload",
-          "canComment"
+          "canComment",
+          "canCreateBooks"
         ],
         "additionalProperties": false
       },
@@ -2335,6 +2838,9 @@
               "canComment": {
                 "type": "boolean"
               },
+              "canCreateBooks": {
+                "type": "boolean"
+              },
               "joinedAt": {
                 "type": "string",
                 "format": "date-time",
@@ -2358,6 +2864,7 @@
               "canUpload",
               "canDownload",
               "canComment",
+              "canCreateBooks",
               "joinedAt",
               "lastSeenAt"
             ],
@@ -2406,6 +2913,9 @@
           "canComment": {
             "type": "boolean"
           },
+          "canCreateBooks": {
+            "type": "boolean"
+          },
           "joinedAt": {
             "type": "string",
             "format": "date-time",
@@ -2432,6 +2942,7 @@
           "canUpload",
           "canDownload",
           "canComment",
+          "canCreateBooks",
           "joinedAt",
           "lastSeenAt"
         ],
@@ -2542,6 +3053,491 @@
           "photoCount",
           "videoCount",
           "disk"
+        ],
+        "additionalProperties": false
+      },
+      "BookPage": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "cover"
+              },
+              "mediaId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "subtitle": {
+                "type": "string",
+                "maxLength": 120
+              }
+            },
+            "required": [
+              "type",
+              "mediaId",
+              "title",
+              "subtitle"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "chapter"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "subtitle": {
+                "type": "string",
+                "maxLength": 120
+              }
+            },
+            "required": [
+              "type",
+              "title",
+              "subtitle"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "photos"
+              },
+              "template": {
+                "type": "string",
+                "enum": [
+                  "one",
+                  "two",
+                  "two_stacked",
+                  "four",
+                  "one_text"
+                ]
+              },
+              "items": {
+                "minItems": 1,
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "mediaId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "caption": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "comments": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "author": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "body": {
+                            "type": "string",
+                            "maxLength": 2000
+                          }
+                        },
+                        "required": [
+                          "author",
+                          "body"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "mediaId",
+                    "caption",
+                    "comments"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "hideText": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "template",
+              "items"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "PhotoBook": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "familyId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/UserBrief"
+          },
+          "title": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "SQUARE_21",
+              "A4_LANDSCAPE",
+              "SQUARE_30"
+            ]
+          },
+          "textMode": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "CAPTIONS",
+              "COMMENTS"
+            ]
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
+          },
+          "onlyCommented": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UPLOADING",
+              "PROCESSING",
+              "READY",
+              "FAILED"
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "mediaCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pdfBytes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "renderedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "canEdit": {
+            "type": "boolean"
+          },
+          "urls": {
+            "type": "object",
+            "properties": {
+              "pdf": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cover": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "pdf",
+              "cover"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "familyId",
+          "createdBy",
+          "title",
+          "format",
+          "textMode",
+          "months",
+          "onlyCommented",
+          "status",
+          "error",
+          "pageCount",
+          "mediaCount",
+          "pdfBytes",
+          "createdAt",
+          "updatedAt",
+          "renderedAt",
+          "canEdit",
+          "urls"
+        ],
+        "additionalProperties": false
+      },
+      "PhotoBookDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "familyId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/UserBrief"
+          },
+          "title": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "SQUARE_21",
+              "A4_LANDSCAPE",
+              "SQUARE_30"
+            ]
+          },
+          "textMode": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "CAPTIONS",
+              "COMMENTS"
+            ]
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
+          },
+          "onlyCommented": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UPLOADING",
+              "PROCESSING",
+              "READY",
+              "FAILED"
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "mediaCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pdfBytes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "renderedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "canEdit": {
+            "type": "boolean"
+          },
+          "urls": {
+            "type": "object",
+            "properties": {
+              "pdf": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cover": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "pdf",
+              "cover"
+            ],
+            "additionalProperties": false
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "page": {
+                  "$ref": "#/components/schemas/BookPage"
+                },
+                "previewUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "thumbs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "index",
+                "page",
+                "previewUrl",
+                "thumbs"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "familyId",
+          "createdBy",
+          "title",
+          "format",
+          "textMode",
+          "months",
+          "onlyCommented",
+          "status",
+          "error",
+          "pageCount",
+          "mediaCount",
+          "pdfBytes",
+          "createdAt",
+          "updatedAt",
+          "renderedAt",
+          "canEdit",
+          "urls",
+          "pages"
         ],
         "additionalProperties": false
       },
@@ -2705,6 +3701,9 @@
           },
           "canComment": {
             "type": "boolean"
+          },
+          "canCreateBooks": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -2718,7 +3717,8 @@
           "uses",
           "canUpload",
           "canDownload",
-          "canComment"
+          "canComment",
+          "canCreateBooks"
         ],
         "additionalProperties": false
       },
@@ -2744,6 +3744,9 @@
           },
           "canComment": {
             "type": "boolean"
+          },
+          "canCreateBooks": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -2752,7 +3755,8 @@
           "isValid",
           "canUpload",
           "canDownload",
-          "canComment"
+          "canComment",
+          "canCreateBooks"
         ],
         "additionalProperties": false
       },
@@ -2842,6 +3846,9 @@
                     "canComment": {
                       "type": "boolean"
                     },
+                    "canCreateBooks": {
+                      "type": "boolean"
+                    },
                     "joinedAt": {
                       "type": "string",
                       "format": "date-time",
@@ -2865,6 +3872,7 @@
                     "canUpload",
                     "canDownload",
                     "canComment",
+                    "canCreateBooks",
                     "joinedAt",
                     "lastSeenAt"
                   ],
@@ -4347,6 +5355,10 @@
                   "canComment": {
                     "default": true,
                     "type": "boolean"
+                  },
+                  "canCreateBooks": {
+                    "default": false,
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -4529,6 +5541,9 @@
                     "type": "boolean"
                   },
                   "canComment": {
+                    "type": "boolean"
+                  },
+                  "canCreateBooks": {
                     "type": "boolean"
                   }
                 }
@@ -4740,6 +5755,10 @@
                   },
                   "canComment": {
                     "default": true,
+                    "type": "boolean"
+                  },
+                  "canCreateBooks": {
+                    "default": false,
                     "type": "boolean"
                   }
                 }
@@ -6819,6 +7838,577 @@
         }
       }
     },
+    "/families/{id}/books": {
+      "get": {
+        "summary": "Fotobücher des Albums (neueste zuerst)",
+        "tags": [
+          "books"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoBook"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Fotobuch anlegen (canCreateBooks): Layoutvorschlag sofort, PDF im Hintergrund",
+        "tags": [
+          "books"
+        ],
+        "description": "409 BOOK_EMPTY ohne Fotos im Zeitraum, 409 BOOK_TOO_LARGE über 200 Seiten.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "format": {
+                    "default": "SQUARE_21",
+                    "type": "string",
+                    "enum": [
+                      "SQUARE_21",
+                      "A4_LANDSCAPE",
+                      "SQUARE_30"
+                    ]
+                  },
+                  "textMode": {
+                    "default": "CAPTIONS",
+                    "type": "string",
+                    "enum": [
+                      "NONE",
+                      "CAPTIONS",
+                      "COMMENTS"
+                    ]
+                  },
+                  "months": {
+                    "minItems": 1,
+                    "maxItems": 36,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                    }
+                  },
+                  "onlyCommented": {
+                    "default": false,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "months"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoBookDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/books/{id}": {
+      "get": {
+        "summary": "Fotobuch mit Seitenliste",
+        "tags": [
+          "books"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoBookDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Titel oder Seiten ändern (Ersteller oder Album-Admin); wird danach neu gerendert",
+        "tags": [
+          "books"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "pages": {
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/BookPageInput"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoBookDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Fotobuch löschen (Ersteller oder Album-Admin)",
+        "tags": [
+          "books"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Kein Inhalt"
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/books/{id}/render": {
+      "post": {
+        "summary": "Nochmals rendern (nach Fehler)",
+        "tags": [
+          "books"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoBook"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/books/{id}/pdf": {
+      "get": {
+        "summary": "Druckfertiges PDF",
+        "tags": [
+          "books"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/books/{id}/pages/{index}": {
+      "get": {
+        "summary": "Seitenvorschau (WebP), Seiten ab 1",
+        "tags": [
+          "books"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "in": "path",
+            "name": "index",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/media/{id}/comments": {
       "get": {
         "summary": "Kommentare eines Mediums (älteste zuerst)",
@@ -7824,6 +9414,9 @@
                               "canComment": {
                                 "type": "boolean"
                               },
+                              "canCreateBooks": {
+                                "type": "boolean"
+                              },
                               "joinedAt": {
                                 "type": "string",
                                 "format": "date-time",
@@ -7847,6 +9440,7 @@
                               "canUpload",
                               "canDownload",
                               "canComment",
+                              "canCreateBooks",
                               "joinedAt",
                               "lastSeenAt"
                             ],
@@ -8175,6 +9769,10 @@
                   },
                   "canComment": {
                     "default": true,
+                    "type": "boolean"
+                  },
+                  "canCreateBooks": {
+                    "default": false,
                     "type": "boolean"
                   }
                 },

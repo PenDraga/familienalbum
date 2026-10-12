@@ -8,6 +8,7 @@ import { MediaStorage } from './lib/storage.js';
 import { MediaProcessor } from './services/media-processor.js';
 import { NotificationService } from './services/notification.service.js';
 import { RecapService, type RecapBuildEnv } from './services/recap.service.js';
+import { BookService } from './services/book.service.js';
 import { UrlSigner } from './lib/signed-url.js';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -23,6 +24,7 @@ async function main() {
   const pushSender = createPushSender(env.FIREBASE_SERVICE_ACCOUNT, log);
   const notifications = new NotificationService(prisma, pushSender, log);
   const recaps = new RecapService(prisma, storage, new UrlSigner(config.jwtSecret, config.signedUrlTtlSeconds), queue);
+  const books = new BookService(prisma, storage, new UrlSigner(config.jwtSecret, config.signedUrlTtlSeconds), queue);
   const assetsDir = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'assets');
   const recapEnv: RecapBuildEnv = {
     ffmpegPath: config.ffmpegPath ?? 'ffmpeg',
@@ -53,6 +55,14 @@ async function main() {
         if (recap.status === 'FAILED') throw new Error(recap.error ?? 'recap failed');
         const outcome = await notifications.notifyRecap(recapId);
         log.info({ recapId, ...outcome }, 'recap push');
+        return;
+      }
+      if (job.name === 'render-book') {
+        const { bookId } = job.data as { bookId: string };
+        const book = await books.render(bookId, { log });
+        if (book.status === 'FAILED') throw new Error(book.error ?? 'book failed');
+        const outcome = await notifications.notifyBook(bookId);
+        log.info({ bookId, ...outcome }, 'book push');
         return;
       }
       if (job.name === 'recap-schedule') {

@@ -53,6 +53,17 @@ export class MediaStorage {
     return join(this.recapDir(familyId, recapId), 'poster.jpg');
   }
 
+  /** Fotobücher: <root>/<familyId>/_books/<bookId>/{book.pdf, page_001.webp …} */
+  bookDir(familyId: string, bookId: string) {
+    return join(this.root, familyId, '_books', bookId);
+  }
+  bookPdfPath(familyId: string, bookId: string) {
+    return join(this.bookDir(familyId, bookId), 'book.pdf');
+  }
+  bookPagePath(familyId: string, bookId: string, fileName: string) {
+    return join(this.bookDir(familyId, bookId), fileName);
+  }
+
   /** Profilbilder: <root>/_avatars/<userId>.webp (512×512, vom Server erzeugt) */
   avatarPath(userId: string) {
     return join(this.root, '_avatars', `${userId}.webp`);

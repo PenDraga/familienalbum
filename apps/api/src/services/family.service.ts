@@ -8,6 +8,7 @@ export interface MembershipFlagsInput {
   canUpload?: boolean;
   canDownload?: boolean;
   canComment?: boolean;
+  canCreateBooks?: boolean;
 }
 
 export class FamilyService {
@@ -55,6 +56,7 @@ export class FamilyService {
                 canUpload: true,
                 canDownload: true,
                 canComment: true,
+                canCreateBooks: true,
               },
             }
           : undefined,
@@ -108,6 +110,7 @@ export class FamilyService {
           canUpload: input.canUpload,
           canDownload: input.canDownload,
           canComment: input.canComment,
+          canCreateBooks: input.canCreateBooks,
         },
         include: { user: { select: { id: true, displayName: true, avatarUpdatedAt: true } } },
       });

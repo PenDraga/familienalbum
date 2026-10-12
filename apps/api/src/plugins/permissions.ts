@@ -5,7 +5,7 @@ import { Errors } from '../lib/errors.js';
  * Familienrechte gemäss Rechtematrix in CLAUDE.md.
  * `member` = blosse Mitgliedschaft (Timeline sehen etc.).
  */
-export type FamilyPermission = 'member' | 'isFamilyAdmin' | 'canUpload' | 'canDownload' | 'canComment';
+export type FamilyPermission = 'member' | 'isFamilyAdmin' | 'canUpload' | 'canDownload' | 'canComment' | 'canCreateBooks';
 
 export type FamilyIdResolver = (request: FastifyRequest) => string | undefined | Promise<string | undefined>;
 
@@ -62,4 +62,5 @@ const PERMISSION_MESSAGES: Record<Exclude<FamilyPermission, 'member'>, string> =
   canUpload: 'Du darfst in diesem Album nichts hochladen.',
   canDownload: 'Du darfst in diesem Album keine Originale herunterladen.',
   canComment: 'Du darfst in diesem Album nicht kommentieren.',
+  canCreateBooks: 'Du darfst in diesem Album keine Fotobücher erstellen.',
 };

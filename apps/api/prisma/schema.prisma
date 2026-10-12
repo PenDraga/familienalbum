@@ -41,6 +41,43 @@ model Recap {
   @@index([familyId, createdAt])
 }
 
+/// Fotobuch als druckfertiges PDF (ADR-0004). `pages` ist die Wahrheit; PDF und Seitenvorschauen werden daraus gerendert.
+model PhotoBook {
+  id          String       @id @default(uuid())
+  familyId    String
+  createdById String
+  title       String
+  format      BookFormat
+  textMode    BookTextMode
+  months      String[] // JJJJ-MM, sortiert
+  onlyCommented Boolean    @default(false)
+  pages       Json
+  pageCount   Int          @default(0)
+  mediaCount  Int          @default(0)
+  status      MediaStatus  @default(PROCESSING)
+  error       String?
+  pdfBytes    Int?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  renderedAt  DateTime?
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy User   @relation("BookCreator", fields: [createdById], references: [id])
+
+  @@index([familyId, createdAt])
+}
+
+enum BookFormat {
+  SQUARE_21
+  A4_LANDSCAPE
+  SQUARE_30
+}
+
+enum BookTextMode {
+  NONE
+  CAPTIONS
+  COMMENTS
+}
+
 enum MediaStatus {
   UPLOADING
   PROCESSING
@@ -65,6 +102,7 @@ model User {
   uploads       Media[]        @relation("UploaderMedia")
   comments      Comment[]
   invites       Invite[]       @relation("InviteCreator")
+  books         PhotoBook[]    @relation("BookCreator")
   uploadSessions UploadSession[]
 }
 
@@ -76,6 +114,7 @@ model Family {
   media     Media[]
   invites   Invite[]
   recaps    Recap[]
+  books     PhotoBook[]
   uploadSessions UploadSession[]
 }
 
@@ -86,6 +125,7 @@ model FamilyMember {
   canUpload     Boolean   @default(false)
   canDownload   Boolean   @default(false)
   canComment    Boolean   @default(true)
+  canCreateBooks Boolean  @default(false) // Fotobuch (PDF) anlegen, ADR-0004
   joinedAt      DateTime  @default(now())
   lastSeenAt    DateTime?
   activitySeenAt DateTime? // Aktivitäts-Verlauf zuletzt geöffnet (Ungelesen-Zähler)
@@ -109,6 +149,7 @@ model Invite {
   canUpload   Boolean
   canDownload Boolean
   canComment  Boolean
+  canCreateBooks Boolean @default(false)
   family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
   createdBy User   @relation("InviteCreator", fields: [createdById], references: [id])
 

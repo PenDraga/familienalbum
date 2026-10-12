@@ -95,7 +95,7 @@ describe('POST /invites/:code/accept – angemeldet', () => {
     expect(res.statusCode, res.body).toBe(200);
     expect(res.json()).toEqual({
       family: { id: family.id, name: family.name, createdAt: family.createdAt.toISOString() },
-      membership: { isFamilyAdmin: false, canUpload: true, canDownload: false, canComment: false },
+      membership: { isFamilyAdmin: false, canUpload: true, canDownload: false, canComment: false, canCreateBooks: false },
     });
 
     expect((await (await ctx.as(user)).get(`/families/${family.id}`)).statusCode).toBe(200);

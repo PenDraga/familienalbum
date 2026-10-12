@@ -49,6 +49,7 @@ export interface MemberFlags {
   canUpload?: boolean;
   canDownload?: boolean;
   canComment?: boolean;
+  canCreateBooks?: boolean;
 }
 
 export class TestContext {
@@ -86,7 +87,7 @@ export class TestContext {
   /** Leert alle Tabellen (Reihenfolge egal dank CASCADE) und die eingereihten Jobs. */
   async resetDb() {
     await this.prisma.$executeRawUnsafe(
-      'TRUNCATE TABLE "Comment","Media","UploadSession","Device","RefreshToken","Invite","FamilyMember","Family","User" CASCADE',
+      'TRUNCATE TABLE "PhotoBook","Comment","Media","UploadSession","Device","RefreshToken","Invite","FamilyMember","Family","User" CASCADE',
     );
     this.queue.reset();
     this.push.reset();
@@ -127,6 +128,7 @@ export class TestContext {
         canUpload: flags.canUpload ?? false,
         canDownload: flags.canDownload ?? false,
         canComment: flags.canComment ?? false,
+        canCreateBooks: flags.canCreateBooks ?? false,
       },
     });
   }
@@ -135,7 +137,7 @@ export class TestContext {
   async createFamilyWithAdmin(name?: string) {
     const family = await this.createFamily(name);
     const admin = await this.createUser();
-    await this.addMember(family, admin, { isFamilyAdmin: true, canUpload: true, canDownload: true, canComment: true });
+    await this.addMember(family, admin, { isFamilyAdmin: true, canUpload: true, canDownload: true, canComment: true, canCreateBooks: true });
     return { family, admin };
   }
 

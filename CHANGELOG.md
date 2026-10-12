@@ -6,6 +6,10 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 ## [Unreleased]
 
 ### Server
+- Fotobuch als druckfertiges PDF (ADR-0004): `POST /families/:id/books` mit Format (21 × 21, A4 quer, 30 × 30),
+  Textmodus (ohne, Bildunterschriften, mit Kommentaren) und Monaten; automatischer Layoutvorschlag (Umschlag,
+  Kapitel pro Monat, Vorlagen eins/zwei/vier/Bild mit Text), Rendern im Worker (`render-book`), Seitenvorschauen,
+  Push an den Ersteller; neues Mitglieder- und Einladungs-Flag `canCreateBooks`; Migration `m15_photo_books`
 - Passwort vergessen per E-Mail: `POST /auth/password-reset` und `…/confirm`, Token 30 Minuten, einmalig, alle
   Sitzungen enden; SMTP über `SMTP_*`/`MAIL_FROM`/`PUBLIC_URL`, `GET /meta` meldet `features.passwordReset`;
   Migration `m14_password_reset`

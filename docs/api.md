@@ -257,3 +257,26 @@ Mitglied der Familie sein (ADR-0003) – ohne Mitgliedschaft sieht er weder Medi
 
 Nachrichten-Daten (`data`): `type` = `media` | `comment`, `familyId`, bei Kommentaren `mediaId` und `commentId`.
 Die App öffnet beim Antippen das betroffene Medium.
+
+## Fotobuch (ADR-0004)
+
+Druckfertiges PDF statt Druckerei-API. Alle Mitglieder sehen Bücher und laden das PDF; anlegen darf `canCreateBooks`,
+ändern und löschen der Ersteller oder ein Album-Admin.
+
+- `GET /families/:id/books` – Liste (neueste zuerst), `PhotoBook` mit `status` (PROCESSING | READY | FAILED), `pageCount`,
+  `mediaCount`, `canEdit` und signierten `urls.pdf` / `urls.cover` (7 Tage).
+- `POST /families/:id/books` `{ title?, format, textMode, months[], onlyCommented }` → 202 `PhotoBookDetail`.
+  `format`: `SQUARE_21` (21 × 21 cm), `A4_LANDSCAPE`, `SQUARE_30`; `textMode`: `NONE` | `CAPTIONS` | `COMMENTS`;
+  `months`: `JJJJ-MM` (1–36). Der Server berechnet den Layoutvorschlag sofort (Umschlag, Kapitel pro Monat, Vorlagen
+  `one`, `two`, `two_stacked`, `four`, `one_text`) und rendert PDF und Seitenvorschauen im Worker (`render-book`).
+  Fehler: `BOOK_EMPTY` (409), `BOOK_TOO_LARGE` (409, über 200 Seiten).
+- `GET /books/:id` – Detail mit `pages[]`: `{ index, page, previewUrl, thumbs[] }`; `page` ist die gespeicherte Seite
+  (`cover` | `chapter` | `photos` mit `template`, `items[{ mediaId, caption, comments[] }]`, `hideText`).
+- `PATCH /books/:id` `{ title?, pages? }` – ersetzt Titel und/oder Seitenliste, rendert neu (202). `BOOK_MEDIA_INVALID`
+  (400), wenn ein Foto nicht zum Album gehört. `POST /books/:id/render` rendert nach einem Fehler nochmals.
+- `DELETE /books/:id` → 204.
+- `GET /books/:id/pdf`, `GET /books/:id/pages/:n` (WebP, ab 1) – signierter Link oder Bearer eines Mitglieds;
+  404 `BOOK_NOT_READY`, solange das Buch rendert.
+
+Dateien: `/data/media/<familyId>/_books/<bookId>/{book.pdf, page_001.webp …}`. Seiten werden mit 300 dpi gerastert
+(3 mm Beschnitt, sRGB, Baloo 2 / Nunito), das PDF enthält eine JPEG-Seite pro Blatt.

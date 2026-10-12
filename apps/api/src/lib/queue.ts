@@ -6,6 +6,7 @@ export type MediaJobData =
   | { mediaId: string } // name: 'process'
   | { familyId: string; uploaderId: string } // name: 'notify'
   | { recapId: string } // name: 'recap'
+  | { bookId: string } // name: 'render-book'
   | { kind: 'MONTH' | 'YEAR' }; // name: 'recap-schedule' (Job-Scheduler, monatlich/jährlich)
 
 /** Abstraktion über die Job-Queue, damit Tests ohne Redis laufen. */
@@ -16,6 +17,8 @@ export interface MediaQueue {
   enqueueNotifyMedia(familyId: string, uploaderId: string): Promise<void>;
   /** Rückblick-Video bauen. */
   enqueueRecap(recapId: string): Promise<void>;
+  /** Fotobuch (PDF + Seitenvorschauen) rendern. */
+  enqueueRenderBook(bookId: string): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -94,6 +97,18 @@ export class BullMqMediaQueue implements MediaQueue {
     await this.queue.add('recap', { recapId }, { jobId, attempts: 2, backoff: { type: 'fixed', delay: 60_000 } });
   }
 
+  async enqueueRenderBook(bookId: string) {
+    const jobId = `book-${bookId}`;
+    const existing = await this.queue.getJob(jobId);
+    if (existing) {
+      const state = await existing.getState();
+      if (state === 'failed') return existing.retry();
+      if (state === 'completed' || state === 'unknown') await existing.remove();
+      else return;
+    }
+    await this.queue.add('render-book', { bookId }, { jobId, attempts: 2, backoff: { type: 'fixed', delay: 60_000 } });
+  }
+
   /**
    * Zeitpläne für automatische Rückblicke (idempotent; BullMQ Job Scheduler): am 1. jedes Monats
    * um 06:00 der Vormonat, am 2. Januar um 07:00 das Vorjahr – Zeitzone Europe/Zurich.
@@ -126,12 +141,18 @@ export class RecordingMediaQueue implements MediaQueue {
     this.recaps.push(recapId);
   }
 
+  readonly books: string[] = [];
+  async enqueueRenderBook(bookId: string) {
+    this.books.push(bookId);
+  }
+
   async close() {}
 
   reset() {
     this.enqueued.length = 0;
     this.notifications.length = 0;
     this.recaps.length = 0;
+    this.books.length = 0;
   }
 }
 
@@ -139,6 +160,7 @@ export interface InlineHandlers {
   process: (mediaId: string) => Promise<void>;
   notify: (familyId: string, uploaderId: string) => Promise<void>;
   recap?: (recapId: string) => Promise<void>;
+  renderBook?: (bookId: string) => Promise<void>;
 }
 
 /** Verarbeitet sofort im selben Prozess (Dev ohne Redis/Worker); Benachrichtigungen mit Timer gebündelt. */
@@ -171,6 +193,12 @@ export class InlineMediaQueue implements MediaQueue {
     const handler = this.handlers.recap;
     if (!handler) return;
     handler(recapId).catch((err) => this.onError(err, `recap:${recapId}`));
+  }
+
+  async enqueueRenderBook(bookId: string) {
+    const handler = this.handlers.renderBook;
+    if (!handler) return;
+    handler(bookId).catch((err) => this.onError(err, `book:${bookId}`));
   }
 
   async close() {

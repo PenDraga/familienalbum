@@ -15,6 +15,7 @@ import authPlugin from './plugins/auth.js';
 import swaggerPlugin from './plugins/swagger.js';
 import { activityRoutes } from './routes/activity.js';
 import { adminRoutes } from './routes/admin.js';
+import { bookRoutes } from './routes/books.js';
 import { commentRoutes } from './routes/comments.js';
 import { deviceRoutes } from './routes/devices.js';
 import { authRoutes } from './routes/auth.js';
@@ -102,6 +103,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
       await api.register(mediaRoutes);
       await api.register(exportRoutes);
       await api.register(recapRoutes);
+      await api.register(bookRoutes);
       await api.register(commentRoutes);
       await api.register(deviceRoutes);
       await api.register(activityRoutes);

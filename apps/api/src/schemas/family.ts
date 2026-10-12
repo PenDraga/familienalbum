@@ -10,6 +10,7 @@ export const membershipFlagsSchema = z
     canUpload: z.boolean(),
     canDownload: z.boolean(),
     canComment: z.boolean(),
+    canCreateBooks: z.boolean(),
   })
   .meta({ id: 'MembershipFlags' });
 
@@ -48,6 +49,7 @@ export const memberSchema = z
     canUpload: z.boolean(),
     canDownload: z.boolean(),
     canComment: z.boolean(),
+    canCreateBooks: z.boolean(),
     joinedAt: z.iso.datetime(),
     lastSeenAt: z.iso.datetime().nullable(),
   })
@@ -68,6 +70,7 @@ export const createMemberAccountBodySchema = z.object({
   canUpload: z.boolean().default(true),
   canDownload: z.boolean().default(false),
   canComment: z.boolean().default(true),
+  canCreateBooks: z.boolean().default(false),
 });
 
 export const familyAdminSchema = familySchema
@@ -88,6 +91,7 @@ export const addMemberBodySchema = z.object({
   canUpload: z.boolean().default(false),
   canDownload: z.boolean().default(false),
   canComment: z.boolean().default(true),
+  canCreateBooks: z.boolean().default(false),
 });
 
 /** Speicherplatz einer Familie: Originale nach Typ; `disk` nur für Familien-/globale Admins. */

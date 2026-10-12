@@ -60,6 +60,7 @@ model FamilyMember {
   canUpload     Boolean @default(false)
   canDownload   Boolean @default(false)
   canComment    Boolean @default(true)
+  canCreateBooks Boolean @default(false)  // Fotobuch (PDF) anlegen, ADR-0004
   lastSeenAt    DateTime?
   user   User   @relation(fields: [userId], references: [id])
   family Family @relation(fields: [familyId], references: [id])
@@ -78,8 +79,11 @@ model Invite {
   canUpload     Boolean
   canDownload   Boolean
   canComment    Boolean
+  canCreateBooks Boolean @default(false)
   family Family @relation(fields: [familyId], references: [id])
 }
+
+model PhotoBook { ... }   // Fotobuch: Format, Textmodus, Monate, Seitenliste (JSON), Status, PDF (ADR-0004)
 
 model Media {
   id           String    @id @default(uuid())
@@ -129,6 +133,8 @@ Dateien liegen unter `/data/media/<familyId>/<mediaId>/{original.ext, thumb_400.
 | Hochladen | `canUpload` |
 | Eigenes Medium löschen / Caption ändern | Uploader oder `isFamilyAdmin` |
 | Kommentieren | `canComment` |
+| Fotobuch anlegen | `canCreateBooks` |
+| Fotobuch ändern / löschen | Ersteller oder `isFamilyAdmin` |
 | Kommentar bearbeiten / löschen | Autor, `isFamilyAdmin` oder `isAdmin` (als Mitglied; ADR-0003) |
 | Mitglieder-Flags ändern, Einladungen erzeugen, Mitglied entfernen | `isFamilyAdmin` |
 | User anlegen/sperren/löschen (anonymisieren), Familien anlegen/löschen, Storage-Statistik | `isAdmin` (global) |
@@ -158,6 +164,9 @@ GET    /media/:id/thumb/:size            400 | 1600
 GET    /media/:id/original               (canDownload)
 GET    /families/:id/recaps | POST /families/:id/recaps {kind, period}   Rückblick-Videos (canUpload); DELETE /recaps/:id (isFamilyAdmin)
 GET    /recaps/:id/video | /poster        signiert oder Mitglied
+GET    /families/:id/books | POST /families/:id/books {format, textMode, months[], onlyCommented}   Fotobuch (canCreateBooks); Layoutvorschlag sofort, PDF im Worker
+GET    /books/:id (Seitenliste) | PATCH /books/:id {title, pages} | POST /books/:id/render | DELETE /books/:id   Ersteller oder isFamilyAdmin
+GET    /books/:id/pdf | /pages/:n          signiert oder Mitglied
 GET    /families/:id/on-this-day         «An diesem Tag» (gleicher Kalendertag vor 1–12 Monaten, 1–10 Jahren)
 GET    /families/:id/export-link/:scope  signierter Link (canDownload); scope = alle | JJJJ-MM
 GET    /families/:id/export/:scope       ZIP-Stream: Originale JJJJ/MM/, index.json, kommentare.md

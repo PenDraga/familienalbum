@@ -46,6 +46,9 @@ Einladungslink mit). Ein Album-Admin verschickt dazu einen Einladungslink, siehe
 - **Rückblicke:** Monats- und Jahres-Video sowie Sekunden-Film, vom Server mit ffmpeg gebaut (Kamerafahrt,
   Überblendungen, Titelkarte, lizenzfreie Musik mit Nachweis), automatisch am Monatsersten und per Knopf;
   «An diesem Tag» zeigt Fotos vom selben Kalendertag früherer Monate und Jahre.
+- **Fotobuch:** druckfertiges PDF aus gewählten Monaten (21 × 21 cm, A4 quer, 30 × 30 cm), automatischer
+  Layoutvorschlag mit Umschlag, Kapitel pro Monat und Bildunterschriften oder Kommentaren; bei jedem Anbieter mit
+  PDF-Upload bestellbar (ADR-0004).
 - **Export:** alle Fotos, Videos und Kommentare als ZIP, gesamt oder pro Monat, mit `index.json` und Kommentaren
   als Datei – die Datenhoheit, die kommerzielle Dienste verweigern.
 - **Profil:** Profilbild pro Benutzer, sichtbar bei Kommentaren, Aktivität und Mitgliedern; Kommentare bearbeitbar

@@ -82,6 +82,18 @@ export class NotificationService {
     return { ...sent, count: 1 };
   }
 
+  /** Fotobuch fertig: nur die Person, die es angelegt hat. */
+  async notifyBook(bookId: string): Promise<NotifyOutcome> {
+    const book = await this.prisma.photoBook.findUnique({ where: { id: bookId }, include: { family: { select: { name: true } } } });
+    if (!book || book.status !== 'READY') return NONE;
+    const sent = await this.sendToUsers([book.createdById], (lang) => ({
+      title: lang === 'en' ? 'Photo book ready' : 'Fotobuch fertig',
+      body: lang === 'en' ? `«${book.title}» – ${book.pageCount} pages · ${book.family.name}` : `«${book.title}» – ${book.pageCount} Seiten · ${book.family.name}`,
+      data: { type: 'book', familyId: book.familyId, bookId: book.id },
+    }));
+    return { ...sent, count: 1 };
+  }
+
   /** Rückblick fertig: alle Mitglieder der Familie. */
   async notifyRecap(recapId: string): Promise<NotifyOutcome> {
     const recap = await this.prisma.recap.findUnique({ where: { id: recapId }, include: { family: { select: { name: true } } } });

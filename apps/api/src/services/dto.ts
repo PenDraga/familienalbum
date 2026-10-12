@@ -48,6 +48,7 @@ export function toMembershipFlags(m: FamilyMember) {
     canUpload: m.canUpload,
     canDownload: m.canDownload,
     canComment: m.canComment,
+    canCreateBooks: m.canCreateBooks,
   };
 }
 
@@ -75,5 +76,6 @@ export function toInviteDto(i: Invite) {
     canUpload: i.canUpload,
     canDownload: i.canDownload,
     canComment: i.canComment,
+    canCreateBooks: i.canCreateBooks,
   };
 }

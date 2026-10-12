@@ -21,6 +21,7 @@ export interface CreateInviteInput {
   canUpload: boolean;
   canDownload: boolean;
   canComment: boolean;
+  canCreateBooks: boolean;
 }
 
 export interface RegistrationInput {
@@ -46,6 +47,7 @@ export class InviteService {
         canUpload: input.canUpload,
         canDownload: input.canDownload,
         canComment: input.canComment,
+        canCreateBooks: input.canCreateBooks,
       },
     });
     return toInviteDto(invite);
@@ -76,6 +78,7 @@ export class InviteService {
       canUpload: invite.canUpload,
       canDownload: invite.canDownload,
       canComment: invite.canComment,
+      canCreateBooks: invite.canCreateBooks,
     };
   }
 
@@ -133,6 +136,7 @@ export class InviteService {
           canUpload: invite.canUpload,
           canDownload: invite.canDownload,
           canComment: invite.canComment,
+          canCreateBooks: invite.canCreateBooks,
         },
       });
 
