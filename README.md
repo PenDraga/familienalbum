@@ -11,7 +11,7 @@ Cloudflare Tunnel erreichbar.
 Clients: iOS, Android, Web (ein Flutter-Codebase). Projekt-Brief und Konventionen: [CLAUDE.md](./CLAUDE.md).
 
 **Status: Version 1.2.** Server im Dauerbetrieb, iOS-App im App Store, Android-App über Google Play oder APK,
-Web-App im Browser. Oberfläche auf Deutsch und Englisch, je nach Systemsprache. Änderungen siehe [CHANGELOG.md](./CHANGELOG.md). Lizenz: [MIT](./LICENSE).
+Web-App im Browser. Oberfläche auf Deutsch und Englisch, je nach Systemsprache. Änderungen siehe [CHANGELOG.md](./CHANGELOG.md). Lizenz: [AGPL-3.0](./LICENSE).
 
 | Timeline | Foto | Kommentare | Rückblick | Einstellungen |
 |---|---|---|---|---|
@@ -280,3 +280,12 @@ rückwirkend wählbar) werden in die gewählte Familie hochgeladen, standardmäs
 - Vordergrund: beim Start, bei Rückkehr in den Vordergrund (höchstens alle 5 Minuten) und über „Jetzt“.
 - Hintergrund: Android WorkManager (periodisch), iOS BGTaskScheduler (`ch.familienalbum.autoupload`). Pro Lauf höchstens 25 Dateien.
 - HEIC wird auf dem Gerät zu JPEG gewandelt, Duplikate erkennt der Server per SHA-256.
+
+## Lizenz
+
+Copyright © 2026 Familienalbum contributors
+
+Familienalbum ist freie Software unter der [GNU Affero General Public License, Version 3](./LICENSE) (AGPL-3.0).
+Du darfst sie nutzen, ändern und weitergeben. Wer eine geänderte Fassung als Dienst über das Netz anbietet, muss
+den Nutzerinnen und Nutzern den Quellcode dieser Fassung ebenfalls zugänglich machen. Versionen bis 1.2.0 wurden
+unter der MIT-Lizenz veröffentlicht; für sie gilt weiterhin MIT.

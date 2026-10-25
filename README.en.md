@@ -11,7 +11,7 @@ Clients: iOS, Android and web from one Flutter code base. Project brief and conv
 
 **Status: version 1.2.** The server runs in production, the iOS app is on the App Store, the Android app ships via
 Google Play or APK, and the web app runs in any browser. The user interface is available in German and English and
-follows the device language. Changes: [CHANGELOG.md](./CHANGELOG.md) (German). License: [MIT](./LICENSE).
+follows the device language. Changes: [CHANGELOG.md](./CHANGELOG.md) (German). License: [AGPL-3.0](./LICENSE).
 
 | Timeline | Photo | Comments | Recap | Settings |
 |---|---|---|---|---|
@@ -266,3 +266,12 @@ that album and switches itself off if the permission is revoked.
 - Foreground: on start, on return to the foreground (at most every 5 minutes) and via "Jetzt".
 - Background: Android WorkManager (periodic), iOS BGTaskScheduler (`ch.familienalbum.autoupload`). At most 25 files per run.
 - HEIC is converted to JPEG on the device; the server detects duplicates by SHA-256.
+
+## License
+
+Copyright © 2026 Familienalbum contributors
+
+Familienalbum is free software under the [GNU Affero General Public License, version 3](./LICENSE) (AGPL-3.0).
+You may use, modify and share it. If you offer a modified version as a service over a network, you must also make
+the source code of that version available to its users. Versions up to 1.2.0 were released under the MIT license
+and remain available under MIT.

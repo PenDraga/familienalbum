@@ -5,6 +5,9 @@ der API ohne Ankündigung möglich. Docker-Images tragen dieselben Tags wie die 
 
 ## [Unreleased]
 
+### Projekt
+- Lizenz von MIT auf AGPL-3.0 umgestellt (`LICENSE`, `package.json`); Versionen bis 1.2.0 bleiben unter MIT
+
 ## [1.2.0] – 2026-10-12
 
 Fotobuch als druckfertiges PDF (Assistent, Seiten prüfen mit Ausschnitt und Zoom, PDF auf Knopfdruck), Beschreibung
